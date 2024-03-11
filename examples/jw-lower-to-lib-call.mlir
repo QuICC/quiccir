@@ -14,8 +14,4 @@ func.func @entry(%thisArr: !llvm.array<1x!llvm.ptr>, %uval: !type_uval, %umod: !
   return
 }
 
-// ./bin/quiccir-opt ../examples/jw-lower-to-lib-call.mlir --convert-quiccir-to-call --canonicalize --finalize-quiccir-view --convert-func-to-llvm --canonicalize | ./bin/quiccir-miniapp -emit=jit --shared-libs=./external/libquiccir_external.so
-
-// or
-// ./bin/quiccir-miniapp ../examples/jw-lower-to-lib-call.mlir --emit=jit
-
+// ./bin/quiccir-opt ../examples/jw-lower-to-lib-call.mlir --convert-quiccir-to-call --canonicalize --finalize-quiccir-view --convert-func-to-llvm --canonicalize

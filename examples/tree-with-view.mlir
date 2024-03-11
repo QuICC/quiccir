@@ -1,3 +1,6 @@
+//
+// Usage prototype, it is not meant to be run
+//
 
 //
 // 1D example, 3 implementations options

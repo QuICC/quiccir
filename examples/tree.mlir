@@ -1,3 +1,7 @@
+//
+// Usage prototype, it is not meant to be run
+//
+
 module {
   // entry point
   func.func @entry(%newumod: memref<?x?x?xf64>, %umod: memref<?x?x?xf64>) {
