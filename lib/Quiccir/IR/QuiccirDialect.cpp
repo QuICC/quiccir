@@ -1,13 +1,12 @@
-//===- QuiccirDialect.cpp - Quiccir dialect ---------------*- C++ -*-===//
+//===- QuiccirDialect.cpp - Quiccir dialect ---------------------*- C++ -*-===//
 //
-// This file is licensed under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for license information.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+//   Copyright (c) 2024,
+//   Earth and Planetary Magnetism group, ETH Zurich
 //
-//===----------------------------------------------------------------------===//
+//===---------------------------------------------------------------------===//
 
-#include "Quiccir/QuiccirDialect.h"
-#include "Quiccir/QuiccirOps.h"
+#include "Quiccir/IR/QuiccirDialect.h"
+#include "Quiccir/IR/QuiccirOps.h"
 
 // #include "mlir/IR/Builders.h"
 // #include "mlir/IR/OpImplementation.h"
@@ -16,7 +15,7 @@
 using namespace mlir;
 using namespace mlir::quiccir;
 
-#include "Quiccir/QuiccirOpsDialect.cpp.inc"
+#include "Quiccir/IR/QuiccirOpsDialect.cpp.inc"
 
 //===----------------------------------------------------------------------===//
 // QuiccirInlinerInterface
@@ -47,7 +46,7 @@ void QuiccirDialect::initialize() {
   /// Add the defined operations in the dialect.
   addOperations<
 #define GET_OP_LIST
-#include "Quiccir/QuiccirOps.cpp.inc"
+#include "Quiccir/IR/QuiccirOps.cpp.inc"
       >();
 
   addInterfaces<QuiccirInlinerInterface>();

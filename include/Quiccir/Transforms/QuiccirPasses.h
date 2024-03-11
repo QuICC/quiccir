@@ -1,10 +1,9 @@
 //===- QuiccirPasses.h - Quiccir dialect passes -----------------*- C++ -*-===//
 //
-// This file is licensed under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for license information.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+//   Copyright (c) 2024,
+//   Earth and Planetary Magnetism group, ETH Zurich
 //
-//===----------------------------------------------------------------------===//
+//===---------------------------------------------------------------------===//
 
 #ifndef QUICCIR_QUICCIRPASSES_H
 #define QUICCIR_QUICCIRPASSES_H
@@ -40,7 +39,7 @@ std::unique_ptr<mlir::Pass> createFinalizeViewToLLVMPass();
 
 /// Generate the code for registering passes.
 #define GEN_PASS_REGISTRATION
-#include "Quiccir/QuiccirPasses.h.inc"
+#include "Quiccir/Transforms/QuiccirPasses.h.inc"
 
 } // namespace quiccir
 } // namespace mlir

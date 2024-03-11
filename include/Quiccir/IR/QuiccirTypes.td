@@ -1,17 +1,11 @@
 //===-- QuiccirTypes.td - Quiccir types definition file ----*- tablegen -*-===//
-//
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for license information.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-//
-//===----------------------------------------------------------------------===//
 
 #ifndef QUICCIR_QUICCIRTYPES
 #define QUICCIR_QUICCIRTYPES
 
 include "mlir/IR/AttrTypeBase.td"
 include "mlir/IR/BuiltinTypeInterfaces.td"
-include "Quiccir/QuiccirDialect.td"
+include "Quiccir/IR/QuiccirDialect.td"
 
 //===----------------------------------------------------------------------===//
 // Base quiccir type definition.

@@ -6,7 +6,7 @@ set(LIBS
         ${conversion_libs}
         ${extension_libs}
         MLIROptLib
-        MLIRQuiccir
+        MLIRQuiccirDialect
         MLIRExecutionEngine
         quiccir_external
         )

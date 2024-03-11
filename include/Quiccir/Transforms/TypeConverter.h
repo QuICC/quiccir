@@ -1,11 +1,5 @@
 //===- TypeConverter.hpp - Quiccir type converter ---------------*- C++ -*-===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for license information.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-//
-//===----------------------------------------------------------------------===//
-//
 // This header file defines prototypes of Quiccir type converter.
 //
 //===----------------------------------------------------------------------===//
@@ -14,7 +8,7 @@
 #define QUICCIR_TRANSFORMS_TYPECONVERTER_H
 
 #include "mlir/Transforms/DialectConversion.h"
-#include "Quiccir/QuiccirTypes.h"
+#include "Quiccir/IR/QuiccirTypes.h"
 
 namespace mlir {
 namespace quiccir {

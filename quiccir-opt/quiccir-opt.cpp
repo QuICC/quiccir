@@ -1,10 +1,9 @@
-//===- quiccir-opt.cpp ---------------------------------------*- C++ -*-===//
+//===- quiccir-opt.cpp ------------------------------------------*- C++ -*-===//
 //
-// This file is licensed under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for license information.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+//   Copyright (c) 2024,
+//   Earth and Planetary Magnetism group, ETH Zurich
 //
-//===----------------------------------------------------------------------===//
+//===---------------------------------------------------------------------===//
 
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/Extensions/AllExtensions.h"
@@ -21,8 +20,8 @@
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/ToolOutputFile.h"
 
-#include "Quiccir/QuiccirDialect.h"
-#include "Quiccir/QuiccirPasses.h"
+#include "Quiccir/IR/QuiccirDialect.h"
+#include "Quiccir/Transforms/QuiccirPasses.h"
 
 int main(int argc, char **argv) {
   // MLIR passes
