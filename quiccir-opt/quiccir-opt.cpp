@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "mlir/Dialect/Arith/IR/Arith.h"
+#include "mlir/Dialect/Func/Extensions/AllExtensions.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/InitAllDialects.h"
@@ -27,12 +28,18 @@ int main(int argc, char **argv) {
   // MLIR passes
   mlir::registerAllPasses();
   // Quiccir passes
+  mlir::quiccir::registerQuiccirLowerToCallPass();
+  mlir::quiccir::registerQuiccirLowerAllocPass();
+  mlir::quiccir::registerQuiccirViewDeallocationPass();
+  mlir::quiccir::registerQuiccirFinalizeViewToLLVMPass();
   // mlir::quiccir::registerQuiccirLowerToAffinePass();
   // mlir::quiccir::registerQuiccirLowerToLinalgPass();
   /// Custom non-Quiccir passes
   // mlir::registerMergeAffineParallelLoopPass();
 
   mlir::DialectRegistry registry;
+  mlir::func::registerAllExtensions(registry);
+
   registry.insert<mlir::quiccir::QuiccirDialect>();
   // Add the following to include *all* MLIR Core dialects, or selectively
   // include what you need like above. You only need to register dialects that

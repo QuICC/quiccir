@@ -17,13 +17,17 @@ include "mlir/IR/OpBase.td"
 
 def Quiccir_Dialect : Dialect {
     let name = "quiccir";
-    let summary = "A out-of-tree MLIR dialect to model nektar++ operators.";
+    let summary = "A out-of-tree MLIR dialect to model QuICC operators.";
     let description = [{
         This dialect is an out-of-tree MLIR dialect designed to
-        model nektar++ operators (https://www.nektar.info/).
+        model QuICC operators (https://github.com/QuICC).
     }];
     let cppNamespace = "::mlir::quiccir";
-    let useFoldAPI = kEmitFoldAdaptorFolder;
+
+    let useDefaultTypePrinterParser = 1;
+    let extraClassDeclaration = [{
+        void registerTypes();
+    }];
 }
 
 //===----------------------------------------------------------------------===//
