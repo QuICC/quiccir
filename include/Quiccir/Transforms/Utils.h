@@ -101,4 +101,4 @@ getLibraryCallSymbolRef(Operation *op, PatternRewriter &rewriter, ArrayRef<Type>
 } // namespace quiccir
 } // namespace mlir
 
-#endif // QUICCIR_TRANSFORMS_UTILSER_H
+#endif // QUICCIR_TRANSFORMS_UTILS_H

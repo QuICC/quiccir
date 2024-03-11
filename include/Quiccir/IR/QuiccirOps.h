@@ -5,8 +5,8 @@
 //
 //===---------------------------------------------------------------------===//
 
-#ifndef QUICCIR_QUICCIROPS_H
-#define QUICCIR_QUICCIROPS_H
+#ifndef QUICCIR_IR_QUICCIROPS_H
+#define QUICCIR_IR_QUICCIROPS_H
 
 #include "Quiccir/IR/QuiccirTypes.h"
 
@@ -19,4 +19,4 @@
 #define GET_OP_CLASSES
 #include "Quiccir/IR/QuiccirOps.h.inc"
 
-#endif // QUICCIR_QUICCIROPS_H
+#endif // QUICCIR_IR_QUICCIROPS_H

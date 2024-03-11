@@ -5,8 +5,8 @@
 //
 //===---------------------------------------------------------------------===//
 
-#ifndef QUICCIR_QUICCIRPASSES_H
-#define QUICCIR_QUICCIRPASSES_H
+#ifndef QUICCIR_TRANSFORMS_QUICCIRPASSES_H
+#define QUICCIR_TRANSFORMS_QUICCIRPASSES_H
 
 #include "mlir/Pass/Pass.h"
 
@@ -44,4 +44,4 @@ std::unique_ptr<mlir::Pass> createFinalizeViewToLLVMPass();
 } // namespace quiccir
 } // namespace mlir
 
-#endif // QUICCIR_QUICCIRPASSES_H
+#endif // QUICCIR_TRANSFORMS_QUICCIRPASSES_H

@@ -5,8 +5,8 @@
 //
 //===---------------------------------------------------------------------===//
 
-#ifndef QUICCIR_QUICCIRPASSDETAIL_H
-#define QUICCIR_QUICCIRPASSDETAIL_H
+#ifndef QUICCIR_TRANSFORMS_QUICCIRPASSDETAIL_H
+#define QUICCIR_TRANSFORMS_QUICCIRPASSDETAIL_H
 
 #include "mlir/Dialect/Tosa/IR/TosaOps.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
@@ -31,4 +31,4 @@ namespace quiccir {
 } // namespace quiccir
 } // namespace mlir
 
-#endif // QUICCIR_QUICCIRPASSDETAIL_H
+#endif // QUICCIR_TRANSFORMS_QUICCIRPASSDETAIL_H
