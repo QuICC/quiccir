@@ -1,11 +1,5 @@
 //====- QuiccirViewDeallocation.cpp - Inserting Quiccir Dealloc -----------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for license information.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-//
-//===----------------------------------------------------------------------===//
-//
 // This file implements a pass that inserts DeallocOps.
 // At the moment, for simplicity, we assume that the temporary buffers are not
 // passed as arguments to other blocks (i.e. no control flow allowed).
@@ -13,11 +7,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "Quiccir/QuiccirPassDetail.h"
+#include "Quiccir/Transforms/QuiccirPassDetail.h"
 
-#include "Quiccir/QuiccirDialect.h"
-#include "Quiccir/QuiccirOps.h"
-#include "Quiccir/QuiccirPasses.h"
+#include "Quiccir/IR/QuiccirDialect.h"
+#include "Quiccir/IR/QuiccirOps.h"
+#include "Quiccir/Transforms/QuiccirPasses.h"
 
 #include "mlir/IR/BuiltinDialect.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"

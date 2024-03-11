@@ -1,23 +1,17 @@
 //====- QuiccirLowerToAffine.cpp - Lowering from Quiccir to Affine+Std --===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for license information.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-//
-//===----------------------------------------------------------------------===//
-//
 // This file implements a partial lowering of Quiccir operations to a combination of
 // affine loops, memref operations and standard operations. This lowering
 // expects that all shapes have been resolved.
 //
 //===----------------------------------------------------------------------===//
 
-#include "Quiccir/QuiccirPassDetail.h"
+#include "Quiccir/Transforms/QuiccirPassDetail.h"
 
 #include "mlir/IR/BuiltinDialect.h"
-#include "Quiccir/QuiccirDialect.h"
-#include "Quiccir/QuiccirOps.h"
-#include "Quiccir/QuiccirPasses.h"
+#include "Quiccir/IR/QuiccirDialect.h"
+#include "Quiccir/IR/QuiccirOps.h"
+#include "Quiccir/Transforms/QuiccirPasses.h"
 
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"

@@ -1,21 +1,15 @@
 //====- QuiccirFinalizeViewToLLVM - Lowering Quiccir.View ----------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for license information.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-//
-//===----------------------------------------------------------------------===//
-//
 // This file implements the final lowering of Quiccir.View to llvm.struct, i.e.
 // in func/call/return ops.
 //
 //===----------------------------------------------------------------------===//
 
-#include "Quiccir/QuiccirPassDetail.h"
+#include "Quiccir/Transforms/QuiccirPassDetail.h"
 
-#include "Quiccir/QuiccirDialect.h"
-#include "Quiccir/QuiccirOps.h"
-#include "Quiccir/QuiccirPasses.h"
+#include "Quiccir/IR/QuiccirDialect.h"
+#include "Quiccir/IR/QuiccirOps.h"
+#include "Quiccir/Transforms/QuiccirPasses.h"
 #include "Quiccir/Transforms/TypeConverter.h"
 
 #include "mlir/Dialect/Func/Transforms/FuncConversions.h"

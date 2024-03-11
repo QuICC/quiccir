@@ -1,13 +1,12 @@
-//===- quiccir-miniapp.cpp ---------------------------------------*- C++ -*-===//
+//===- quiccir-miniapp.cpp --------------------------------------*- C++ -*-===//
 //
-// This file is licensed under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for license information.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+//   Copyright (c) 2024,
+//   Earth and Planetary Magnetism group, ETH Zurich
 //
-//===----------------------------------------------------------------------===//
+//===---------------------------------------------------------------------===//
 
-#include "Quiccir/QuiccirDialect.h"
-#include "Quiccir/QuiccirPasses.h"
+#include "Quiccir/IR/QuiccirDialect.h"
+#include "Quiccir/Transforms/QuiccirPasses.h"
 
 #include "mlir/Dialect/Func/Extensions/AllExtensions.h"
 #include "mlir/Dialect/Tensor/Transforms/Passes.h"
@@ -56,7 +55,7 @@
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/raw_ostream.h"
 
-#include "Quiccir/QuiccirDialect.h"
+#include "Quiccir/IR/QuiccirDialect.h"
 #include "jwOp.hpp"
 #include "utils.hpp"
 

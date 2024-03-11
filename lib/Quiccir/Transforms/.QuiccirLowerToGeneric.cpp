@@ -1,21 +1,15 @@
 //====- QuiccirLowerToGeneric.cpp - Lowering from Quiccir ops to Generic ops --===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for license information.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-//
-//===----------------------------------------------------------------------===//
-//
 // This file implements a partial lowering of Quiccir operations to Generic
 // operations (quadrature or FFT based ops)
 //
 //===----------------------------------------------------------------------===//
 
-#include "Quiccir/QuiccirPassDetail.h"
+#include "Quiccir/Transforms/QuiccirPassDetail.h"
 
-#include "Quiccir/QuiccirDialect.h"
-#include "Quiccir/QuiccirOps.h"
-#include "Quiccir/QuiccirPasses.h"
+#include "Quiccir/IR/QuiccirDialect.h"
+#include "Quiccir/IR/QuiccirOps.h"
+#include "Quiccir/Transforms/QuiccirPasses.h"
 #include "Quiccir/Transforms/TypeConverter.hpp"
 
 #include "mlir/IR/BuiltinDialect.h"

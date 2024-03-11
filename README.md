@@ -1,12 +1,16 @@
-# LLVM 17
 
-# An out-of-tree MLIR dialect
+# quiccir: an out-of-tree MLIR dialect
 
-This is an example of an out-of-tree [MLIR](https://mlir.llvm.org/) dialect along with a quiccir `opt`-like tool to operate on that dialect.
+`quiccir` is an out-of-tree [MLIR](https://mlir.llvm.org/) dialect.
+This dialect provides operators and types that can be lowered to library calls to use the spectral operators in [QuICC](https://github.com/QuICC/QuICC).
+
+It implements a  quiccir `opt`-like tool to operate on that dialect.
+
+An a miniapp that prototypes the usage in QuICC.
 
 ## Building
 
-This setup assumes that you have built LLVM and MLIR in `$LLVM_BUILD` and installed them to `$LLVM_ROOT`. To build and launch the tests, run
+This setup assumes that you have built LLVM 17 and MLIR in `$LLVM_BUILD` and installed them to `$LLVM_ROOT`. To build and launch the tests, run
 ```sh
 mkdir build && cd build
 cmake -G Ninja .. -DMLIR_DIR=$LLVM_ROOT/lib/cmake/mlir -DLLVM_EXTERNAL_LIT=$LLVM_BUILD/bin/llvm-lit

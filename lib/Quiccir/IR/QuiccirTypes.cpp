@@ -1,14 +1,13 @@
-//===- QuiccirTypes.cpp - Quiccir dialect types -----------*- C++ -*-===//
+//===- QuiccirTypes.cpp - Quiccir dialect types -----------------*- C++ -*-===//
 //
-// This file is licensed under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for license information.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+//   Copyright (c) 2024,
+//   Earth and Planetary Magnetism group, ETH Zurich
 //
-//===----------------------------------------------------------------------===//
+//===---------------------------------------------------------------------===//
 
-#include "Quiccir/QuiccirTypes.h"
+#include "Quiccir/IR/QuiccirTypes.h"
 
-#include "Quiccir/QuiccirDialect.h"
+#include "Quiccir/IR/QuiccirDialect.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/DialectImplementation.h"
 #include "llvm/ADT/TypeSwitch.h"
@@ -16,12 +15,12 @@
 using namespace mlir::quiccir;
 
 #define GET_TYPEDEF_CLASSES
-#include "Quiccir/QuiccirOpsTypes.cpp.inc"
+#include "Quiccir/IR/QuiccirOpsTypes.cpp.inc"
 
 void QuiccirDialect::registerTypes() {
   addTypes<
 #define GET_TYPEDEF_LIST
-#include "Quiccir/QuiccirOpsTypes.cpp.inc"
+#include "Quiccir/IR/QuiccirOpsTypes.cpp.inc"
       >();
 }
 

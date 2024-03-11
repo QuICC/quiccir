@@ -1,0 +1,17 @@
+add_mlir_dialect_library(MLIRQuiccirDialect
+    QuiccirDialect.cpp
+    QuiccirOps.cpp
+    QuiccirTypes.cpp
+
+    ADDITIONAL_HEADER_DIRS
+    ${PROJECT_SOURCE_DIR}/include/Quiccir
+
+    DEPENDS
+    MLIRQuiccirOpsIncGen
+
+    LINK_LIBS PUBLIC
+    MLIRIR
+    MLIRInferTypeOpInterface
+    )
+
+
