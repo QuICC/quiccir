@@ -6,6 +6,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "Quiccir/QuiccirDialect.h"
+#include "Quiccir/QuiccirPasses.h"
+
+#include "mlir/Dialect/Func/Extensions/AllExtensions.h"
 #include "mlir/Dialect/Tensor/Transforms/Passes.h"
 #include "mlir/Dialect/Linalg/Passes.h"
 #include "mlir/Dialect/Affine/Passes.h"
@@ -15,17 +19,14 @@
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 
-
 #include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVM.h"
 #include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVMPass.h"
 
 #include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
-// #include "mlir/Conversion/SCFToStandard/SCFToStandard.h"
 #include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
 #include "mlir/Conversion/MemRefToLLVM/MemRefToLLVM.h"
 #include "mlir/Conversion/VectorToLLVM/ConvertVectorToLLVM.h"
 #include "mlir/Conversion/LLVMCommon/LoweringOptions.h"
-// #include "mlir/Conversion/StandardToLLVM/ConvertStandardToLLVMPass.h"
 #include "mlir/Conversion/ReconcileUnrealizedCasts/ReconcileUnrealizedCasts.h"
 
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
@@ -39,12 +40,12 @@
 #include "mlir/Parser/Parser.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
+#include "mlir/Target/LLVMIR/Dialect/Builtin/BuiltinToLLVMIRTranslation.h"
 #include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
 #include "mlir/Target/LLVMIR/Export.h"
 #include "mlir/Transforms/Passes.h"
 
 #include "mlir-c/Support.h"
-
 
 #include "llvm/ADT/StringRef.h"
 #include "llvm/IR/Module.h"
@@ -55,16 +56,9 @@
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/raw_ostream.h"
 
-
-template<typename T, size_t N>
-struct MemRefDescriptor {
-  T *allocated;
-  T *aligned;
-  intptr_t offset;
-  intptr_t sizes[N];
-  intptr_t strides[N];
-};
-
+#include "Quiccir/QuiccirDialect.h"
+#include "jwOp.hpp"
+#include "utils.hpp"
 
 namespace cl = llvm::cl;
 
@@ -85,6 +79,7 @@ namespace {
 enum Action {
   None,
   DumpMLIR,
+  TestPipeLine,
   DumpLLVMIR,
   RunJIT
 };
@@ -92,6 +87,7 @@ enum Action {
 static cl::opt<enum Action> emitAction(
     "emit", cl::desc("Select the kind of output desired"),
     cl::values(clEnumValN(DumpMLIR, "mlir", "output the MLIR dump")),
+    cl::values(clEnumValN(TestPipeLine, "test", "output the MLIR dump after calling the pipeline")),
     cl::values(clEnumValN(DumpLLVMIR, "llvm", "output the LLVM IR dump")),
     cl::values(
         clEnumValN(RunJIT, "jit",
@@ -134,28 +130,35 @@ int loadMLIR(mlir::MLIRContext &context,
 int processMLIR(mlir::MLIRContext &context,
                        mlir::OwningOpRef<mlir::ModuleOp>  &module) {
 
+  // Top level (module) pass manager
   mlir::PassManager pm(&context);
   // Apply any generic pass manager command line options and run the pipeline.
-  applyPassManagerCLOptions(pm);
+  if (mlir::failed(mlir::applyPassManagerCLOptions(pm)))
+      return 4;
 
-  // // Function pass
-  // mlir::OpPassManager &optPM = pm.nest<mlir::FuncOp>();
+  // Lower to view rapresentation
+  pm.addPass(mlir::quiccir::createLowerToCallPass());
+  pm.addPass(mlir::createCanonicalizerPass());
 
+  mlir::OpPassManager &nestedFuncPm = pm.nest<mlir::func::FuncOp>();
+  nestedFuncPm.addPass(mlir::quiccir::createViewDeallocationPass());
 
+  // Lower to llvm
+  pm.addPass(mlir::quiccir::createLowerAllocPass());
+  pm.addPass(mlir::quiccir::createFinalizeViewToLLVMPass());
   pm.addPass(mlir::createConvertFuncToLLVMPass());
-  // pm.addPass(mlir::createConvertFuncToLLVMPass());
+  pm.addPass(mlir::createCanonicalizerPass());
 
   // run the pass manager
   if (mlir::failed(pm.run(*module)))
     return 4;
-
-  module->dump();
 
   return 0;
 }
 
 int dumpLLVMIR(mlir::ModuleOp module) {
   // Register the translation to LLVM IR with the MLIR context.
+  mlir::registerBuiltinDialectTranslation(*module->getContext());
   mlir::registerLLVMDialectTranslation(*module->getContext());
 
   // Convert the module to LLVM IR in a new LLVM IR context.
@@ -169,7 +172,21 @@ int dumpLLVMIR(mlir::ModuleOp module) {
   // Initialize LLVM targets.
   llvm::InitializeNativeTarget();
   llvm::InitializeNativeTargetAsmPrinter();
-  mlir::ExecutionEngine::setupTargetTriple(llvmModule.get());
+
+  // Create target machine and configure the LLVM Module
+  auto tmBuilderOrError = llvm::orc::JITTargetMachineBuilder::detectHost();
+  if (!tmBuilderOrError) {
+    llvm::errs() << "Could not create JITTargetMachineBuilder\n";
+    return -1;
+  }
+
+  auto tmOrError = tmBuilderOrError->createTargetMachine();
+  if (!tmOrError) {
+    llvm::errs() << "Could not create TargetMachine\n";
+    return -1;
+  }
+  mlir::ExecutionEngine::setupTargetTripleAndDataLayout(llvmModule.get(),
+                                                        tmOrError.get().get());
 
   /// Optionally run an optimization pipeline over the llvm module.
   auto optPipeline = mlir::makeOptimizingTransformer(
@@ -183,6 +200,14 @@ int dumpLLVMIR(mlir::ModuleOp module) {
   return 0;
 }
 
+// rand float
+template <class T>
+inline T randf()
+{
+    return 2.0*static_cast<T>(std::rand()) / static_cast<T>(RAND_MAX) - 1.0;
+}
+
+
 int runJit(mlir::ModuleOp module) {
   // Initialize LLVM targets.
   llvm::InitializeNativeTarget();
@@ -190,6 +215,7 @@ int runJit(mlir::ModuleOp module) {
 
   // Register the translation from MLIR to LLVM IR, which must happen before we
   // can JIT-compile.
+  mlir::registerBuiltinDialectTranslation(*module->getContext());
   mlir::registerLLVMDialectTranslation(*module->getContext());
 
   // An optimization pipeline to use within the execution engine.
@@ -207,70 +233,92 @@ int runJit(mlir::ModuleOp module) {
   // the module.
   mlir::ExecutionEngineOptions engineOptions;
   engineOptions.transformer = optPipeline;
+  engineOptions.sharedLibPaths = executionEngineLibs;
   auto maybeEngine = mlir::ExecutionEngine::create(module, engineOptions);
   assert(maybeEngine && "failed to construct an execution engine");
   auto &engine = maybeEngine.get();
 
   // Invoke the JIT-compiled function.
-  std::string symbol = "wrap_batched_bwd";
-  symbol = "_mlir_ciface_"+symbol;
+  std::string symbol = "entry";
+  // symbol = "_mlir_ciface_"+symbol;
   auto funSym = engine->lookup(symbol);
   if (auto E = funSym.takeError()) {
     llvm::errs() << "JIT invocation failed " << toString(std::move(E)) << "\n";
     return -1;
   }
 
-
   // number of elements/batch size
-  // uval_e = b0 * a_e * b1^T
-  constexpr std::size_t E = 16;
+  // uval = op * umod
   // problem size
-  constexpr std::size_t nQuad = 4;
-  constexpr std::size_t nMod = 2;
+  constexpr std::size_t nLayer = 1;
+  constexpr std::size_t nMod0 = 2;
+  constexpr std::size_t nMod1 = 3;
+  constexpr std::size_t nQuad0 = 3;
 
-  std::array<double, nQuad*nMod> b0{1,0.75,0.5,0.0, 0.125,0.25,0.375,0.5};
-  std::array<double, nQuad*nMod> b1{b0};
-  std::array<double, nMod*nMod> umod{1,1, 1,1};
-  std::array<double, nQuad*nQuad> uval{};
-  std::array<double, nQuad*nQuad> ref{
-    1.265625, 1.125, 0.984375, 0.5625,
-    1.125, 1, 0.875, 0.5,
-    0.984375, 0.875, 0.765625, 0.4375,
-    0.5625, 0.5, 0.4375, 0.25};
-
+  std::array<double, nLayer*nQuad0*nMod0> proj;
+  std::array<double, nLayer*nMod0*nQuad0> intg;
+  std::array<double, nLayer*nMod0*nMod1> umod;
+  std::array<double, nLayer*nMod0*nMod1> out;
+  std::array<double, nLayer*nMod0*nMod1> ref;
+  std::array<double, nLayer*nQuad0*nMod1> uval;
+  // std::array<double, nLayer*nQuad0*nMod1> ref;
 
   // Call kernel
-  // c_api calling convention
-  // this works also without static sizes
+  view3_t viewRef_proj{{nQuad0, nMod0, nLayer}, nullptr, 0, nullptr, 0, proj.data(), proj.size()};
+  view3_t viewRef_intg{{nMod0, nQuad0, nLayer}, nullptr, 0, nullptr, 0, intg.data(), intg.size()};
+  view3_t viewRef_umod{{nMod0, nMod1, nLayer}, nullptr, 0, nullptr, 0, umod.data(), umod.size()};
+  view3_t viewRef_out{{nMod0, nMod1, nLayer}, nullptr, 0, nullptr, 0, out.data(), out.size()};
+  // view3_t viewRef_uval{{nQuad0, nMod1, nLayer}, nullptr, 0, nullptr, 0, uval.data(), uval.size()};
 
-  using mem3_t = MemRefDescriptor<double, 3>;
-  using mem2_t = MemRefDescriptor<double, 2>;
+  // instantiate mock projector
+  JWOp jwp;
+  jwp.getOp() = viewRef_proj;
+  for(size_t i = 0; i < nLayer*nQuad0*nMod0; ++i)
+  {
+    proj[i] = randf<double>();
+  }
 
-  mem2_t memRef_b0{b0.data(), b0.data(), 0, {nQuad, nMod}, {nMod, 1}};
-  mem2_t memRef_b1{b1.data(), b1.data(), 0, {nQuad, nMod}, {nMod, 1}};
-  mem3_t memRef_umod{umod.data(), umod.data(), 0, {E, nMod, nMod},
-    {nMod, nMod, 1}};
-  mem3_t memRef_uval{uval.data(), uval.data(), 0, {E, nQuad, nQuad},
-    {nQuad, nQuad, 1}};
+  JWOp jwi;
+  jwi.getOp() = viewRef_intg;
+  for(size_t i = 0; i < nLayer*nMod0*nQuad0; ++i)
+  {
+    intg[i] = randf<double>();
+  }
 
-  auto fun = (void (*)(mem2_t*, mem2_t*, mem3_t*, mem3_t*))funSym.get();
-  fun(&memRef_b1, &memRef_b1, &memRef_umod, &memRef_uval);
+  // init input data
+  for(size_t i = 0; i < nLayer*nMod0*nMod1; ++i)
+  {
+    umod[i] = randf<double>();
+  }
 
+  auto fun = (void (*)(void*, view3_t*, view3_t*))funSym.get();
+
+  std::array<void*, 2> thisArr;
+  thisArr[0] = &jwp;
+  thisArr[1] = &jwi;
+
+  fun(thisArr.data(), &viewRef_out, &viewRef_umod);
 
   llvm::outs() << "ref out diff" << '\n';
   // check
+  cpu_op(uval.data(), proj.data(), umod.data(), nLayer, nQuad0, nMod0, nMod1);
+  cpu_op(ref.data(), intg.data(), uval.data(), nLayer, nMod0, nQuad0, nMod1);
+
   auto checkSuccess{true};
-  for(size_t j = 0; j < nQuad; ++j)
+  for(size_t k = 0; k < nLayer; ++k)
   {
-    for(size_t i = 0; i < nQuad; ++i)
+    for(size_t j = 0; j < nMod0; ++j)
     {
-      auto ij = i+j*nQuad;
-      auto diff = ref[ij]-uval[ij];
-      if (diff != 0.0)
+      for(size_t i = 0; i < nMod1; ++i)
       {
-        llvm::outs() << ij<< '\t' << ref[ij] << '\t' << uval[ij] << '\t'
-          << diff << '\n';
-        checkSuccess = false;
+        auto ijk = i + j*nMod0 + k*nMod0*nMod1;
+        auto diff = ref[ijk]-out[ijk];
+        if (diff != 0.0)
+        {
+          llvm::outs() << ijk<< '\t' << ref[ijk] << '\t' << uval[ijk] << '\t'
+            << diff << '\n';
+          checkSuccess = false;
+        }
       }
     }
   }
@@ -292,23 +340,16 @@ int main(int argc, char **argv) {
   cl::ParseCommandLineOptions(argc, argv, "mlir jitter\n");
 
   // If we aren't dumping the AST, then we are compiling with/to MLIR.
+  mlir::DialectRegistry registry;
+  mlir::func::registerAllExtensions(registry);
+  // Add the following to include *all* MLIR Core dialects, or selectively
+  // include what you need like above. You only need to register dialects that
+  // will be *parsed* by the tool, not the one generated
+  registerAllDialects(registry);
 
-  mlir::MLIRContext context;
+  mlir::MLIRContext context(registry);
   // Load our Dialect in this MLIR Context.
-  context.loadDialect<
-    mlir::scf::SCFDialect,
-    mlir::arith::ArithDialect,
-    mlir::memref::MemRefDialect,
-    mlir::bufferization::BufferizationDialect,
-    mlir::AffineDialect,
-    mlir::linalg::LinalgDialect,
-    mlir::cf::ControlFlowDialect,
-    mlir::vector::VectorDialect,
-    mlir::tensor::TensorDialect,
-    mlir::func::FuncDialect,
-    mlir::LLVM::LLVMDialect
-    >();
-
+  context.loadDialect<mlir::quiccir::QuiccirDialect>();
 
   // Load
   mlir::OwningOpRef<mlir::ModuleOp>  module;
@@ -321,15 +362,22 @@ int main(int argc, char **argv) {
     return 0;
   }
 
-  // // Check to see if we are compiling to LLVM IR.
-  // if (emitAction == Action::DumpLLVMIR)
-  //   return dumpLLVMIR(*module);
+  if (int error = processMLIR(context, module)) {
+    return error;
+  }
+  if (emitAction == Action::TestPipeLine) {
+    module->dump();
+    return 0;
+  }
+
+  // Check to see if we are compiling to LLVM IR.
+  if (emitAction == Action::DumpLLVMIR)
+    return dumpLLVMIR(*module);
 
   // Otherwise, we must be running the jit.
-  if (emitAction == Action::RunJIT)
-    if (int error = processMLIR(context, module))
-      return error;
+  if (emitAction == Action::RunJIT) {
     return runJit(*module);
+  }
 
   llvm::errs() << "No action specified (parsing only?), use -emit=<action>\n";
   return -1;

@@ -9,6 +9,8 @@
 #ifndef QUICCIR_QUICCIROPS_H
 #define QUICCIR_QUICCIROPS_H
 
+#include "Quiccir/QuiccirTypes.h"
+
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/OpDefinition.h"

@@ -10,8 +10,123 @@
 #define QUICCIR_OPS
 
 include "Quiccir/QuiccirDialect.td"
+include "Quiccir/QuiccirTypes.td"
 include "mlir/Interfaces/InferTypeOpInterface.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
+
+//===----------------------------------------------------------------------===//
+// AllocOp
+//===----------------------------------------------------------------------===//
+
+def Quiccir_AllocOp : Quiccir_Op<"alloc", []> {
+    let summary = "Allocate view";
+    let description = [{
+        The `quiccir.alloc` operation allocate a new view buffer.
+
+        In order to allocate the right amount of space for the data
+        and the meta data (and populate the metadata?) we need to
+        know the producer kind and the input view.
+
+        Example:
+
+        ```mlir
+        %0 = quiccir.alloc(%arg) : !quiccir.view<?x?x?xf64, "layout"> ->
+            !quiccir.view<?x?x?xf64, "layout">  {producer="quiccir.op"}
+        ```
+
+        For codegen we should lower this to something like
+        ```mlir
+        %uphys_pos = memref.alloc() : memref<?xi32>
+        %uphys_coo = memref.alloc() : memref<?xi32>
+        %uphys_val = memref.alloc() : memref<?xf64>
+        %uphys = quiccir.assemble(%uphys_pos, %uphys_coo, %uphys_val) : !quiccir.view<?x?x?xf64, "layout">
+        ```
+        or use directly the sparse tensor facilities
+
+    }];
+
+    let arguments = (ins AnyView:$producerView, StrAttr:$producer);
+    let results = (outs AnyView:$view);
+
+    let assemblyFormat = [{
+        `(` $producerView `)` `:` qualified(type($producerView)) `->` qualified(type($view)) attr-dict
+    }];
+
+    // let skipDefaultBuilders = 1;
+    let builders = [
+        OpBuilder<(ins "ViewType":$viewType, "Value":$producerViewType, "StringAttr":$producerName), [{
+            return build($_builder, $_state, viewType, producerViewType, producerName);
+        }]>
+    ];
+
+    // let hasVerifier = 1;
+}
+
+//===----------------------------------------------------------------------===//
+// DeallocOp
+//===----------------------------------------------------------------------===//
+
+def Quiccir_DeallocOp : Quiccir_Op<"dealloc", []> {
+    let summary = "Deallocate view";
+    let description = [{
+        The `quiccir.dealloc` operation deallocate a view buffer.
+
+        Example:
+
+        ```mlir
+        quiccir.dealloc(%arg) : !quiccir.view<?x?x?xf64, "layout">
+        ```
+    }];
+
+    let arguments = (ins AnyView:$view);
+
+    let assemblyFormat = [{
+        `(` $view `)` `:` qualified(type($view)) attr-dict
+    }];
+
+    // let skipDefaultBuilders = 1;
+    // let builders = [
+    //     OpBuilder<(ins "Value":$view), [{
+    //         return build($_builder, $_state, view);
+    //     }]>
+    // ];
+
+    let hasVerifier = 1;
+}
+
+
+//===----------------------------------------------------------------------===//
+// MaterializeOp
+//===----------------------------------------------------------------------===//
+
+def Quiccir_MaterializeOp : Quiccir_Op<"materialize", []> {
+    let summary = "Materialize (sparse) tensor to view";
+    let description = [{
+        The `quiccir.materialize` operation materializes a tensor into an existing
+        view buffer.
+        At the moment this is a dense operation, next should be implemented as sparse.
+        For codegen we should use the sparse tensor infrastructure.
+
+        This operation takes one tensor and a view.
+        In conjuction with the lowering of the tensor producer, it allows to reuse
+        an existing buffer.
+
+        Example:
+
+        ```mlir
+        quiccir.materialize %ret in %uval : (tensor<1x3x2xf64>, !quiccir.view<1x3x2xf64, "layout">)
+        ```
+    }];
+
+    let arguments = (ins AnyRankedTensor:$tensor, AnyView:$view);
+
+    let assemblyFormat = [{
+        $tensor `in` $view  `:` `(` type($tensor) `,` qualified(type($view)) `)` attr-dict
+    }];
+
+    let hasVerifier = 1;
+}
+
 
 //===----------------------------------------------------------------------===//
 // QuadratureOp
@@ -23,26 +138,26 @@ def Quiccir_QuadratureOp : Quiccir_Op<"quadrature", [Pure]> {
         The `quiccir.quadrature` operation implements a batched quadrature based transform kernel.
         At the moment this is a dense operation, next should be implemented as sparse.
 
-        This operation take 2 tensors rapresenting, one representing the operator the second the
+        This operation takes 2 tensors, one representing the operator the second the
         modes/quadrature values, it returns a tensor representing the value at the
         integration points or the modes.
 
         The shape of the operator and the input tensor need to fit.
 
-        The operation represents op * mods = phys or op * vals = mods.
+        The operation represents oprtr * mods = phys or oprtr * vals = mods.
 
         Example:
 
         ```mlir
-        %uphys = quiccir.quadrature %op, %umods: tensor<?x?x?x?>, tensor<?x?x?x?> -> tensor<?x?x?x?>
+        %uphys = quiccir.quadrature %oprtr, %umods: tensor<?x?x?x?>, tensor<?x?x?x?> -> tensor<?x?x?x?>
         ```
     }];
 
-    let arguments = (ins AnyTensor:$op, AnyTensor:$umods);
+    let arguments = (ins AnyTensor:$oprtr, AnyTensor:$umods);
     let results = (outs AnyTensor:$uphys);
 
     let assemblyFormat = [{
-        $op `,` $umods attr-dict `:`  type($op) `,` type($umods)  `->` type($uphys)
+        $oprtr `,` $umods attr-dict `:`  type($oprtr) `,` type($umods)  `->` type($uphys)
     }];
 
     // Add additional verification logic to the constant operation. Setting this bit
@@ -52,10 +167,104 @@ def Quiccir_QuadratureOp : Quiccir_Op<"quadrature", [Pure]> {
     // in the definition of this `verify` method in the C++ source file.
     let hasVerifier = 1;
 
-    // Allow building a QuadratureOp from the three input operands.
+    // let skipDefaultBuilders = 1;
+    // Allow building a QuadratureOp from the two input operands.
     let builders = [
-        OpBuilder<(ins "Value":$op, "Value":$umods)>
+        OpBuilder<(ins "Value":$oprtr, "Value":$umods)>
     ];
 }
+
+//===----------------------------------------------------------------------===//
+//JonesWorlandProjectorOp
+//===----------------------------------------------------------------------===//
+
+def Quiccir_JWPOp : Quiccir_Op<"jw.prj", [Pure]> {
+    let summary = "Jone-Worland Transform modal to physical space";
+    let description = [{
+        The `quiccir.jw.prj` operation implements a generic Jones Worland projector.
+        At the momement there is no implemented path for code generation,
+        but only lowering to library calls.
+        Future codegen path will lower to LinAlg on sparse tensors for
+        quadrature ops.
+
+        This operation takes one tensor representing, the
+        modes values, it returns a tensor representing the value at the
+        integration points.
+
+        Attributes:
+        - implptr, index to retrieve backend class implementation
+        - dim, size of the operator that cannot be inferred from the input
+
+        Example:
+
+        ```mlir
+        %phys = quiccir.jw.prj<implptr = 0 : i64 : !llvm.ptr, dim = 3 : i64> %mods: tensor<?x?x?x?> -> tensor<?x?x?x?>
+        ```
+    }];
+
+    let arguments = (ins AnyTensor:$mods
+        , OptionalAttr<I64Attr>:$implptr
+        , OptionalAttr<I64Attr>:$dim);
+    let results = (outs AnyTensor:$phys);
+
+    let assemblyFormat = [{
+        $mods `:` type($mods)  `->` type($phys) attr-dict-with-keyword
+    }];
+
+    let hasVerifier = 1;
+
+    // let skipDefaultBuilders = 1;
+    // Allow building a JWPOp from the input operand.
+    let builders = [
+        OpBuilder<(ins "Value":$mods)>
+    ];
+}
+
+//===----------------------------------------------------------------------===//
+//JonesWorlandIntegratorOp
+//===----------------------------------------------------------------------===//
+
+def Quiccir_JWIOp : Quiccir_Op<"jw.int", [Pure]> {
+    let summary = "Jone-Worland Transform from physical to modal space";
+    let description = [{
+        The `quiccir.jw.int` operation implements a generic Jones Worland integrator.
+        At the momement there is no implemented path for code generation,
+        but only lowering to library calls.
+        Future codegen path will lower to LinAlg on sparse tensors for
+        quadrature ops.
+
+        This operation takes one tensor representing, the value at the
+        integration points, it returns a tensor representing the
+        modes values.
+
+        Attributes:
+        - implptr, index to retrieve backend class implementation
+        - dim, size of the operator that cannot be inferred from the input
+
+        Example:
+
+        ```mlir
+        %mods = quiccir.jw.int<implptr = 0 : i64 : !llvm.ptr, dim = 3 : i64> %phys: tensor<?x?x?x?> -> tensor<?x?x?x?>
+        ```
+    }];
+
+    let arguments = (ins AnyTensor:$phys
+        , OptionalAttr<I64Attr>:$implptr
+        , OptionalAttr<I64Attr>:$dim);
+    let results = (outs AnyTensor:$mods);
+
+    let assemblyFormat = [{
+        $phys `:` type($phys)  `->` type($mods) attr-dict-with-keyword
+    }];
+
+    let hasVerifier = 1;
+
+    // let skipDefaultBuilders = 1;
+    // Allow building a JWIOp from the input operand.
+    let builders = [
+        OpBuilder<(ins "Value":$phys)>
+    ];
+}
+
 
 #endif // QUICCIR_OPS

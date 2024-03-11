@@ -14,11 +14,24 @@
 namespace mlir {
 namespace quiccir {
 
+/// Create a pass for adding quiccir deallocation ops
+std::unique_ptr<mlir::Pass> createViewDeallocationPass();
+
+/// Create a pass for lowering to quiccir operations to call op
+std::unique_ptr<mlir::Pass> createLowerToCallPass();
+
+/// Create a pass for lowering alloc op
+std::unique_ptr<mlir::Pass> createLowerAllocPass();
+
+/// Create a pass for lowering view in func/call/return/op
+std::unique_ptr<mlir::Pass> createFinalizeViewToLLVMPass();
+
 // /// Create a pass for lowering to operations in the `Affine` and `Std` dialects
 // std::unique_ptr<mlir::Pass> createLowerToAffinePass();
 
 // /// Create a pass for lowering to operations in the `Linalg` and `Affine` dialects
 // std::unique_ptr<mlir::Pass> createLowerToLinalgPass();
+
 
 
 //===----------------------------------------------------------------------===//

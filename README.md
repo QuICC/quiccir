@@ -1,4 +1,4 @@
-# LLVM 16
+# LLVM 17
 
 # An out-of-tree MLIR dialect
 
@@ -6,10 +6,10 @@ This is an example of an out-of-tree [MLIR](https://mlir.llvm.org/) dialect alon
 
 ## Building
 
-This setup assumes that you have built LLVM and MLIR in `$BUILD_DIR` and installed them to `$PREFIX`. To build and launch the tests, run
+This setup assumes that you have built LLVM and MLIR in `$LLVM_BUILD` and installed them to `$LLVM_ROOT`. To build and launch the tests, run
 ```sh
 mkdir build && cd build
-cmake -G Ninja .. -DMLIR_DIR=$PREFIX/lib/cmake/mlir -DLLVM_EXTERNAL_LIT=$BUILD_DIR/bin/llvm-lit
+cmake -G Ninja .. -DMLIR_DIR=$LLVM_ROOT/lib/cmake/mlir -DLLVM_EXTERNAL_LIT=$LLVM_BUILD/bin/llvm-lit
 cmake --build . --target check-quiccir
 ```
 To build the documentation from the TableGen description of the dialect operations, run

@@ -9,6 +9,7 @@
 #ifndef QUICCIR_QUICCIRDIALECT_H
 #define QUICCIR_QUICCIRDIALECT_H
 
+#include "mlir/Bytecode/BytecodeOpInterface.h"
 #include "mlir/IR/Dialect.h"
 
 #include "Quiccir/QuiccirOpsDialect.h.inc"
