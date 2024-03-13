@@ -7,26 +7,11 @@
 
 #include "Quiccir/IR/QuiccirDialect.h"
 #include "Quiccir/Transforms/QuiccirPasses.h"
+#include "Quiccir/Pipelines/Passes.h"
+#include "Quiccir-c/Utils.h"
+#include "jwOp.hpp"
 
 #include "mlir/Dialect/Func/Extensions/AllExtensions.h"
-#include "mlir/Dialect/Tensor/Transforms/Passes.h"
-#include "mlir/Dialect/Linalg/Passes.h"
-#include "mlir/Dialect/Affine/Passes.h"
-#include "mlir/Dialect/MemRef/Transforms/Passes.h"
-#include "mlir/Dialect/Arith/Transforms/Passes.h"
-#include "mlir/Dialect/Arith/IR/Arith.h"
-#include "mlir/Dialect/SCF/IR/SCF.h"
-#include "mlir/Dialect/Func/IR/FuncOps.h"
-
-#include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVM.h"
-#include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVMPass.h"
-
-#include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
-#include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
-#include "mlir/Conversion/MemRefToLLVM/MemRefToLLVM.h"
-#include "mlir/Conversion/VectorToLLVM/ConvertVectorToLLVM.h"
-#include "mlir/Conversion/LLVMCommon/LoweringOptions.h"
-#include "mlir/Conversion/ReconcileUnrealizedCasts/ReconcileUnrealizedCasts.h"
 
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
 #include "mlir/ExecutionEngine/OptUtils.h"
@@ -55,9 +40,6 @@
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/raw_ostream.h"
 
-#include "Quiccir/IR/QuiccirDialect.h"
-#include "Quiccir-c/Utils.h"
-#include "jwOp.hpp"
 
 namespace cl = llvm::cl;
 
@@ -136,17 +118,7 @@ int processMLIR(mlir::MLIRContext &context,
       return 4;
 
   // Lower to view rapresentation
-  pm.addPass(mlir::quiccir::createLowerToCallPass());
-  pm.addPass(mlir::createCanonicalizerPass());
-
-  mlir::OpPassManager &nestedFuncPm = pm.nest<mlir::func::FuncOp>();
-  nestedFuncPm.addPass(mlir::quiccir::createViewDeallocationPass());
-
-  // Lower to llvm
-  pm.addPass(mlir::quiccir::createLowerAllocPass());
-  pm.addPass(mlir::quiccir::createFinalizeViewToLLVMPass());
-  pm.addPass(mlir::createConvertFuncToLLVMPass());
-  pm.addPass(mlir::createCanonicalizerPass());
+  mlir::quiccir::quiccLibCallPipelineBuilder(pm);
 
   // run the pass manager
   if (mlir::failed(pm.run(*module)))

@@ -7,6 +7,7 @@ set(LIBS
         ${extension_libs}
         MLIROptLib
         MLIRQuiccirDialect
+        MLIRQuiccirPipelines
         # MLIRQuiccirExternalTransforms
         )
 add_llvm_executable(quiccir-opt quiccir-opt.cpp)

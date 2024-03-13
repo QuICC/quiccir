@@ -22,6 +22,7 @@
 
 #include "Quiccir/IR/QuiccirDialect.h"
 #include "Quiccir/Transforms/QuiccirPasses.h"
+#include "Quiccir/Pipelines/Passes.h"
 
 int main(int argc, char **argv) {
   // MLIR passes
@@ -31,10 +32,7 @@ int main(int argc, char **argv) {
   mlir::quiccir::registerQuiccirLowerAllocPass();
   mlir::quiccir::registerQuiccirViewDeallocationPass();
   mlir::quiccir::registerQuiccirFinalizeViewToLLVMPass();
-  // mlir::quiccir::registerQuiccirLowerToAffinePass();
-  // mlir::quiccir::registerQuiccirLowerToLinalgPass();
-  /// Custom non-Quiccir passes
-  // mlir::registerMergeAffineParallelLoopPass();
+  mlir::quiccir::registerQuiccirPipelines();
 
   mlir::DialectRegistry registry;
   mlir::func::registerAllExtensions(registry);
