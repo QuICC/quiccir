@@ -3,6 +3,7 @@ project(quiccir-dialect LANGUAGES CXX C)
 
 set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
 
+include(GNUInstallDirs)
 set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
 
 find_package(MLIR 17 REQUIRED CONFIG)
@@ -30,7 +31,9 @@ endif()
 include_directories(${LLVM_INCLUDE_DIRS})
 include_directories(${MLIR_INCLUDE_DIRS})
 include_directories(${PROJECT_SOURCE_DIR}/include)
-include_directories(${PROJECT_BINARY_DIR}/include)
+# include_directories(${PROJECT_BINARY_DIR}/include)
+set(QUICCIR_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/include)
+include_directories(${QUICCIR_INCLUDE_DIR})
 link_directories(${LLVM_BUILD_LIBRARY_DIR})
 add_definitions(${LLVM_DEFINITIONS})
 
@@ -45,3 +48,56 @@ add_subdirectory(quiccir-opt)
 add_subdirectory(quiccir-translate)
 add_subdirectory(quiccir-miniapp)
 add_subdirectory(external)
+
+# Install headers
+install(DIRECTORY include/Quiccir include/Quiccir-c
+  DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+  COMPONENT mlir-headers
+  FILES_MATCHING
+  PATTERN "*.def"
+  PATTERN "*.h"
+  PATTERN "*.inc"
+  PATTERN "*.td"
+  PATTERN "LICENSE.TXT"
+)
+
+install(DIRECTORY ${QUICCIR_INCLUDE_DIR}/Quiccir ${QUICCIR_INCLUDE_DIR}/Quiccir-c
+DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+  COMPONENT mlir-headers
+  FILES_MATCHING
+  PATTERN "*.def"
+  PATTERN "*.h"
+  PATTERN "*.gen"
+  PATTERN "*.inc"
+  PATTERN "*.td"
+  PATTERN "CMakeFiles" EXCLUDE
+  PATTERN "config.h" EXCLUDE
+)
+
+add_llvm_install_targets(install-mlir-headers
+                             DEPENDS mlir-headers
+                             COMPONENT mlir-headers)
+
+# Install libraries
+add_custom_target(mlir-libraries)
+set_target_properties(mlir-libraries PROPERTIES FOLDER "Misc")
+
+add_llvm_install_targets(install-mlir-libraries
+                          DEPENDS mlir-libraries
+                          COMPONENT mlir-libraries)
+
+# set(QUICIR_LIBS MLIRQuiccirDialect)
+
+# if(QUICIR_LIBS)
+#   list(REMOVE_DUPLICATES QUICIR_LIBS)
+#   foreach(lib ${QUICIR_LIBS})
+#     add_dependencies(mlir-libraries ${lib})
+#     add_dependencies(install-mlir-libraries install-${lib})
+#     add_dependencies(install-mlir-libraries-stripped install-${lib}-stripped)
+#     endforeach()
+# endif()
+llvm_distribution_add_targets()
+
+include(cmake/modules/AddQuiccir.cmake)
+add_quiccir_library_install(MLIRQuiccirDialect)
+add_subdirectory(cmake/modules)
