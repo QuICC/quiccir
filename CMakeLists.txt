@@ -115,6 +115,7 @@ target_include_directories(QuiccirCAPI
 # Export targets
 include(cmake/modules/AddQuiccir.cmake)
 add_quiccir_library_install(MLIRQuiccirDialect)
+add_quiccir_library_install(MLIRQuiccirPipelines)
 add_quiccir_library_install(QuiccirCAPI)
 add_quiccir_library_install(QuiccirCAPITestLib)
 add_subdirectory(cmake/modules)
