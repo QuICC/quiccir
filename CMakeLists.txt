@@ -106,6 +106,11 @@ target_include_directories(MLIRQuiccirDialect
   INTERFACE
     ${MLIR_INCLUDE_DIRS}
 )
+target_link_directories(MLIRQuiccirDialect
+  PUBLIC
+  ${LLVM_BUILD_LIBRARY_DIR})
+
+
 target_include_directories(QuiccirCAPI
   INTERFACE
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
