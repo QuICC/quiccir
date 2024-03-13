@@ -20,8 +20,7 @@ namespace quiccir {
 /// Build pipeline to lower to QuICC library calls.
 void quiccLibCallPipelineBuilder(OpPassManager &pm);
 
-/// Registers all pipelines for the `sparse_tensor` dialect.  At present,
-/// this includes only "sparse-compiler".
+/// Registers all pipelines for the `quiccir` dialect.
 void registerQuiccirPipelines();
 
 } // namespace quiccir
