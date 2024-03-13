@@ -95,6 +95,11 @@ target_include_directories(MLIRQuiccirDialect
 )
 target_include_directories(MLIRQuiccirDialect
   INTERFACE
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>"
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+)
+target_include_directories(MLIRQuiccirDialect
+  INTERFACE
     ${LLVM_INCLUDE_DIRS}
 )
 target_include_directories(MLIRQuiccirDialect
