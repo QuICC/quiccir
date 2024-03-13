@@ -5,8 +5,6 @@ add_mlir_dialect_library(MLIRQuiccirPipelines
     ${PROJECT_SOURCE_DIR}/include/Quiccir
 
     LINK_LIBS PUBLIC
-    MLIRPass
-    MLIRReconcileUnrealizedCasts
     MLIRQuiccirPasses
 
 )
