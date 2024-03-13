@@ -56,7 +56,7 @@
 #include "llvm/Support/raw_ostream.h"
 
 #include "Quiccir/IR/QuiccirDialect.h"
-#include "Quiccir-c/Utils.hpp"
+#include "Quiccir-c/Utils.h"
 #include "jwOp.hpp"
 
 namespace cl = llvm::cl;

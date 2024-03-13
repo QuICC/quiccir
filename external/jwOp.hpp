@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <string>
 
-#include "Quiccir-c/Utils.hpp"
+#include "Quiccir-c/Utils.h"
 
 // Mock operation backend (dense batched matmul)
 template <class T>

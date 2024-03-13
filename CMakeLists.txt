@@ -86,18 +86,20 @@ add_llvm_install_targets(install-mlir-libraries
                           DEPENDS mlir-libraries
                           COMPONENT mlir-libraries)
 
-# set(QUICIR_LIBS MLIRQuiccirDialect)
+# Attach include folders
+target_include_directories(MLIRQuiccirDialect
+  INTERFACE
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+)
+target_include_directories(QuiccirCAPI
+  INTERFACE
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+)
 
-# if(QUICIR_LIBS)
-#   list(REMOVE_DUPLICATES QUICIR_LIBS)
-#   foreach(lib ${QUICIR_LIBS})
-#     add_dependencies(mlir-libraries ${lib})
-#     add_dependencies(install-mlir-libraries install-${lib})
-#     add_dependencies(install-mlir-libraries-stripped install-${lib}-stripped)
-#     endforeach()
-# endif()
-llvm_distribution_add_targets()
-
+# Export targets
 include(cmake/modules/AddQuiccir.cmake)
 add_quiccir_library_install(MLIRQuiccirDialect)
+add_quiccir_library_install(QuiccirCAPI)
 add_subdirectory(cmake/modules)

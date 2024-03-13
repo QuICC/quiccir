@@ -1,4 +1,7 @@
-#pragma once
+//===- Utils.h - Utils for CAPI ----------------------------------*- C -*-===//
+
+#ifndef QUICCIR_C_UTILS_H
+#define QUICCIR_C_UTILS_H
 
 #include <cstdint>
 #include <string>
@@ -26,3 +29,5 @@ struct ViewDescriptor {
 };
 
 using view3_t = ViewDescriptor<double, std::uint32_t, 3>;
+
+#endif // QUICCIR_C_UTILS_H
