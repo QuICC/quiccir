@@ -92,6 +92,14 @@ target_include_directories(MLIRQuiccirDialect
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
+target_include_directories(MLIRQuiccirDialect
+  INTERFACE
+    ${LLVM_INCLUDE_DIRS}
+)
+target_include_directories(MLIRQuiccirDialect
+  INTERFACE
+    ${MLIR_INCLUDE_DIRS}
+)
 target_include_directories(QuiccirCAPI
   INTERFACE
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
