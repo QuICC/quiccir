@@ -86,6 +86,7 @@ add_llvm_install_targets(install-mlir-libraries
                           DEPENDS mlir-libraries
                           COMPONENT mlir-libraries)
 
+# \todo: clean this up
 # Attach include folders
 target_include_directories(MLIRQuiccirDialect
   INTERFACE
@@ -110,4 +111,5 @@ target_include_directories(QuiccirCAPI
 include(cmake/modules/AddQuiccir.cmake)
 add_quiccir_library_install(MLIRQuiccirDialect)
 add_quiccir_library_install(QuiccirCAPI)
+add_quiccir_library_install(QuiccirCAPITestLib)
 add_subdirectory(cmake/modules)
