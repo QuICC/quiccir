@@ -98,24 +98,6 @@ target_include_directories(MLIRQuiccirDialect
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>"
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
-target_include_directories(MLIRQuiccirDialect
-  INTERFACE
-    ${LLVM_INCLUDE_DIRS}
-)
-target_include_directories(MLIRQuiccirDialect
-  INTERFACE
-    ${MLIR_INCLUDE_DIRS}
-)
-target_link_directories(MLIRQuiccirDialect
-  PUBLIC
-  ${LLVM_BUILD_LIBRARY_DIR})
-
-
-target_include_directories(QuiccirCAPI
-  INTERFACE
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
-)
 
 # Export targets
 include(cmake/modules/AddQuiccir.cmake)
@@ -123,5 +105,4 @@ add_quiccir_library_install(MLIRQuiccirDialect)
 add_quiccir_library_install(MLIRQuiccirPipelines)
 add_quiccir_library_install(MLIRQuiccirPasses)
 add_quiccir_library_install(QuiccirCAPI)
-add_quiccir_library_install(QuiccirCAPITestLib)
 add_subdirectory(cmake/modules)
