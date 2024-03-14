@@ -23,6 +23,10 @@ target_include_directories(QuiccirJITLib
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../include>"
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
+target_include_directories(QuiccirJITLib INTERFACE ${LLVM_INCLUDE_DIRS})
+target_include_directories(QuiccirJITLib INTERFACE ${MLIR_INCLUDE_DIRS})
+target_link_directories(QuiccirJITLib INTERFACE ${LLVM_BUILD_LIBRARY_DIR})
+target_compile_definitions(QuiccirJITLib INTERFACE ${LLVM_DEFINITIONS})
 
 # Export targets
 include(AddQuiccir)
