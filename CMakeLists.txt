@@ -17,6 +17,7 @@ set(MLIR_BINARY_DIR ${CMAKE_BINARY_DIR})
 
 list(APPEND CMAKE_MODULE_PATH "${MLIR_CMAKE_DIR}")
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
 
 include(TableGen)
 include(AddLLVM)
@@ -47,6 +48,7 @@ add_subdirectory(test)
 add_subdirectory(quiccir-opt)
 add_subdirectory(quiccir-translate)
 add_subdirectory(quiccir-miniapp)
+add_subdirectory(quiccir-lib)
 add_subdirectory(external)
 
 # Install headers
@@ -85,24 +87,5 @@ set_target_properties(mlir-libraries PROPERTIES FOLDER "Misc")
 add_llvm_install_targets(install-mlir-libraries
                           DEPENDS mlir-libraries
                           COMPONENT mlir-libraries)
-
-# \todo: clean this up
-# Attach include folders
-target_include_directories(MLIRQuiccirDialect
-  INTERFACE
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
-)
-target_include_directories(MLIRQuiccirDialect
-  INTERFACE
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>"
-    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
-)
-
-# Export targets
-include(cmake/modules/AddQuiccir.cmake)
-add_quiccir_library_install(MLIRQuiccirDialect)
-add_quiccir_library_install(MLIRQuiccirPipelines)
-add_quiccir_library_install(MLIRQuiccirPasses)
-add_quiccir_library_install(QuiccirCAPI)
+# Config
 add_subdirectory(cmake/modules)
