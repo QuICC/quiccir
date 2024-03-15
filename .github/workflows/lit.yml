@@ -30,3 +30,4 @@ jobs:
           -DMLIR_DIR=/lib/llvm-17/lib/cmake/mlir \
           -DLLVM_EXTERNAL_LIT=/usr/local/bin/lit
           ninja check-quiccir
+
