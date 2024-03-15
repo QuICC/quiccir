@@ -15,7 +15,8 @@ on:
 jobs:
   test-lit:
     # The type of runner that the job will run on
-    runs-on: docker.io/giacasti/ubuntu-llvm
+    runs-on: ubuntu-latest
+    container: docker.io/giacasti/ubuntu-llvm:22.04-17
 
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
