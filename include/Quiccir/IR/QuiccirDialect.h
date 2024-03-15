@@ -1,4 +1,4 @@
-//===- QuiccirDialect.h - Quiccir dialect -----------------------*- C++ -*-===//
+//===- QuiccirDialect.h - Quiccir dialect ----------------------*- C++ -*-===//
 //
 //   Copyright (c) 2024,
 //   Earth and Planetary Magnetism group, ETH Zurich

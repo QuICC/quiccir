@@ -3,6 +3,7 @@ project(quiccir-dialect LANGUAGES CXX C)
 
 set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
 
+include(GNUInstallDirs)
 set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
 
 find_package(MLIR 17 REQUIRED CONFIG)
@@ -16,6 +17,7 @@ set(MLIR_BINARY_DIR ${CMAKE_BINARY_DIR})
 
 list(APPEND CMAKE_MODULE_PATH "${MLIR_CMAKE_DIR}")
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
 
 include(TableGen)
 include(AddLLVM)
@@ -30,7 +32,8 @@ endif()
 include_directories(${LLVM_INCLUDE_DIRS})
 include_directories(${MLIR_INCLUDE_DIRS})
 include_directories(${PROJECT_SOURCE_DIR}/include)
-include_directories(${PROJECT_BINARY_DIR}/include)
+set(QUICCIR_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/include)
+include_directories(${QUICCIR_INCLUDE_DIR})
 link_directories(${LLVM_BUILD_LIBRARY_DIR})
 add_definitions(${LLVM_DEFINITIONS})
 
@@ -40,8 +43,13 @@ if(MLIR_ENABLE_BINDINGS_PYTHON)
   message(STATUS "Enabling Python API")
   add_subdirectory(python)
 endif()
+
+add_subdirectory(quiccir-translate)
+add_subdirectory(quiccir-lib)
 add_subdirectory(test)
 add_subdirectory(quiccir-opt)
-add_subdirectory(quiccir-translate)
 add_subdirectory(quiccir-miniapp)
 add_subdirectory(external)
+
+# Config
+add_subdirectory(cmake/modules)
