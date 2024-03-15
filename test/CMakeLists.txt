@@ -1,3 +1,9 @@
+option(QUICCIR_BUILD_TEST "Build quiccir tests." ON)
+if(NOT QUICCIR_BUILD_TEST)
+  return()
+endif()
+message(STATUS "Building quiccir tests")
+
 llvm_canonicalize_cmake_booleans(
         MLIR_ENABLE_BINDINGS_PYTHON
 )

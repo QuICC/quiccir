@@ -1,3 +1,9 @@
+option(QUICCIR_BUILD_OPT "Build quiccir-opt." ON)
+if(NOT QUICCIR_BUILD_OPT)
+  return()
+endif()
+message(STATUS "Building quiccir-opt")
+
 get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
 get_property(conversion_libs GLOBAL PROPERTY MLIR_CONVERSION_LIBS)
 get_property(extension_libs GLOBAL PROPERTY MLIR_EXTENSION_LIBS)
