@@ -170,6 +170,92 @@ mlir::LogicalResult QuadratureOp::verify() {
 }
 
 //===----------------------------------------------------------------------===//
+// FrPOp
+//===----------------------------------------------------------------------===//
+
+mlir::LogicalResult FrPOp::verify() {
+  auto mod = getOperand();
+  auto modType = mod.getType().dyn_cast<RankedTensorType>();
+  auto resultType = getType().dyn_cast<RankedTensorType>();
+
+  // If unranked, there is nothing to check
+  if (!modType || !resultType)
+    return mlir::success();
+
+  // Check ranks
+  if (modType.getRank() != 3) {
+    return emitOpError()
+           << "operand #1 expected rank=3 instead rank="
+           << modType.getRank();
+  }
+  if (resultType.getRank() != 3) {
+    return emitOpError()
+           << "return value expected rank=3 instead rank="
+           << resultType.getRank();
+  }
+
+  // Check consistency of the number of modes
+  // right most is first logical
+  auto modShape = modType.getShape();
+  auto valShape = resultType.getShape();
+  if (modShape[0] != valShape[0]) {
+    return emitError()
+           << "expected result first dimension to match mod first dimension";
+  }
+  if (modShape[2] != valShape[2]) {
+    return emitError()
+           << "expected result third dimension to match mod third dimension";
+  }
+
+  // Todo: check dim attribute consistency if available
+
+  return mlir::success();
+}
+
+//===----------------------------------------------------------------------===//
+// FrIOp
+//===----------------------------------------------------------------------===//
+
+mlir::LogicalResult FrIOp::verify() {
+  auto phys = getOperand();
+  auto physType = phys.getType().dyn_cast<RankedTensorType>();
+  auto resultType = getType().dyn_cast<RankedTensorType>();
+
+  // If unranked, there is nothing to check
+  if (!physType || !resultType)
+    return mlir::success();
+
+  // Check ranks
+  if (physType.getRank() != 3) {
+    return emitOpError()
+           << "operand #1 expected rank=3 instead rank="
+           << physType.getRank();
+  }
+  if (resultType.getRank() != 3) {
+    return emitOpError()
+           << "return value expected rank=3 instead rank="
+           << resultType.getRank();
+  }
+
+  // Check consistency of the number of integration points
+  // right most is first logical
+  auto physShape = physType.getShape();
+  auto valShape = resultType.getShape();
+  if (physShape[0] != valShape[0]) {
+    return emitError()
+           << "expected result first dimension to match phys first dimension";
+  }
+  if (physShape[2] != valShape[2]) {
+    return emitError()
+           << "expected result third dimension to match phys third dimension";
+  }
+
+  // Todo: check dim attribute consistency if available
+
+  return mlir::success();
+}
+
+//===----------------------------------------------------------------------===//
 // JWPOp
 //===----------------------------------------------------------------------===//
 
@@ -254,4 +340,3 @@ mlir::LogicalResult JWIOp::verify() {
 
   return mlir::success();
 }
-
