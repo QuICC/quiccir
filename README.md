@@ -5,9 +5,10 @@
 `quiccir` is an out-of-tree [MLIR](https://mlir.llvm.org/) dialect.
 This dialect provides operators and types that can be lowered to library calls to use the spectral operators in [QuICC](https://github.com/QuICC/QuICC).
 
-It implements a  quiccir `opt`-like tool to operate on that dialect.
-
-An a miniapp that prototypes the usage in QuICC.
+It implements
+- a `opt`-like tool to operate on quiccir
+- a self contained library to JIT quiccir operators
+- a miniapp that prototypes the usage in QuICC
 
 ## Building
 
