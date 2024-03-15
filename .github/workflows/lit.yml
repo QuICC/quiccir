@@ -25,7 +25,8 @@ jobs:
       # Runs a single command using the runners shell
       - name: setup
         run: |
-          mkdir quiccir/build && cd quiccir/build
+          ls
+          mkdir build && cd build
           cmake -G Ninja .. \
           -DMLIR_DIR=/lib/llvm-17/lib/cmake/mlir \
           -DLLVM_EXTERNAL_LIT=/usr/local/bin/lit
