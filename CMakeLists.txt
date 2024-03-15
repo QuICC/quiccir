@@ -46,59 +46,10 @@ endif()
 
 add_subdirectory(quiccir-translate)
 add_subdirectory(quiccir-lib)
+add_subdirectory(test)
+add_subdirectory(quiccir-opt)
+add_subdirectory(quiccir-miniapp)
+add_subdirectory(external)
 
-option(QUICCIR_BUILD_TEST "Build quiccir tests." ON)
-if(QUICCIR_BUILD_TEST)
-  message(STATUS "Building quiccir tests")
-  add_subdirectory(test)
-endif()
-option(QUICCIR_BUILD_OPT "Build quiccir-opt." ON)
-if(QUICCIR_BUILD_OPT)
-  message(STATUS "Building quiccir-opt")
-  add_subdirectory(quiccir-opt)
-endif()
-option(QUICCIR_BUILD_MINIAPP "Build quiccir-miniapp." ON)
-if(QUICCIR_BUILD_MINIAPP)
-  message(STATUS "Building quiccir-miniapp")
-  add_subdirectory(quiccir-miniapp)
-  add_subdirectory(external)
-endif()
-
-# Install headers
-install(DIRECTORY include/Quiccir include/Quiccir-c
-  DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
-  COMPONENT mlir-headers
-  FILES_MATCHING
-  PATTERN "*.def"
-  PATTERN "*.h"
-  PATTERN "*.inc"
-  PATTERN "*.td"
-  PATTERN "LICENSE.TXT"
-)
-
-install(DIRECTORY ${QUICCIR_INCLUDE_DIR}/Quiccir ${QUICCIR_INCLUDE_DIR}/Quiccir-c
-DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
-  COMPONENT mlir-headers
-  FILES_MATCHING
-  PATTERN "*.def"
-  PATTERN "*.h"
-  PATTERN "*.gen"
-  PATTERN "*.inc"
-  PATTERN "*.td"
-  PATTERN "CMakeFiles" EXCLUDE
-  PATTERN "config.h" EXCLUDE
-)
-
-add_llvm_install_targets(install-mlir-headers
-                             DEPENDS mlir-headers
-                             COMPONENT mlir-headers)
-
-# Install libraries
-add_custom_target(mlir-libraries)
-set_target_properties(mlir-libraries PROPERTIES FOLDER "Misc")
-
-add_llvm_install_targets(install-mlir-libraries
-                          DEPENDS mlir-libraries
-                          COMPONENT mlir-libraries)
 # Config
 add_subdirectory(cmake/modules)

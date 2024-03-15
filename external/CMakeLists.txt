@@ -1,3 +1,7 @@
+if(NOT QUICCIR_BUILD_MINIAPP)
+  return()
+endif()
+
 add_library(quiccir_external SHARED
     jwOp.cpp
 )

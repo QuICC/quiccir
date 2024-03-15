@@ -1,3 +1,43 @@
+<<<<<<< HEAD
+=======
+# Install headers
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/Quiccir ${PROJECT_SOURCE_DIR}/include/Quiccir-c
+  DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+  COMPONENT mlir-headers
+  FILES_MATCHING
+  PATTERN "*.def"
+  PATTERN "*.h"
+  PATTERN "*.inc"
+  PATTERN "*.td"
+  PATTERN "LICENSE.TXT"
+)
+
+install(DIRECTORY ${QUICCIR_INCLUDE_DIR}/Quiccir ${QUICCIR_INCLUDE_DIR}/Quiccir-c
+DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+  COMPONENT mlir-headers
+  FILES_MATCHING
+  PATTERN "*.def"
+  PATTERN "*.h"
+  PATTERN "*.gen"
+  PATTERN "*.inc"
+  PATTERN "*.td"
+  PATTERN "CMakeFiles" EXCLUDE
+  PATTERN "config.h" EXCLUDE
+)
+
+add_llvm_install_targets(install-mlir-headers
+                             DEPENDS mlir-headers
+                             COMPONENT mlir-headers)
+
+# Install libraries
+add_custom_target(mlir-libraries)
+set_target_properties(mlir-libraries PROPERTIES FOLDER "Misc")
+
+add_llvm_install_targets(install-mlir-libraries
+                          DEPENDS mlir-libraries
+                          COMPONENT mlir-libraries)
+
+>>>>>>> dev
 # Export targets
 install(EXPORT quiccirTargets
   FILE quiccirTargets.cmake
