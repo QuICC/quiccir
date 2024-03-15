@@ -13,7 +13,6 @@ configure_lit_site_cfg(
 
 set(QUICCIR_TEST_DEPENDS
         FileCheck count not
-        quiccir-capi-test
         quiccir-opt
         quiccir-translate
         )
@@ -40,5 +39,3 @@ add_lit_testsuite(check-quiccir "Running the quiccir regression tests"
 set_target_properties(check-quiccir PROPERTIES FOLDER "Tests")
 
 add_lit_testsuites(QUICCIR ${CMAKE_CURRENT_SOURCE_DIR} DEPENDS ${QUICCIR_TEST_DEPENDS})
-
-add_subdirectory(CAPI)
