@@ -22,15 +22,11 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
 
-      # Runs a single command using the runners shell
-      - name: setup
+      - name: build & test
         run: |
           ls
           mkdir build && cd build
           cmake -G Ninja .. \
           -DMLIR_DIR=/lib/llvm-17/lib/cmake/mlir \
           -DLLVM_EXTERNAL_LIT=/usr/local/bin/lit
-
-      # Runs a set of commands using the runners shell
-      - name: build & test
-        run: ninja check-quiccir
+          ninja check-quiccir
