@@ -1,4 +1,4 @@
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![Tests](https://github.com/QuICC/quiccir/actions/workflows/lit.yml/badge.svg)](https://github.com/QuICC/quiccir/actions/workflows/lit.yml)
 
 # quiccir: an out-of-tree MLIR dialect
 
