@@ -21,7 +21,8 @@ cmake -G Ninja .. -DMLIR_DIR=$LLVM_ROOT/lib/cmake/mlir -DQUICCIR_BUILD_TEST=OFF
 To build and launch the tests, there is an additional dependency on `lit`, for instance
 ```sh
 mkdir build && cd build
-cmake -G Ninja .. -DMLIR_DIR=$LLVM_ROOT/lib/cmake/mlir -DLLVM_EXTERNAL_LIT=$LLVM_BUILD/bin/llvm-lit -DQUICCIR_BUILD_TEST=ON
+cmake -G Ninja .. -DMLIR_DIR=$LLVM_ROOT/lib/cmake/mlir  \
+-DLLVM_EXTERNAL_LIT=$LLVM_BUILD/bin/llvm-lit -DQUICCIR_BUILD_TEST=ON
 cmake --build . --target check-quiccir
 ```
 

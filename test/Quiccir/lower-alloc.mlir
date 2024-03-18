@@ -8,8 +8,8 @@ module {
     // CHECK: %[[DIM1:.*]] = llvm.mlir.constant(3 : i32) : i32
     // CHECK: %[[DIM2:.*]] = llvm.mlir.constant(3 : i32) : i32
     // CHECK: %[[ST1:.*]] = llvm.insertvalue %[[DIM0]], %[[ST0]][0, 2] : !llvm.struct<(array<3 x i32>, ptr<i32>, i32, ptr<i32>, i32, ptr<f32>, i32)>
-    // CHECK: %[[ST2:.*]] = llvm.insertvalue %[[DIM1]], %[[ST1]][0, 1] : !llvm.struct<(array<3 x i32>, ptr<i32>, i32, ptr<i32>, i32, ptr<f32>, i32)>
-    // CHECK: %{{.*}} = llvm.insertvalue %[[DIM2]], %[[ST2]][0, 0] : !llvm.struct<(array<3 x i32>, ptr<i32>, i32, ptr<i32>, i32, ptr<f32>, i32)>
+    // CHECK: %[[ST2:.*]] = llvm.insertvalue %[[DIM1]], %[[ST1]][0, 0] : !llvm.struct<(array<3 x i32>, ptr<i32>, i32, ptr<i32>, i32, ptr<f32>, i32)>
+    // CHECK: %{{.*}} = llvm.insertvalue %[[DIM2]], %[[ST2]][0, 1] : !llvm.struct<(array<3 x i32>, ptr<i32>, i32, ptr<i32>, i32, ptr<f32>, i32)>
     // CHECK: %{{.*}} = llvm.mlir.constant(1 : index) : i64
     // CHECK: %{{.*}} = llvm.alloca %{{.*}} x !llvm.struct<(array<3 x i32>, ptr<i32>, i32, ptr<i32>, i32, ptr<f32>, i32)> : (i64) -> !llvm.ptr<struct<(array<3 x i32>, ptr<i32>, i32, ptr<i32>, i32, ptr<f32>, i32)>>
     // CHECK: lvm.store %{{.*}}, %{{.*}} : !llvm.ptr<struct<(array<3 x i32>, ptr<i32>, i32, ptr<i32>, i32, ptr<f32>, i32)>>
