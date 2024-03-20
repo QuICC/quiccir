@@ -9,10 +9,13 @@
 #define QUICCIR_IR_QUICCIROPS_H
 
 #include "Quiccir/IR/QuiccirTypes.h"
+#include "Quiccir/Interfaces/ShapeInferenceInterface.h"
 
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/OpDefinition.h"
+#include "mlir/IR/PatternMatch.h"
+#include "mlir/Interfaces/CastInterfaces.h"
 #include "mlir/Interfaces/InferTypeOpInterface.h"
 #include "mlir/Interfaces/SideEffectInterfaces.h"
 

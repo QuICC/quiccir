@@ -10,8 +10,33 @@
 
 include "Quiccir/IR/QuiccirDialect.td"
 include "Quiccir/IR/QuiccirTypes.td"
+include "Quiccir/Interfaces/ShapeInferenceInterface.td"
 include "mlir/Interfaces/InferTypeOpInterface.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
+include "mlir/Interfaces/CastInterfaces.td"
+
+//===----------------------------------------------------------------------===//
+// CastOp
+//===----------------------------------------------------------------------===//
+
+def CastOp : Quiccir_Op<"cast", [
+    DeclareOpInterfaceMethods<CastOpInterface>,
+    Pure,
+    SameOperandsAndResultShape]
+  > {
+  let summary = "shape cast operation";
+  let description = [{
+    The "cast" operation converts a tensor from one type to an equivalent type
+    without changing any data elements. The source and destination types
+    must both be tensor types with the same element type. If both are ranked,
+    then shape is required to match. The operation is invalid if converting
+    to a mismatching constant dimension.
+  }];
+
+  let arguments = (ins F64Tensor:$input);
+  let results = (outs F64Tensor:$output);
+  let assemblyFormat = "$input attr-dict `:` type($input) `to` type($output)";
+}
 
 //===----------------------------------------------------------------------===//
 // AllocOp
@@ -177,7 +202,7 @@ def Quiccir_QuadratureOp : Quiccir_Op<"quadrature", [Pure]> {
 // FourierProjectorOp
 //===----------------------------------------------------------------------===//
 
-def Quiccir_FrPOp : Quiccir_Op<"fr.prj", [Pure]> {
+def Quiccir_FrPOp : Quiccir_Op<"fr.prj", [Pure,  DeclareOpInterfaceMethods<ShapeInferenceInterface>]> {
     let summary = "Fourier Transform modal to physical space";
     let description = [{
         The `quiccir.fr.prj` operation implements a generic Fourier projector.
@@ -207,6 +232,7 @@ def Quiccir_FrPOp : Quiccir_Op<"fr.prj", [Pure]> {
     }];
 
     let hasVerifier = 1;
+    let hasCanonicalizeMethod = 1;
 
     // let skipDefaultBuilders = 1;
     // Allow building a FrPOp from the input operand.

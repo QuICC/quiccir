@@ -31,27 +31,58 @@ struct QuiccirInlinerInterface : public DialectInlinerInterface {
   //===--------------------------------------------------------------------===//
 
   /// All operations within Quiccir can be inlined.
-  bool isLegalToInline(Operation *, Region *, bool,
-                       IRMapping &) const final {
+  bool isLegalToInline(Operation *call, Operation *callable,
+                       bool wouldBeCloned) const final {
     return true;
   }
 
+  /// All operations within Quiccir can be inlined.
+  bool isLegalToInline(Operation *, Region *, bool, IRMapping &) const final {
+    return true;
+  }
+
+  // All functions within Quiccir can be inlined.
+  bool isLegalToInline(Region *, Region *, bool, IRMapping &) const final {
+    return true;
+  }
+
+  //===--------------------------------------------------------------------===//
+  // Transformation Hooks
+  //===--------------------------------------------------------------------===//
+
+  /// Attempts to materialize a conversion for a type mismatch between a call
+  /// from this dialect, and a callable region. This method should generate an
+  /// operation that takes 'input' as the only operand, and produces a single
+  /// result of 'resultType'. If a conversion can not be generated, nullptr
+  /// should be returned.
+  Operation *materializeCallConversion(OpBuilder &builder, Value input,
+                                       Type resultType,
+                                       Location conversionLoc) const final {
+    return builder.create<CastOp>(conversionLoc, resultType, input);
+  }
 };
 
 //===----------------------------------------------------------------------===//
-// Quiccir dialect.
+// CastOp
 //===----------------------------------------------------------------------===//
 
-void QuiccirDialect::initialize() {
-  /// Add the defined operations in the dialect.
-  addOperations<
-#define GET_OP_LIST
-#include "Quiccir/IR/QuiccirOps.cpp.inc"
-      >();
+/// Infer the output shape of the CastOp, this is required by the shape
+/// inference interface.
+// void CastOp::inferShapes() { getResult().setType(getInput().getType()); }
 
-  addInterfaces<QuiccirInlinerInterface>();
-
-  registerTypes();
+/// Returns true if the given set of input and result types are compatible with
+/// this cast operation. This is required by the `CastOpInterface` to verify
+/// this operation and provide other additional utilities.
+bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
+  if (inputs.size() != 1 || outputs.size() != 1)
+    return false;
+  // The inputs must be Tensors with the same element type.
+  TensorType input = llvm::dyn_cast<TensorType>(inputs.front());
+  TensorType output = llvm::dyn_cast<TensorType>(outputs.front());
+  if (!input || !output || input.getElementType() != output.getElementType())
+    return false;
+  // The shape is required to match if both types are ranked.
+  return !input.hasRank() || !output.hasRank() || input == output;
 }
 
 //===----------------------------------------------------------------------===//
@@ -198,13 +229,17 @@ mlir::LogicalResult FrPOp::verify() {
   // right most is first logical
   auto modShape = modType.getShape();
   auto valShape = resultType.getShape();
-  if (modShape[0] != valShape[0]) {
+  if (valShape[0] != ShapedType::kDynamic &&
+      modShape[0] != valShape[0]) {
     return emitError()
-           << "expected result first dimension to match mod first dimension";
+      << "expected result first dimension " << valShape[0]
+      << "to match mod first dimension " << modShape[0];
   }
-  if (modShape[2] != valShape[2]) {
+  if (valShape[2] != ShapedType::kDynamic &&
+      modShape[2] != valShape[2]) {
     return emitError()
-           << "expected result third dimension to match mod third dimension";
+      << "expected result third dimension " << valShape[2]
+      << "to match mod third dimension " << modShape[2];
   }
 
   // Todo: check dim attribute consistency if available
@@ -425,4 +460,20 @@ mlir::LogicalResult JWIOp::verify() {
   // Todo: check dim attribute consistency if available
 
   return mlir::success();
+}
+
+//===----------------------------------------------------------------------===//
+// Quiccir dialect.
+//===----------------------------------------------------------------------===//
+
+void QuiccirDialect::initialize() {
+  /// Add the defined operations in the dialect.
+  addOperations<
+#define GET_OP_LIST
+#include "Quiccir/IR/QuiccirOps.cpp.inc"
+      >();
+
+  addInterfaces<QuiccirInlinerInterface>();
+
+  registerTypes();
 }
