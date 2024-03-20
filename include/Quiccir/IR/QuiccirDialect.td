@@ -18,12 +18,13 @@ def Quiccir_Dialect : Dialect {
     let name = "quiccir";
     let summary = "A out-of-tree MLIR dialect to model QuICC operators.";
     let description = [{
-        This dialect is an out-of-tree MLIR dialect designed to
-        model QuICC operators (https://github.com/QuICC).
+        This dialect is an out-of-tree MLIR dialect (https://github.com/QuICC/quiccir) designed to
+        model QuICC operators (https://github.com/QuICC/QuICC).
     }];
     let cppNamespace = "::mlir::quiccir";
 
     let useDefaultTypePrinterParser = 1;
+    let hasCanonicalizer = 1;
     let extraClassDeclaration = [{
         void registerTypes();
     }];

@@ -232,7 +232,7 @@ def Quiccir_FrPOp : Quiccir_Op<"fr.prj", [Pure,  DeclareOpInterfaceMethods<Shape
     }];
 
     let hasVerifier = 1;
-    let hasCanonicalizeMethod = 1;
+    // let hasCanonicalizeMethod = 1;
 
     // let skipDefaultBuilders = 1;
     // Allow building a FrPOp from the input operand.

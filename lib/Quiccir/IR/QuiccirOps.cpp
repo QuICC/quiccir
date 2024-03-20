@@ -28,24 +28,31 @@ namespace mlir::quiccir
 using namespace mlir;
 using namespace mlir::quiccir;
 
+//===----------------------------------------------------------------------===//
+// FrPOp
+//===----------------------------------------------------------------------===//
+
+/// \todo this is not correct we could come up with some
+/// rule, for instance min to dealias but this should be an input.
+/// we should have a set grid pass for ops that cannot be inferred
 void FrPOp::inferShapes() { getResult().setType(getMods().getType()); }
 
-LogicalResult mlir::quiccir::FrPOp::canonicalize(mlir::quiccir::FrPOp frOp,
-  PatternRewriter &rewriter) {
+// LogicalResult mlir::quiccir::FrPOp::canonicalize(mlir::quiccir::FrPOp frOp,
+//   PatternRewriter &rewriter) {
 
-  // Ask the operation to infer its output shapes.
-  Operation *op = frOp;
-  LLVM_DEBUG(llvm::dbgs() << "Inferring shape for: " << op->getName() << '\n');
-  if (auto shapeOp = dyn_cast<ShapeInference>(op)) {
-    shapeOp.inferShapes();
-
-
-  } else {
-    op->emitError("unable to infer shape of operation without shape "
-                  "inference interface");
-    return failure();
-  }
+//   // Ask the operation to infer its output shapes.
+//   Operation *op = frOp;
+//   LLVM_DEBUG(llvm::dbgs() << "Inferring shape for: " << op->getName() << '\n');
+//   if (auto shapeOp = dyn_cast<ShapeInference>(op)) {
+//     shapeOp.inferShapes();
 
 
-  return success();
-}
+//   } else {
+//     op->emitError("unable to infer shape of operation without shape "
+//                   "inference interface");
+//     return failure();
+//   }
+
+
+//   return success();
+// }

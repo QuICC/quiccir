@@ -229,13 +229,16 @@ mlir::LogicalResult FrPOp::verify() {
   // right most is first logical
   auto modShape = modType.getShape();
   auto valShape = resultType.getShape();
-  if (valShape[0] != ShapedType::kDynamic &&
+
+  if ((valShape[0] != ShapedType::kDynamic &&
+       modShape[0] != ShapedType::kDynamic) &&
       modShape[0] != valShape[0]) {
     return emitError()
       << "expected result first dimension " << valShape[0]
       << "to match mod first dimension " << modShape[0];
   }
-  if (valShape[2] != ShapedType::kDynamic &&
+  if ((valShape[2] != ShapedType::kDynamic &&
+       modShape[2] != ShapedType::kDynamic) &&
       modShape[2] != valShape[2]) {
     return emitError()
       << "expected result third dimension " << valShape[2]
@@ -463,7 +466,7 @@ mlir::LogicalResult JWIOp::verify() {
 }
 
 //===----------------------------------------------------------------------===//
-// Quiccir dialect.
+// QuiccirDialect
 //===----------------------------------------------------------------------===//
 
 void QuiccirDialect::initialize() {
