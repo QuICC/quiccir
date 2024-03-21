@@ -279,13 +279,20 @@ mlir::LogicalResult FrIOp::verify() {
   // right most is first logical
   auto physShape = physType.getShape();
   auto valShape = resultType.getShape();
-  if (physShape[0] != valShape[0]) {
+
+  if ((valShape[0] != ShapedType::kDynamic &&
+       physShape[0] != ShapedType::kDynamic) &&
+      physShape[0] != valShape[0]) {
     return emitError()
-           << "expected result first dimension to match phys first dimension";
+      << "expected result first dimension " << valShape[0]
+      << "to match phys first dimension " << physShape[0];
   }
-  if (physShape[2] != valShape[2]) {
+  if ((valShape[2] != ShapedType::kDynamic &&
+       physShape[2] != ShapedType::kDynamic) &&
+      physShape[2] != valShape[2]) {
     return emitError()
-           << "expected result third dimension to match phys third dimension";
+      << "expected result third dimension " << valShape[2]
+      << "to match phys third dimension " << physShape[2];
   }
 
   // Todo: check dim attribute consistency if available
