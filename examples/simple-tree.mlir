@@ -5,14 +5,14 @@
 !type_tumod = tensor<1x2x3xf64, "layoutUmod">
 !type_tuval = tensor<1x3x3xf64, "layoutUval">
 
-func.func @simpleTree(%R: tensor<?x?x?xf64>, %Theta: tensor<?x?x?xf64>, %Phi: tensor<?x?x?xf64>) -> (tensor<?x?x?xf64>) {
+func.func private @simpleTree(%R: tensor<?x?x?xf64>, %Theta: tensor<?x?x?xf64>, %Phi: tensor<?x?x?xf64>) -> (tensor<?x?x?xf64>) {
   // // R
-  %R1 = quiccir.fr.int %R : tensor<?x?x?xf64> -> tensor<?x?x?xf64>
+  %R1 = quiccir.fr.int %R : tensor<?x?x?xf64> -> tensor<?x?x?xf64> attributes{implptr = 0 :i64}
   // return %R1 : tensor<?x?x?xf64>
   // %R2 = quiccir.al.int %R1 : tensor<?x?x?xf64> -> tensor<?x?x?xf64>
   // %R3 = quiccir.jw.int %R2 : tensor<?x?x?xf64> -> tensor<?x?x?xf64>
   // Theta
-  %Th1 = quiccir.fr.int %Theta : tensor<?x?x?xf64> -> tensor<?x?x?xf64>
+  %Th1 = quiccir.fr.int %Theta : tensor<?x?x?xf64> -> tensor<?x?x?xf64> attributes{implptr = 0 :i64}
   // %Th2 = quiccir.al.int %Th1 : tensor<?x?x?xf64> -> tensor<?x?x?xf64>
   // %Th3 = quiccir.jw.int %Th2 : tensor<?x?x?xf64> -> tensor<?x?x?xf64>
   // // Phi
@@ -26,12 +26,12 @@ func.func @simpleTree(%R: tensor<?x?x?xf64>, %Theta: tensor<?x?x?xf64>, %Phi: te
 
   // Pol
   // %tmp = "new.sub"(%Th3, %R3) : (tensor<?x?x?xf64>, tensor<?x?x?xf64>) -> tensor<?x?x?xf64>
-  %Pol = quiccir.add %R1, %Th1 : tensor<?x?x?xf64>, tensor<?x?x?xf64> -> tensor<?x?x?xf64>
+  %Pol = quiccir.add %R1, %Th1 : tensor<?x?x?xf64>, tensor<?x?x?xf64> -> tensor<?x?x?xf64> attributes{implptr = 1 :i64}
 
   return %Pol : tensor<?x?x?xf64>
 }
 
-func.func @entry(%thisArr: !llvm.array<1x!llvm.ptr>, %Polv: !type_umod, %Rv: !type_uval, %Thetav: !type_uval, %Phiv: !type_uval) {
+func.func @entry(%thisArr: !llvm.ptr<array<2 x ptr>> {llvm.noalias}, %Polv: !type_umod, %Rv: !type_uval, %Thetav: !type_uval, %Phiv: !type_uval) {
   %R = builtin.unrealized_conversion_cast %Rv : !type_uval to !type_tuval
   %Theta = builtin.unrealized_conversion_cast %Thetav : !type_uval to !type_tuval
   %Phi = builtin.unrealized_conversion_cast %Phiv : !type_uval to !type_tuval
@@ -46,4 +46,4 @@ func.func @entry(%thisArr: !llvm.array<1x!llvm.ptr>, %Polv: !type_umod, %Rv: !ty
 }
 
 
-// ./bin/quiccir-opt ../examples/simple-tree.mlir --convert-quiccir-to-call --canonicalize --finalize-quiccir-view --convert-func-to-llvm --canonicalize
+// ./bin/quiccir-opt ../examples/simple-tree.mlir --inline --convert-quiccir-to-call --quiccir-view-deallocation --lower-quiccir-alloc --canonicalize --finalize-quiccir-view --convert-func-to-llvm --canonicalize

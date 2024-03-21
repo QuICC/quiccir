@@ -195,11 +195,12 @@ def Quiccir_AddOp : Quiccir_Op<"add", [Pure, Commutative, Elementwise,
         ```
     }];
 
-    let arguments = (ins AnyTensor:$lhs, AnyTensor:$rhs );
+    let arguments = (ins AnyTensor:$lhs, AnyTensor:$rhs,
+        OptionalAttr<I64Attr>:$implptr);
     let results = (outs AnyTensor:$res);
 
     let assemblyFormat = [{
-        $lhs `,` $rhs `:` type($rhs) `,` type($lhs) `->` type($res) attr-dict
+        $lhs `,` $rhs `:` type($rhs) `,` type($lhs) `->` type($res) attr-dict-with-keyword
     }];
 
     // let hasVerifier = 1;

@@ -165,6 +165,8 @@ void QuiccirToCallLoweringPass::runOnOperation() {
       &getContext(), viewConverter);
   patterns.add<OpLowering<quiccir::FrIOp>>(
       &getContext(), viewConverter);
+  patterns.add<OpLowering<quiccir::AddOp>>(
+      &getContext(), viewConverter);
 
   // With the target and rewrite patterns defined, we can now attempt the
   // conversion. The conversion will signal failure if any of our `illegal`
