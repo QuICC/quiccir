@@ -8,5 +8,16 @@ module {
         %ret = tensor.cast %0 : tensor<?x?x?xf32> to tensor<1x2x1xf32, "lay">
         return %ret : tensor<1x2x1xf32, "lay">
     }
+
+    func.func @wrapAdd(%arg0: tensor<1x1x1xf64, "lay">) -> tensor<1x1x1xf64, "lay"> {
+        %arg0t = tensor.cast %arg0 : tensor<1x1x1xf64, "lay"> to tensor<?x?x?xf64>
+        // CHECK: %{{.*}} = quiccir.add %{{.*}}, %{{.*}} : tensor<1x1x1xf64, "lay">, tensor<1x1x1xf64, "lay"> -> tensor<1x1x1xf64, "lay">
+        %0 = quiccir.add %arg0t, %arg0t : tensor<?x?x?xf64>, tensor<?x?x?xf64> -> tensor<?x?x?xf64>
+        %ret = tensor.cast %0 : tensor<?x?x?xf64> to tensor<1x1x1xf64, "lay">
+        return %ret : tensor<1x1x1xf64, "lay">
+    }
+
+
+
 }
 
