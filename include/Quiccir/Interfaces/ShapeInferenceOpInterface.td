@@ -1,4 +1,4 @@
-//===- ShapeInferenceInterface.td - Shape Inference Interface -*- tablegen -==//
+//===- ShapeInferenceOpInterface.td - Shape Inference Interface -*- tablegen -==//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -10,16 +10,18 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef QUICCIR_INTERFACES_SHAPEINFERENCEINTERFACE
-#define QUICCIR_INTERFACES_SHAPEINFERENCEINTERFACE
+#ifndef QUICCIR_INTERFACES_SHAPEINFERENCEOPINTERFACE
+#define QUICCIR_INTERFACES_SHAPEINFERENCEOPINTERFACE
 
 include "mlir/IR/OpBase.td"
 
-def ShapeInferenceInterface : OpInterface<"ShapeInference"> {
+def ShapeInferenceOpInterface : OpInterface<"ShapeInferenceOpInterface"> {
   let description = [{
     Interface to access a registered method to infer the return types for an
     operation that can be used during type inference.
   }];
+
+  let cppNamespace = "::mlir::quiccir";
 
   let methods = [
     InterfaceMethod<"Infer and set the output shape for the current operation.",
@@ -27,4 +29,4 @@ def ShapeInferenceInterface : OpInterface<"ShapeInference"> {
   ];
 }
 
-#endif // QUICCIR_INTERFACES_SHAPEINFERENCEINTERFACE
+#endif // QUICCIR_INTERFACES_SHAPEINFERENCEOPINTERFACE

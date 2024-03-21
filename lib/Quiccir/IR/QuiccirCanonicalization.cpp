@@ -10,11 +10,84 @@
 
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 
+#include "Quiccir/Interfaces/FoldTensorCastIntoConsumerOpInterface.cpp.inc"
+
 using namespace mlir;
 using namespace mlir::quiccir;
 
+//===----------------------------------------------------------------------===//
+// Common Canonicalizers and Folders.
+//===----------------------------------------------------------------------===//
+
+
+namespace mlir
+{
+namespace quiccir
+{
+
 /// Fold QuiccirOps with `tensor.cast` consumer if the `tensor.cast` has
 /// result that is more static than the quiccir op.
+///
+/// Example:
+/// ```mlir
+///   %1 = tensor.cast %0 : tensor<8x16xf32> to tensor<?x?xf32>
+///   %2 = consumer %1 ... : tensor<?x?xf32> ...
+/// ```
+///
+/// folds into:
+///
+/// ```mlir
+///   %2 = consumer %0 ... : tensor<8x16xf32> ...
+/// ```
+struct FoldTensorCastProducerOp
+    : public OpInterfaceRewritePattern<FoldTensorCastIntoConsumerOpInterface> {
+  using OpInterfaceRewritePattern<
+      FoldTensorCastIntoConsumerOpInterface>::OpInterfaceRewritePattern;
+
+  LogicalResult matchAndRewrite(FoldTensorCastIntoConsumerOpInterface op,
+                                PatternRewriter &rewriter) const override {
+    // If no operand comes from a tensor::CastOp and can be folded then fail.
+    bool hasTensorCastOperand =
+        llvm::any_of(op->getOpOperands(), [&](OpOperand &opOperand) {
+          if (llvm::isa<BlockArgument>(opOperand.get()))
+            return false;
+          auto castOp = opOperand.get().getDefiningOp<tensor::CastOp>();
+          return castOp && canFoldIntoConsumerOp(castOp);
+        });
+    if (!hasTensorCastOperand)
+      return failure();
+
+    SmallVector<Value, 4> newOperands;
+    newOperands.reserve(op->getNumOperands());
+    for (OpOperand &opOperand : op->getOpOperands()) {
+      auto tensorCastOp = opOperand.get().getDefiningOp<tensor::CastOp>();
+      bool fold = canFoldIntoConsumerOp(tensorCastOp);
+      newOperands.push_back(fold ? tensorCastOp.getOperand() : opOperand.get());
+    }
+
+    // Clone op.
+    Operation *newOp = clone(rewriter, op, op->getResultTypes(), newOperands);
+    // Replace
+    rewriter.replaceOp(op, newOp);
+
+    return success();
+  }
+};
+
+/// Fold QuiccirOps with `tensor.cast` consumer if the `tensor.cast` has
+/// result that is more static than the quiccir op.
+///
+/// Example:
+/// ```mlir
+///   %1 = producer %0 ... : tensor<?x?xf32> ...
+///   %2 = tensor.cast %1 : tensor<?x?xf32> to tensor<8x16xf32>
+/// ```
+///
+/// folds into:
+///
+/// ```mlir
+///   %2 = producer %0 ... : tensor<8x16xf32> ...
+/// ```
 struct FoldTensorCastConsumerOp : public OpRewritePattern<tensor::CastOp> {
   using OpRewritePattern<tensor::CastOp>::OpRewritePattern;
 
@@ -68,5 +141,9 @@ struct FoldTensorCastConsumerOp : public OpRewritePattern<tensor::CastOp> {
 
 void QuiccirDialect::getCanonicalizationPatterns(
     RewritePatternSet &results) const {
-  results.add<FoldTensorCastConsumerOp>(getContext());
+  results.add<quiccir::FoldTensorCastProducerOp,
+              quiccir::FoldTensorCastConsumerOp>(getContext());
 }
+
+} // namespace quiccir
+} // namespace mlir

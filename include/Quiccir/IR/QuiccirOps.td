@@ -10,7 +10,8 @@
 
 include "Quiccir/IR/QuiccirDialect.td"
 include "Quiccir/IR/QuiccirTypes.td"
-include "Quiccir/Interfaces/ShapeInferenceInterface.td"
+include "Quiccir/Interfaces/ShapeInferenceOpInterface.td"
+include "Quiccir/Interfaces/FoldTensorCastIntoConsumerOpInterface.td"
 include "mlir/Interfaces/InferTypeOpInterface.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/Interfaces/CastInterfaces.td"
@@ -202,7 +203,8 @@ def Quiccir_QuadratureOp : Quiccir_Op<"quadrature", [Pure]> {
 // FourierProjectorOp
 //===----------------------------------------------------------------------===//
 
-def Quiccir_FrPOp : Quiccir_Op<"fr.prj", [Pure,  DeclareOpInterfaceMethods<ShapeInferenceInterface>]> {
+def Quiccir_FrPOp : Quiccir_Op<"fr.prj", [Pure,
+    DeclareOpInterfaceMethods<FoldTensorCastIntoConsumerOpInterface>]> {
     let summary = "Fourier Transform modal to physical space";
     let description = [{
         The `quiccir.fr.prj` operation implements a generic Fourier projector.
