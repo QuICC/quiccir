@@ -60,11 +60,12 @@ struct AllocOpLowering : public ConversionPattern {
     Value dim2 = rewriter.create<LLVM::ConstantOp>(loc, I32Type,
       retViewType.cast<ViewType>().getShape()[2]);
     // insert dims
+    // swap logical order!
     SmallVector<int64_t, 2> pos0 = {0, 2};
     Value buf0 = rewriter.create<LLVM::InsertValueOp>(loc, bufStructScratch, dim0, pos0);
-    SmallVector<int64_t, 2> pos1 = {0, 1};
+    SmallVector<int64_t, 2> pos1 = {0, 0};
     Value buf1 = rewriter.create<LLVM::InsertValueOp>(loc, buf0, dim1, pos1);
-    SmallVector<int64_t, 2> pos2 = {0, 0};
+    SmallVector<int64_t, 2> pos2 = {0, 1};
     Value buf2 = rewriter.create<LLVM::InsertValueOp>(loc, buf1, dim2, pos2);
 
     // allocate on stack

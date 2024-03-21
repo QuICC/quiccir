@@ -174,7 +174,179 @@ def Quiccir_QuadratureOp : Quiccir_Op<"quadrature", [Pure]> {
 }
 
 //===----------------------------------------------------------------------===//
-//JonesWorlandProjectorOp
+// FourierProjectorOp
+//===----------------------------------------------------------------------===//
+
+def Quiccir_FrPOp : Quiccir_Op<"fr.prj", [Pure]> {
+    let summary = "Fourier Transform modal to physical space";
+    let description = [{
+        The `quiccir.fr.prj` operation implements a generic Fourier projector.
+
+        This operation takes one tensor representing, the
+        modes values, it returns a tensor representing the value at the
+        integration points.
+
+        Attributes:
+        - implptr, index to retrieve backend class implementation
+        - dim, size of the operator that cannot be inferred from the input
+
+        Example:
+
+        ```mlir
+        %phys = quiccir.fr.prj<implptr = 0 : i64 : !llvm.ptr, dim = 3 : i64> %mods: tensor<?x?x?x?> -> tensor<?x?x?x?>
+        ```
+    }];
+
+    let arguments = (ins AnyTensor:$mods
+        , OptionalAttr<I64Attr>:$implptr
+        , OptionalAttr<I64Attr>:$dim);
+    let results = (outs AnyTensor:$phys);
+
+    let assemblyFormat = [{
+        $mods `:` type($mods)  `->` type($phys) attr-dict-with-keyword
+    }];
+
+    let hasVerifier = 1;
+
+    // let skipDefaultBuilders = 1;
+    // Allow building a FrPOp from the input operand.
+    let builders = [
+        OpBuilder<(ins "Value":$mods)>
+    ];
+}
+
+//===----------------------------------------------------------------------===//
+// FourierIntegratorOp
+//===----------------------------------------------------------------------===//
+
+def Quiccir_FrIOp : Quiccir_Op<"fr.int", [Pure]> {
+    let summary = "Fourier Transform from physical to modal space";
+    let description = [{
+        The `quiccir.fr.int` operation implements a generic Fourier integrator.
+        At the momement there is no implemented path for code generation,
+        but only lowering to library calls.
+
+        This operation takes one tensor representing, the value at the
+        integration points, it returns a tensor representing the
+        modes values.
+
+        Attributes:
+        - implptr, index to retrieve backend class implementation
+        - dim, size of the operator that cannot be inferred from the input
+
+        Example:
+
+        ```mlir
+        %mods = quiccir.fr.int<implptr = 0 : i64 : !llvm.ptr, dim = 3 : i64> %phys: tensor<?x?x?x?> -> tensor<?x?x?x?>
+        ```
+    }];
+
+    let arguments = (ins AnyTensor:$phys
+        , OptionalAttr<I64Attr>:$implptr
+        , OptionalAttr<I64Attr>:$dim);
+    let results = (outs AnyTensor:$mods);
+
+    let assemblyFormat = [{
+        $phys `:` type($phys)  `->` type($mods) attr-dict-with-keyword
+    }];
+
+    let hasVerifier = 1;
+
+    // let skipDefaultBuilders = 1;
+    // Allow building a FrIOp from the input operand.
+    let builders = [
+        OpBuilder<(ins "Value":$phys)>
+    ];
+}
+
+//===----------------------------------------------------------------------===//
+// AssociateLegendreProjectorOp
+//===----------------------------------------------------------------------===//
+
+def Quiccir_AlPOp : Quiccir_Op<"al.prj", [Pure]> {
+    let summary = "AssociateLegendre Transform modal to physical space";
+    let description = [{
+        The `quiccir.al.prj` operation implements a generic AssociateLegendre projector.
+
+        This operation takes one tensor representing, the
+        modes values, it returns a tensor representing the value at the
+        integration points.
+
+        Attributes:
+        - implptr, index to retrieve backend class implementation
+        - dim, size of the operator that cannot be inferred from the input
+
+        Example:
+
+        ```mlir
+        %phys = quiccir.al.prj<implptr = 0 : i64 : !llvm.ptr, dim = 3 : i64> %mods: tensor<?x?x?x?> -> tensor<?x?x?x?>
+        ```
+    }];
+
+    let arguments = (ins AnyTensor:$mods
+        , OptionalAttr<I64Attr>:$implptr
+        , OptionalAttr<I64Attr>:$dim);
+    let results = (outs AnyTensor:$phys);
+
+    let assemblyFormat = [{
+        $mods `:` type($mods)  `->` type($phys) attr-dict-with-keyword
+    }];
+
+    let hasVerifier = 1;
+
+    // let skipDefaultBuilders = 1;
+    // Allow building a FrPOp from the input operand.
+    let builders = [
+        OpBuilder<(ins "Value":$mods)>
+    ];
+}
+
+//===----------------------------------------------------------------------===//
+// AssociateLegendreIntegratorOp
+//===----------------------------------------------------------------------===//
+
+def Quiccir_AlIOp : Quiccir_Op<"al.int", [Pure]> {
+    let summary = "AssociateLegendre Transform from physical to modal space";
+    let description = [{
+        The `quiccir.al.int` operation implements a generic AssociateLegendre integrator.
+        At the momement there is no implemented path for code generation,
+        but only lowering to library calls.
+
+        This operation takes one tensor representing, the value at the
+        integration points, it returns a tensor representing the
+        modes values.
+
+        Attributes:
+        - implptr, index to retrieve backend class implementation
+        - dim, size of the operator that cannot be inferred from the input
+
+        Example:
+
+        ```mlir
+        %mods = quiccir.al.int<implptr = 0 : i64 : !llvm.ptr, dim = 3 : i64> %phys: tensor<?x?x?x?> -> tensor<?x?x?x?>
+        ```
+    }];
+
+    let arguments = (ins AnyTensor:$phys
+        , OptionalAttr<I64Attr>:$implptr
+        , OptionalAttr<I64Attr>:$dim);
+    let results = (outs AnyTensor:$mods);
+
+    let assemblyFormat = [{
+        $phys `:` type($phys)  `->` type($mods) attr-dict-with-keyword
+    }];
+
+    let hasVerifier = 1;
+
+    // let skipDefaultBuilders = 1;
+    // Allow building a FrIOp from the input operand.
+    let builders = [
+        OpBuilder<(ins "Value":$phys)>
+    ];
+}
+
+//===----------------------------------------------------------------------===//
+// JonesWorlandProjectorOp
 //===----------------------------------------------------------------------===//
 
 def Quiccir_JWPOp : Quiccir_Op<"jw.prj", [Pure]> {
@@ -220,7 +392,7 @@ def Quiccir_JWPOp : Quiccir_Op<"jw.prj", [Pure]> {
 }
 
 //===----------------------------------------------------------------------===//
-//JonesWorlandIntegratorOp
+// JonesWorlandIntegratorOp
 //===----------------------------------------------------------------------===//
 
 def Quiccir_JWIOp : Quiccir_Op<"jw.int", [Pure]> {
