@@ -158,7 +158,7 @@ def Quiccir_QuadratureOp : Quiccir_Op<"quadrature", [Pure]> {
     let results = (outs AnyTensor:$uphys);
 
     let assemblyFormat = [{
-        $oprtr `,` $umods attr-dict `:`  type($oprtr) `,` type($umods)  `->` type($uphys)
+        $oprtr `,` $umods `:`  type($oprtr) `,` type($umods)  `->` type($uphys) attr-dict
     }];
 
     // Add additional verification logic to the constant operation. Setting this bit
@@ -172,6 +172,43 @@ def Quiccir_QuadratureOp : Quiccir_Op<"quadrature", [Pure]> {
     // Allow building a QuadratureOp from the two input operands.
     let builders = [
         OpBuilder<(ins "Value":$oprtr, "Value":$umods)>
+    ];
+}
+
+//===----------------------------------------------------------------------===//
+// AddOp
+//===----------------------------------------------------------------------===//
+
+def Quiccir_AddOp : Quiccir_Op<"add", [Pure, Commutative, Elementwise,
+    SameOperandsAndResultShape, SameOperandsAndResultElementType,
+    DeclareOpInterfaceMethods<FoldTensorCastIntoConsumerOpInterface>,
+    DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
+    let summary = "AddOp";
+    let description = [{
+        The `quiccir.add` operation implements a pointwise addition.
+        ?variadic?
+
+        Example:
+
+        ```mlir
+        %res = quiccir.add %lhs, %rhs: tensor<?x?x?x?>, tensor<?x?x?x?> -> tensor<?x?x?x?>
+        ```
+    }];
+
+    let arguments = (ins AnyTensor:$lhs, AnyTensor:$rhs );
+    let results = (outs AnyTensor:$res);
+
+    let assemblyFormat = [{
+        $lhs `,` $rhs `:` type($rhs) `,` type($lhs) `->` type($res) attr-dict
+    }];
+
+    // let hasVerifier = 1;
+    let hasCanonicalizeMethod = 1;
+
+    // let skipDefaultBuilders = 1;
+    // Allow building a FrPOp from the input operand.
+    let builders = [
+        OpBuilder<(ins "Value":$lhs, "Value":$rhs)>
     ];
 }
 

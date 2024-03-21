@@ -2,7 +2,7 @@ add_mlir_dialect_library(MLIRQuiccirDialect
     QuiccirDialect.cpp
     QuiccirOps.cpp
     QuiccirTypes.cpp
-    QuiccirCanonicalization.cpp
+    Canonicalization.cpp
 
     ADDITIONAL_HEADER_DIRS
     ${PROJECT_SOURCE_DIR}/include/Quiccir

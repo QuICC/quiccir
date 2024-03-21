@@ -7,11 +7,12 @@
 
 func.func @simpleTree(%R: tensor<?x?x?xf64>, %Theta: tensor<?x?x?xf64>, %Phi: tensor<?x?x?xf64>) -> (tensor<?x?x?xf64>) {
   // // R
-  // %R1 = quiccir.fr.int %R : tensor<?x?x?xf64> -> tensor<?x?x?xf64>
+  %R1 = quiccir.fr.int %R : tensor<?x?x?xf64> -> tensor<?x?x?xf64>
+  // return %R1 : tensor<?x?x?xf64>
   // %R2 = quiccir.al.int %R1 : tensor<?x?x?xf64> -> tensor<?x?x?xf64>
   // %R3 = quiccir.jw.int %R2 : tensor<?x?x?xf64> -> tensor<?x?x?xf64>
-  // // Theta
-  // %Th1 = quiccir.fr.int %Theta : tensor<?x?x?xf64> -> tensor<?x?x?xf64>
+  // Theta
+  %Th1 = quiccir.fr.int %Theta : tensor<?x?x?xf64> -> tensor<?x?x?xf64>
   // %Th2 = quiccir.al.int %Th1 : tensor<?x?x?xf64> -> tensor<?x?x?xf64>
   // %Th3 = quiccir.jw.int %Th2 : tensor<?x?x?xf64> -> tensor<?x?x?xf64>
   // // Phi
@@ -19,15 +20,15 @@ func.func @simpleTree(%R: tensor<?x?x?xf64>, %Theta: tensor<?x?x?xf64>, %Phi: te
   // %Phi2 = quiccir.al.int %Phi1 : tensor<?x?x?xf64> -> tensor<?x?x?xf64>
   // %Phi3 = quiccir.jw.int %Phi2 : tensor<?x?x?xf64> -> tensor<?x?x?xf64>
 
-  // %0 = tensor.empty() : tensor<*xf64>
-  %Phi3 = linalg.add ins(%R, %Theta : tensor<?x?x?xf64>, tensor<?x?x?xf64>) outs(%Phi: tensor<?x?x?xf64>) -> tensor<?x?x?xf64>
-  return %Phi3 : tensor<?x?x?xf64>
+  // %0 = tensor.empty() : tensor<?x?x?xf64>
+  // %Phi3 = linalg.add ins(%R, %Theta : tensor<?x?x?xf64>, tensor<?x?x?xf64>) outs(%Phi: tensor<?x?x?xf64>) -> tensor<?x?x?xf64>
+  // return %Phi3 : tensor<?x?x?xf64>
 
   // Pol
   // %tmp = "new.sub"(%Th3, %R3) : (tensor<?x?x?xf64>, tensor<?x?x?xf64>) -> tensor<?x?x?xf64>
-  // %Pol = "new.add"(%tmp, %Phi3) : (tensor<?x?x?xf64>, tensor<?x?x?xf64>) -> tensor<?x?x?xf64>
+  %Pol = quiccir.add %R1, %Th1 : tensor<?x?x?xf64>, tensor<?x?x?xf64> -> tensor<?x?x?xf64>
 
-  // return %Pol : tensor<?x?x?xf64>
+  return %Pol : tensor<?x?x?xf64>
 }
 
 func.func @entry(%thisArr: !llvm.array<1x!llvm.ptr>, %Polv: !type_umod, %Rv: !type_uval, %Thetav: !type_uval, %Phiv: !type_uval) {
