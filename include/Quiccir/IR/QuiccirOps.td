@@ -14,30 +14,6 @@ include "Quiccir/Interfaces/ShapeInferenceOpInterface.td"
 include "Quiccir/Interfaces/FoldTensorCastIntoConsumerOpInterface.td"
 include "mlir/Interfaces/InferTypeOpInterface.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
-include "mlir/Interfaces/CastInterfaces.td"
-
-//===----------------------------------------------------------------------===//
-// CastOp
-//===----------------------------------------------------------------------===//
-
-def CastOp : Quiccir_Op<"cast", [
-    DeclareOpInterfaceMethods<CastOpInterface>,
-    Pure,
-    SameOperandsAndResultShape]
-  > {
-  let summary = "shape cast operation";
-  let description = [{
-    The "cast" operation converts a tensor from one type to an equivalent type
-    without changing any data elements. The source and destination types
-    must both be tensor types with the same element type. If both are ranked,
-    then shape is required to match. The operation is invalid if converting
-    to a mismatching constant dimension.
-  }];
-
-  let arguments = (ins F64Tensor:$input);
-  let results = (outs F64Tensor:$output);
-  let assemblyFormat = "$input attr-dict `:` type($input) `to` type($output)";
-}
 
 //===----------------------------------------------------------------------===//
 // AllocOp
@@ -247,7 +223,8 @@ def Quiccir_FrPOp : Quiccir_Op<"fr.prj", [Pure,
 // FourierIntegratorOp
 //===----------------------------------------------------------------------===//
 
-def Quiccir_FrIOp : Quiccir_Op<"fr.int", [Pure]> {
+def Quiccir_FrIOp : Quiccir_Op<"fr.int", [Pure,
+    DeclareOpInterfaceMethods<FoldTensorCastIntoConsumerOpInterface>]> {
     let summary = "Fourier Transform from physical to modal space";
     let description = [{
         The `quiccir.fr.int` operation implements a generic Fourier integrator.

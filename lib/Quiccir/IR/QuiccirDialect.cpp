@@ -11,6 +11,7 @@
 // #include "mlir/IR/Builders.h"
 // #include "mlir/IR/OpImplementation.h"
 #include "mlir/Transforms/InliningUtils.h"
+#include "mlir/Dialect/Tensor/IR/Tensor.h"
 
 using namespace mlir;
 using namespace mlir::quiccir;
@@ -58,32 +59,9 @@ struct QuiccirInlinerInterface : public DialectInlinerInterface {
   Operation *materializeCallConversion(OpBuilder &builder, Value input,
                                        Type resultType,
                                        Location conversionLoc) const final {
-    return builder.create<CastOp>(conversionLoc, resultType, input);
+    return builder.create<tensor::CastOp>(conversionLoc, resultType, input);
   }
 };
-
-//===----------------------------------------------------------------------===//
-// CastOp
-//===----------------------------------------------------------------------===//
-
-/// Infer the output shape of the CastOp, this is required by the shape
-/// inference interface.
-// void CastOp::inferShapes() { getResult().setType(getInput().getType()); }
-
-/// Returns true if the given set of input and result types are compatible with
-/// this cast operation. This is required by the `CastOpInterface` to verify
-/// this operation and provide other additional utilities.
-bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
-  if (inputs.size() != 1 || outputs.size() != 1)
-    return false;
-  // The inputs must be Tensors with the same element type.
-  TensorType input = llvm::dyn_cast<TensorType>(inputs.front());
-  TensorType output = llvm::dyn_cast<TensorType>(outputs.front());
-  if (!input || !output || input.getElementType() != output.getElementType())
-    return false;
-  // The shape is required to match if both types are ranked.
-  return !input.hasRank() || !output.hasRank() || input == output;
-}
 
 //===----------------------------------------------------------------------===//
 // DeallocOp
