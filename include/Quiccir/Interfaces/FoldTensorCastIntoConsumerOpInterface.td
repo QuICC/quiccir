@@ -1,10 +1,9 @@
-//===- FoldTensorCastIntoConsumerOpInterface.td - Shape Inference Interface -*- tablegen -==//
+//===- FoldTensorCastIntoConsumerOpInterface.td - Fold Cast Interface -*- tablegen -==//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for license information.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+//   Copyright (c) 2024,
+//   Earth and Planetary Magnetism group, ETH Zurich
 //
-//===----------------------------------------------------------------------===//
+//===---------------------------------------------------------------------===//
 //
 // Defines the operations of the operations that can fold a tensor producer.
 //

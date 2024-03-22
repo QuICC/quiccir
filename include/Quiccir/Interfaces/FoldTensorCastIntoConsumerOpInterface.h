@@ -1,13 +1,12 @@
-//===- FoldTensorCastIntoConsumerOpInterface.h - Interface definitions for ShapeInference -=//
+//===- FoldTensorCastIntoConsumerOpInterface.h - Fold Cast Interface -----===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for license information.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+//   Copyright (c) 2024,
+//   Earth and Planetary Magnetism group, ETH Zurich
 //
-//===----------------------------------------------------------------------===//
+//===---------------------------------------------------------------------===//
 //
-// This file contains the declarations of the shape inference interfaces defined
-// in FoldTensorCastIntoConsumerOpInterface.td.
+// This file contains the declarations of the fold tensor.cast into a consumer
+// op interface defined in FoldTensorCastIntoConsumerOpInterface.td.
 //
 //===----------------------------------------------------------------------===//
 
