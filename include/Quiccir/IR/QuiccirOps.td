@@ -185,7 +185,13 @@ def Quiccir_TransposeOp : Quiccir_Op<"transpose", [Pure,
     let summary = "Transpose operator";
 
     let description = [{
-        Permutes the dimensions based on perm.
+        Permutes the dimensions based on permutation.
+
+        Example:
+
+        ```mlir
+        %out = quiccir.transpose %in permutation [0, 2, 1]: tensor<1x2x3xf32> -> tensor<1x3x2xf32>
+        ```
     }];
 
     let arguments = (ins
