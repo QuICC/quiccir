@@ -46,6 +46,9 @@ getLibraryCallSymbolRef(Operation *op, PatternRewriter &rewriter, ArrayRef<Type>
   // Return types
   for (Type ret : op->getResultTypes()) {
     if (auto tensor = ret.dyn_cast<RankedTensorType>()) {
+      if (!tensor.getEncoding()) {
+        return rewriter.notifyMatchFailure(op, "Encoding attribute is missing");
+      }
       auto as = tensor.getEncoding().cast<StringAttr>();
       fnName += "_"+as.str();
     }
