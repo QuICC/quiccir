@@ -307,13 +307,20 @@ mlir::LogicalResult AlPOp::verify() {
   // right most is first logical
   auto modShape = modType.getShape();
   auto valShape = resultType.getShape();
-  if (modShape[0] != valShape[0]) {
+
+  if ((valShape[0] != ShapedType::kDynamic &&
+       modShape[0] != ShapedType::kDynamic) &&
+      modShape[0] != valShape[0]) {
     return emitError()
-           << "expected result first dimension to match mod first dimension";
+      << "expected result first dimension " << valShape[0]
+      << "to match mod first dimension " << modShape[0];
   }
-  if (modShape[2] != valShape[2]) {
+  if ((valShape[2] != ShapedType::kDynamic &&
+       modShape[2] != ShapedType::kDynamic) &&
+      modShape[2] != valShape[2]) {
     return emitError()
-           << "expected result third dimension to match mod third dimension";
+      << "expected result third dimension " << valShape[2]
+      << "to match mod third dimension " << modShape[2];
   }
 
   // Todo: check dim attribute consistency if available
@@ -350,13 +357,20 @@ mlir::LogicalResult AlIOp::verify() {
   // right most is first logical
   auto physShape = physType.getShape();
   auto valShape = resultType.getShape();
-  if (physShape[0] != valShape[0]) {
+
+  if ((valShape[0] != ShapedType::kDynamic &&
+       physShape[0] != ShapedType::kDynamic) &&
+      physShape[0] != valShape[0]) {
     return emitError()
-           << "expected result first dimension to match phys first dimension";
+      << "expected result first dimension " << valShape[0]
+      << "to match phys first dimension " << physShape[0];
   }
-  if (physShape[2] != valShape[2]) {
+  if ((valShape[2] != ShapedType::kDynamic &&
+       physShape[2] != ShapedType::kDynamic) &&
+      physShape[2] != valShape[2]) {
     return emitError()
-           << "expected result third dimension to match phys third dimension";
+      << "expected result third dimension " << valShape[2]
+      << "to match phys third dimension " << physShape[2];
   }
 
   // Todo: check dim attribute consistency if available
@@ -393,15 +407,21 @@ mlir::LogicalResult JWPOp::verify() {
   // right most is first logical
   auto modShape = modType.getShape();
   auto valShape = resultType.getShape();
-  if (modShape[0] != valShape[0]) {
-    return emitError()
-           << "expected result first dimension to match mod first dimension";
-  }
-  if (modShape[2] != valShape[2]) {
-    return emitError()
-           << "expected result third dimension to match mod third dimension";
-  }
 
+  if ((valShape[0] != ShapedType::kDynamic &&
+       modShape[0] != ShapedType::kDynamic) &&
+      modShape[0] != valShape[0]) {
+    return emitError()
+      << "expected result first dimension " << valShape[0]
+      << "to match mod first dimension " << modShape[0];
+  }
+  if ((valShape[2] != ShapedType::kDynamic &&
+       modShape[2] != ShapedType::kDynamic) &&
+      modShape[2] != valShape[2]) {
+    return emitError()
+      << "expected result third dimension " << valShape[2]
+      << "to match mod third dimension " << modShape[2];
+  }
   // Todo: check dim attribute consistency if available
 
   return mlir::success();
@@ -436,13 +456,20 @@ mlir::LogicalResult JWIOp::verify() {
   // right most is first logical
   auto physShape = physType.getShape();
   auto valShape = resultType.getShape();
-  if (physShape[0] != valShape[0]) {
+
+  if ((valShape[0] != ShapedType::kDynamic &&
+       physShape[0] != ShapedType::kDynamic) &&
+      physShape[0] != valShape[0]) {
     return emitError()
-           << "expected result first dimension to match phys first dimension";
+      << "expected result first dimension " << valShape[0]
+      << "to match phys first dimension " << physShape[0];
   }
-  if (physShape[2] != valShape[2]) {
+  if ((valShape[2] != ShapedType::kDynamic &&
+       physShape[2] != ShapedType::kDynamic) &&
+      physShape[2] != valShape[2]) {
     return emitError()
-           << "expected result third dimension to match phys third dimension";
+      << "expected result third dimension " << valShape[2]
+      << "to match phys third dimension " << physShape[2];
   }
 
   // Todo: check dim attribute consistency if available

@@ -152,7 +152,7 @@ struct InferShapePattern
   LogicalResult matchAndRewrite(ShapeInferenceOpInterface op,
                                 PatternRewriter &rewriter) const override {
 
-    // Ask the operation to infer its output shapes.
+    // Ask the operation to infer its output/input shapes.
     LLVM_DEBUG(llvm::dbgs() << "Inferring shape for: " << op->getName() << '\n');
     op.inferShapes();
     return success();

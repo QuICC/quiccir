@@ -176,6 +176,34 @@ def Quiccir_QuadratureOp : Quiccir_Op<"quadrature", [Pure]> {
 }
 
 //===----------------------------------------------------------------------===//
+// TransposeOp
+//===----------------------------------------------------------------------===//
+
+// def Quiccir_TransposeOp : Quiccir_Op<"transpose", [InferShapedTypeOpAdaptor, Pure]> {
+def Quiccir_TransposeOp : Quiccir_Op<"transpose", [Pure]> {
+    let summary = "Transpose operator";
+
+    let description = [{
+        Permutes the dimensions based on perm.
+    }];
+
+    let arguments = (ins
+        AnyTensor:$input,
+        DenseI64ArrayAttr:$permutation
+    );
+
+    let results = (
+        outs AnyTensor:$output
+    );
+
+    let assemblyFormat = [{
+        $input `permutation` `=` $permutation `:` type($input) `->` type($output) attr-dict-with-keyword
+    }];
+
+}
+
+
+//===----------------------------------------------------------------------===//
 // AddOp
 //===----------------------------------------------------------------------===//
 
