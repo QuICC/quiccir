@@ -328,8 +328,10 @@ def Quiccir_FrPOp : Quiccir_Op<"fr.prj", [Pure,
 // FourierIntegratorOp
 //===----------------------------------------------------------------------===//
 
+
 def Quiccir_FrIOp : Quiccir_Op<"fr.int", [Pure,
-    DeclareOpInterfaceMethods<FoldTensorCastIntoConsumerOpInterface>]> {
+    DeclareOpInterfaceMethods<FoldTensorCastIntoConsumerOpInterface>,
+    DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
     let summary = "Fourier Transform from physical to modal space";
     let description = [{
         The `quiccir.fr.int` operation implements a generic Fourier integrator.
@@ -367,6 +369,8 @@ def Quiccir_FrIOp : Quiccir_Op<"fr.int", [Pure,
     let builders = [
         OpBuilder<(ins "Value":$phys)>
     ];
+
+    let extraClassDefinition = inferTransformShapes;
 }
 
 //===----------------------------------------------------------------------===//
@@ -415,7 +419,9 @@ def Quiccir_AlPOp : Quiccir_Op<"al.prj", [Pure]> {
 // AssociateLegendreIntegratorOp
 //===----------------------------------------------------------------------===//
 
-def Quiccir_AlIOp : Quiccir_Op<"al.int", [Pure]> {
+def Quiccir_AlIOp : Quiccir_Op<"al.int", [Pure,
+    DeclareOpInterfaceMethods<FoldTensorCastIntoConsumerOpInterface>,
+    DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
     let summary = "AssociateLegendre Transform from physical to modal space";
     let description = [{
         The `quiccir.al.int` operation implements a generic AssociateLegendre integrator.
@@ -453,6 +459,8 @@ def Quiccir_AlIOp : Quiccir_Op<"al.int", [Pure]> {
     let builders = [
         OpBuilder<(ins "Value":$phys)>
     ];
+
+    let extraClassDefinition = inferTransformShapes;
 }
 
 //===----------------------------------------------------------------------===//
