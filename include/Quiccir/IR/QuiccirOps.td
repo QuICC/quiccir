@@ -180,7 +180,8 @@ def Quiccir_QuadratureOp : Quiccir_Op<"quadrature", [Pure]> {
 //===----------------------------------------------------------------------===//
 
 // def Quiccir_TransposeOp : Quiccir_Op<"transpose", [InferShapedTypeOpAdaptor, Pure]> {
-def Quiccir_TransposeOp : Quiccir_Op<"transpose", [Pure]> {
+def Quiccir_TransposeOp : Quiccir_Op<"transpose", [Pure,
+    DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
     let summary = "Transpose operator";
 
     let description = [{

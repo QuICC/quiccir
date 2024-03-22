@@ -76,3 +76,40 @@ void SubOp::inferShapes() {
         LLVM_DEBUG(llvm::dbgs() << "Lhs has less info then result\n");
     }
 }
+
+//===----------------------------------------------------------------------===//
+// TransposeOp
+//===----------------------------------------------------------------------===//
+void TransposeOp::inferShapes() {
+    Type in = getInput().getType();
+    Type out = getOutput().getType();
+
+    auto inType = llvm::dyn_cast<RankedTensorType>(in);
+    auto outType = llvm::dyn_cast<RankedTensorType>(out);
+
+    // Requires RankedTensorType.
+    if (!inType || !outType)
+        return;
+
+    llvm::ArrayRef<int64_t> inShape = inType.getShape();
+    llvm::ArrayRef<int64_t> outShape = outType.getShape();
+
+    // Try to propagate input
+    auto perm = getPermutation();
+    SmallVector<int64_t, 3> newOutShape{outShape};
+    for (auto idx : {0, 1, 2}) {
+        if (outType.isDynamicDim(perm[idx]) && !inType.isDynamicDim(idx)) {
+            newOutShape[perm[idx]] = inShape[idx];
+        }
+    }
+    getResult().setType(outType.clone(newOutShape));
+
+    // Try to propagate output
+    SmallVector<int64_t, 3> newInShape{inShape};
+    for (auto idx : {0, 1, 2}) {
+        if (!outType.isDynamicDim(perm[idx]) && inType.isDynamicDim(idx)) {
+            newInShape[idx] = outShape[perm[idx]];
+        }
+    }
+    getInput().setType(inType.clone(newInShape));
+}
