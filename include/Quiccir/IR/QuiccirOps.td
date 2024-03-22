@@ -204,7 +204,7 @@ def Quiccir_AddOp : Quiccir_Op<"add", [Pure, Commutative, Elementwise,
     }];
 
     // let hasVerifier = 1;
-    let hasCanonicalizeMethod = 1;
+    // let hasCanonicalizeMethod = 1;
 
     // let skipDefaultBuilders = 1;
     // Allow building a FrPOp from the input operand.
@@ -212,6 +212,45 @@ def Quiccir_AddOp : Quiccir_Op<"add", [Pure, Commutative, Elementwise,
         OpBuilder<(ins "Value":$lhs, "Value":$rhs)>
     ];
 }
+
+//===----------------------------------------------------------------------===//
+// SubOp
+//===----------------------------------------------------------------------===//
+
+def Quiccir_SubOp : Quiccir_Op<"sub", [Pure, Elementwise,
+    SameOperandsAndResultShape, SameOperandsAndResultElementType,
+    DeclareOpInterfaceMethods<FoldTensorCastIntoConsumerOpInterface>,
+    DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
+    let summary = "SubOp";
+    let description = [{
+        The `quiccir.sub` operation implements a pointwise subtraction.
+        ?variadic?
+
+        Example:
+
+        ```mlir
+        %res = quiccir.sub %lhs, %rhs: tensor<?x?x?x?>, tensor<?x?x?x?> -> tensor<?x?x?x?>
+        ```
+    }];
+
+    let arguments = (ins AnyTensor:$lhs, AnyTensor:$rhs,
+        OptionalAttr<I64Attr>:$implptr);
+    let results = (outs AnyTensor:$res);
+
+    let assemblyFormat = [{
+        $lhs `,` $rhs `:` type($rhs) `,` type($lhs) `->` type($res) attr-dict-with-keyword
+    }];
+
+    // let hasVerifier = 1;
+    // let hasCanonicalizeMethod = 1;
+
+    // let skipDefaultBuilders = 1;
+    // Allow building a FrPOp from the input operand.
+    let builders = [
+        OpBuilder<(ins "Value":$lhs, "Value":$rhs)>
+    ];
+}
+
 
 //===----------------------------------------------------------------------===//
 // FourierProjectorOp

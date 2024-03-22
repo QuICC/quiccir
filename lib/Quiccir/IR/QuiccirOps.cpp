@@ -50,24 +50,32 @@ void AddOp::inferShapes() {
     }
 }
 
-LogicalResult mlir::quiccir::AddOp::canonicalize(mlir::quiccir::AddOp addOp,
-  PatternRewriter &rewriter) {
-
-  // Ask the operation to infer its output shapes.
-  Operation *op = addOp;
-  LLVM_DEBUG(llvm::dbgs() << "Inferring shape for: " << op->getName() << '\n');
-  if (auto shapeOp = dyn_cast<ShapeInferenceOpInterface>(op)) {
-    shapeOp.inferShapes();
-  } else {
-    op->emitError("unable to infer shape of operation without shape "
-                  "inference interface");
-    return failure();
-  }
-
-
-  return success();
+//===----------------------------------------------------------------------===//
+// SubOp
+//===----------------------------------------------------------------------===//
+void SubOp::inferShapes() {
+    if (tensor::preservesStaticInformation(getLhs().getType(),
+        getResult().getType())) {
+        getLhs().setType(getResult().getType());
+    }
+    else {
+        LLVM_DEBUG(llvm::dbgs() << "Result has less info then Lhs\n");
+    }
+    if (tensor::preservesStaticInformation(getRhs().getType(),
+        getResult().getType())) {
+        getRhs().setType(getResult().getType());
+    }
+    else {
+        LLVM_DEBUG(llvm::dbgs() << "Result has less info then Rhs\n");
+    }
+    if (tensor::preservesStaticInformation(getResult().getType(),
+        getLhs().getType())) {
+        getResult().setType(getLhs().getType());
+    }
+    else {
+        LLVM_DEBUG(llvm::dbgs() << "Lhs has less info then result\n");
+    }
 }
-
 
 
 //===----------------------------------------------------------------------===//

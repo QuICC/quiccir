@@ -7,10 +7,12 @@
 
 #include "Quiccir/IR/QuiccirDialect.h"
 #include "Quiccir/IR/QuiccirOps.h"
-
-#include "mlir/Dialect/Tensor/IR/Tensor.h"
-
 #include "Quiccir/Interfaces/FoldTensorCastIntoConsumerOpInterface.cpp.inc"
+#include "mlir/Dialect/Tensor/IR/Tensor.h"
+#include "llvm/Support/Debug.h"
+#include "llvm/Support/raw_ostream.h"
+
+#define DEBUG_TYPE "canonicalizer"
 
 using namespace mlir;
 using namespace mlir::quiccir;
@@ -39,7 +41,7 @@ namespace quiccir
 /// ```mlir
 ///   %2 = consumer %0 ... : tensor<8x16xf32> ...
 /// ```
-struct FoldTensorCastProducerOp
+struct FoldTensorCastProducerPattern
     : public OpInterfaceRewritePattern<FoldTensorCastIntoConsumerOpInterface> {
   using OpInterfaceRewritePattern<
       FoldTensorCastIntoConsumerOpInterface>::OpInterfaceRewritePattern;
@@ -88,7 +90,7 @@ struct FoldTensorCastProducerOp
 /// ```mlir
 ///   %2 = producer %0 ... : tensor<8x16xf32> ...
 /// ```
-struct FoldTensorCastConsumerOp : public OpRewritePattern<tensor::CastOp> {
+struct FoldTensorCastConsumerPattern : public OpRewritePattern<tensor::CastOp> {
   using OpRewritePattern<tensor::CastOp>::OpRewritePattern;
 
   LogicalResult matchAndRewrite(tensor::CastOp castOp,
@@ -139,10 +141,29 @@ struct FoldTensorCastConsumerOp : public OpRewritePattern<tensor::CastOp> {
   }
 };
 
+///
+/// Canonicalize operations that can infer results or operands shape
+///
+struct InferShapePattern
+    : public OpInterfaceRewritePattern<ShapeInferenceOpInterface> {
+  using OpInterfaceRewritePattern<
+      ShapeInferenceOpInterface>::OpInterfaceRewritePattern;
+
+  LogicalResult matchAndRewrite(ShapeInferenceOpInterface op,
+                                PatternRewriter &rewriter) const override {
+
+    // Ask the operation to infer its output shapes.
+    LLVM_DEBUG(llvm::dbgs() << "Inferring shape for: " << op->getName() << '\n');
+    op.inferShapes();
+    return success();
+  }
+};
+
 void QuiccirDialect::getCanonicalizationPatterns(
     RewritePatternSet &results) const {
-  results.add<quiccir::FoldTensorCastProducerOp,
-              quiccir::FoldTensorCastConsumerOp>(getContext());
+  results.add<quiccir::FoldTensorCastProducerPattern,
+              quiccir::FoldTensorCastConsumerPattern,
+              quiccir::InferShapePattern>(getContext());
 }
 
 } // namespace quiccir

@@ -15,8 +15,8 @@ func.func private @simpleTree(%R: tensor<?x?x?xf64>, %Theta: tensor<?x?x?xf64>, 
   %Th1 = quiccir.fr.int %Theta : tensor<?x?x?xf64> -> tensor<?x?x?xf64> attributes{implptr = 0 :i64}
   // %Th2 = quiccir.al.int %Th1 : tensor<?x?x?xf64> -> tensor<?x?x?xf64>
   // %Th3 = quiccir.jw.int %Th2 : tensor<?x?x?xf64> -> tensor<?x?x?xf64>
-  // // Phi
-  // %Phi1 = quiccir.fr.int %Phi : tensor<?x?x?xf64> -> tensor<?x?x?xf64>
+  // Phi
+  %Phi1 = quiccir.fr.int %Phi : tensor<?x?x?xf64> -> tensor<?x?x?xf64> attributes{implptr = 0 :i64}
   // %Phi2 = quiccir.al.int %Phi1 : tensor<?x?x?xf64> -> tensor<?x?x?xf64>
   // %Phi3 = quiccir.jw.int %Phi2 : tensor<?x?x?xf64> -> tensor<?x?x?xf64>
 
@@ -26,7 +26,9 @@ func.func private @simpleTree(%R: tensor<?x?x?xf64>, %Theta: tensor<?x?x?xf64>, 
 
   // Pol
   // %tmp = "new.sub"(%Th3, %R3) : (tensor<?x?x?xf64>, tensor<?x?x?xf64>) -> tensor<?x?x?xf64>
-  %Pol = quiccir.add %R1, %Th1 : tensor<?x?x?xf64>, tensor<?x?x?xf64> -> tensor<?x?x?xf64> attributes{implptr = 1 :i64}
+  // %Pol = "new.add"(%tmp, %Phi3) : (tensor<?x?x?xf64>, tensor<?x?x?xf64>) -> tensor<?x?x?xf64>
+  %tmp = quiccir.sub %Th1, %R1 : tensor<?x?x?xf64>, tensor<?x?x?xf64> -> tensor<?x?x?xf64> attributes{implptr = 1 :i64}
+  %Pol = quiccir.add %tmp, %Phi1 : tensor<?x?x?xf64>, tensor<?x?x?xf64> -> tensor<?x?x?xf64> attributes{implptr = 2 :i64}
 
   return %Pol : tensor<?x?x?xf64>
 }
