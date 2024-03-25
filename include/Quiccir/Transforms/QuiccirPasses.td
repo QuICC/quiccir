@@ -50,6 +50,10 @@ def QuiccirSetViewLayout : Pass<"set-quiccir-view-lay", "ModuleOp"> {
   let dependentDialects = [
     "func::FuncDialect",
     "LLVM::LLVMDialect"];
+   let options = [
+    Option<"setViewLayout", "integrator0", "std::string", /*default=*/"\"Layout0\"",
+           "Set View Layout attribute">
+  ];
 }
 
 // def QuiccirLowerToLinalg : Pass<"convert-quiccir-to-linalg", "func::FuncOp"> {
