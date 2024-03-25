@@ -25,15 +25,32 @@ struct QuiccirSetViewLayout : public QuiccirSetViewLayoutBase<QuiccirSetViewLayo
   void runOnOperation() final;
 
   private:
-  std::string _lay0;
+  SmallVector<std::string, 3> layInt{};
+  SmallVector<std::string, 3> layPrj{};
 };
 } // namespace
 
 LogicalResult QuiccirSetViewLayout::initializeOptions(StringRef options) {
   if (failed(Pass::initializeOptions(options)))
     return failure();
-  _lay0 = setViewLayout;
+  layInt.push_back(layIntZero);
+  layInt.push_back(layIntOne);
+  layInt.push_back(layIntTwo);
   return success();
+}
+
+void setMissingLayout(Value val, llvm::StringRef enc) {
+  Type valTy = val.getType();
+  if (auto tensor = valTy.dyn_cast<RankedTensorType>()) {
+    if (!tensor.getEncoding()) {
+      Attribute encoding = get<StringAttr>(val.getContext(), enc);
+      auto shape = tensor.getShape();
+      auto eleTy = tensor.getElementType();
+      auto plusAttrTy = get<RankedTensorType>(val.getContext(), shape, eleTy, encoding);
+      val.setType(plusAttrTy);
+      llvm::errs() << val << " ret has no ecoding\n";
+    }
+  }
 }
 
 void QuiccirSetViewLayout::runOnOperation() {
@@ -43,30 +60,24 @@ void QuiccirSetViewLayout::runOnOperation() {
   RewritePatternSet patterns(ctx);
   ConversionTarget target(*ctx);
 
-  llvm::errs() << _lay0 << '\n';
-
-  // mapping needs to passed in as option
-  // op -> layout, str to str? op to str?
-
-  // walk the tree and process quiccir ops with missing
-  // layout
-
   // Walk from root func
   WalkResult result = getOperation()->walk([&](Operation* op) {
       if (auto frIntOp = dyn_cast<FrIOp>(op)) {
         // check if attribute is set
         for (auto ret : op->getResults()) {
-          Type retTy = ret.getType();
-          if (auto tensor = retTy.dyn_cast<RankedTensorType>()) {
-            if (!tensor.getEncoding()) {
-              Attribute encoding = get<StringAttr>(ctx, _lay0);
-              auto shape = tensor.getShape();
-              auto eleTy = tensor.getElementType();
-              auto plusAttrTy = get<RankedTensorType>(ctx, shape, eleTy, encoding);
-              ret.setType(plusAttrTy);
-              llvm::errs() << op->getName() << " ret has no ecoding\n";
-            }
-          }
+          setMissingLayout(ret, layInt[0]);
+        }
+      }
+      if (auto frIntOp = dyn_cast<AlIOp>(op)) {
+        // check if attribute is set
+        for (auto ret : op->getResults()) {
+          setMissingLayout(ret, layInt[1]);
+        }
+      }
+      if (auto frIntOp = dyn_cast<JWIOp>(op)) {
+        // check if attribute is set
+        for (auto ret : op->getResults()) {
+          setMissingLayout(ret, layInt[2]);
         }
       }
 

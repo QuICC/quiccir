@@ -44,15 +44,19 @@ def QuiccirFinalizeViewToLLVM : Pass<"finalize-quiccir-view", "ModuleOp"> {
     "LLVM::LLVMDialect"];
 }
 
-def QuiccirSetViewLayout : Pass<"set-quiccir-view-lay", "ModuleOp"> {
+def QuiccirSetViewLayout : Pass<"set-quiccir-view-lay", "func::FuncOp"> {
   let summary = "Set View layout based on options and ops";
   let constructor = "mlir::quiccir::createSetViewLayoutPass()";
   let dependentDialects = [
     "func::FuncDialect",
     "LLVM::LLVMDialect"];
    let options = [
-    Option<"setViewLayout", "integrator0", "std::string", /*default=*/"\"Layout0\"",
-           "Set View Layout attribute">
+    Option<"layIntZero", "lay-int-0", "std::string", /*default=*/"\"LayoutInt0\"",
+           "Set View Layout for first integrator">,
+    Option<"layIntOne", "lay-int-1", "std::string", /*default=*/"\"LayoutInt1\"",
+           "Set View Layout for second integrator">,
+    Option<"layIntTwo", "lay-int-2", "std::string", /*default=*/"\"LayoutInt2\"",
+           "Set View Layout for second integrator">
   ];
 }
 
