@@ -25,8 +25,8 @@ std::unique_ptr<mlir::Pass> createLowerAllocPass();
 /// Create a pass for lowering view in func/call/return/op
 std::unique_ptr<mlir::Pass> createFinalizeViewToLLVMPass();
 
-// /// Create a pass for lowering to operations in the `Affine` and `Std` dialects
-// std::unique_ptr<mlir::Pass> createLowerToAffinePass();
+/// Create a pass for addind missing view layout info
+std::unique_ptr<mlir::Pass> createSetViewLayoutPass();
 
 // /// Create a pass for lowering to operations in the `Linalg` and `Affine` dialects
 // std::unique_ptr<mlir::Pass> createLowerToLinalgPass();

@@ -44,6 +44,14 @@ def QuiccirFinalizeViewToLLVM : Pass<"finalize-quiccir-view", "ModuleOp"> {
     "LLVM::LLVMDialect"];
 }
 
+def QuiccirSetViewLayout : Pass<"set-quiccir-view-lay", "ModuleOp"> {
+  let summary = "Set View layout based on options and ops";
+  let constructor = "mlir::quiccir::createSetViewLayoutPass()";
+  let dependentDialects = [
+    "func::FuncDialect",
+    "LLVM::LLVMDialect"];
+}
+
 // def QuiccirLowerToLinalg : Pass<"convert-quiccir-to-linalg", "func::FuncOp"> {
 //   let summary = "Lower the operations from the quiccir dialect into linalg "
 //                 "loops";
