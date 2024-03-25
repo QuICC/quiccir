@@ -25,17 +25,27 @@ struct QuiccirSetViewLayout : public QuiccirSetViewLayoutBase<QuiccirSetViewLayo
   void runOnOperation() final;
 
   private:
-  SmallVector<std::string, 3> layInt{};
-  SmallVector<std::string, 3> layPrj{};
+  std::array<std::array<std::string, 2>, 3> layout;
 };
 } // namespace
 
 LogicalResult QuiccirSetViewLayout::initializeOptions(StringRef options) {
   if (failed(Pass::initializeOptions(options)))
     return failure();
-  layInt.push_back(layIntZero);
-  layInt.push_back(layIntOne);
-  layInt.push_back(layIntTwo);
+  if (layZero.size() == 2) {
+    layout[0][0] = layZero[0];
+    layout[0][1] = layZero[1];
+  }
+  else {
+    layout[0][0] = "layPPP";
+    layout[0][1] = "layMPP";
+  }
+  layout[1][0] = "layPMP";
+  layout[1][1] = "layMMP";
+  layout[2][0] = "layPMM";
+  layout[2][1] = "layMMM";
+  // layout[1][0] = layOne[0];
+  // layout[2][0] = layTwo[0];
   return success();
 }
 
@@ -48,7 +58,6 @@ void setMissingLayout(Value val, llvm::StringRef enc) {
       auto eleTy = tensor.getElementType();
       auto plusAttrTy = get<RankedTensorType>(val.getContext(), shape, eleTy, encoding);
       val.setType(plusAttrTy);
-      llvm::errs() << val << " ret has no ecoding\n";
     }
   }
 }
@@ -63,29 +72,26 @@ void QuiccirSetViewLayout::runOnOperation() {
   // Walk from root func
   WalkResult result = getOperation()->walk([&](Operation* op) {
       if (auto frIntOp = dyn_cast<FrIOp>(op)) {
-        // check if attribute is set
-        for (auto ret : op->getResults()) {
-          setMissingLayout(ret, layInt[0]);
-        }
+        // set attributes if not set
+        Value in = frIntOp.getPhys();
+        setMissingLayout(in, layout[0][0]);
+        Value ret = frIntOp.getMods();
+        setMissingLayout(ret, layout[0][1]);
+       }
+      if (auto alIntOp = dyn_cast<AlIOp>(op)) {
+        // set attributes if not set
+        Value in = alIntOp.getPhys();
+        setMissingLayout(in, layout[1][0]);
+        Value ret = alIntOp.getMods();
+        setMissingLayout(ret, layout[1][1]);
       }
-      if (auto frIntOp = dyn_cast<AlIOp>(op)) {
-        // check if attribute is set
-        for (auto ret : op->getResults()) {
-          setMissingLayout(ret, layInt[1]);
-        }
+      if (auto jwIntOp = dyn_cast<JWIOp>(op)) {
+        // set attributes if not set
+        Value in = jwIntOp.getPhys();
+        setMissingLayout(in, layout[2][0]);
+        Value ret = jwIntOp.getMods();
+        setMissingLayout(ret, layout[2][1]);
       }
-      if (auto frIntOp = dyn_cast<JWIOp>(op)) {
-        // check if attribute is set
-        for (auto ret : op->getResults()) {
-          setMissingLayout(ret, layInt[2]);
-        }
-      }
-
-      // // return deallocateBuffers(op);
-      // if (llvm::isa<QuiccirDialect>(op->getDialect())) {
-      //   llvm::errs() << op->getName() << '\n';
-      // }
-
       // if (failed(deallocateBuffers(op)))
       //   return WalkResult::interrupt();
       return WalkResult::advance();

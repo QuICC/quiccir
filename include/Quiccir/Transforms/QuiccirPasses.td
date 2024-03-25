@@ -51,12 +51,12 @@ def QuiccirSetViewLayout : Pass<"set-quiccir-view-lay", "func::FuncOp"> {
     "func::FuncDialect",
     "LLVM::LLVMDialect"];
    let options = [
-    Option<"layIntZero", "lay-int-0", "std::string", /*default=*/"\"LayoutInt0\"",
-           "Set View Layout for first integrator">,
-    Option<"layIntOne", "lay-int-1", "std::string", /*default=*/"\"LayoutInt1\"",
-           "Set View Layout for second integrator">,
-    Option<"layIntTwo", "lay-int-2", "std::string", /*default=*/"\"LayoutInt2\"",
-           "Set View Layout for second integrator">
+    ListOption<"layZero", "lay-ppp2mpp", "std::string",
+           "Set View Layout pair for first integrator">,
+    ListOption<"layOne", "lay-pmp2mmp", "std::string",
+           "Set View Layout pair for second integrator">,
+    ListOption<"layTwo", "lay-pmm2mmm", "std::string",
+           "Set View Layout pair for second integrator">
   ];
 }
 
