@@ -95,6 +95,9 @@ struct OpLowering : public ConversionPattern {
     }
 
     // get index from op attribute
+    if (!cast<Top>(*op).getImplptr()) {
+        return rewriter.notifyMatchFailure(op, "Implementation attribute is missing");
+    }
     ArrayRef<int64_t> index = cast<Top>(*op).getImplptr().value();
     auto implPtr = rewriter.create<LLVM::ExtractValueOp>(loc, implArray, index);
 
@@ -161,11 +164,19 @@ void QuiccirToCallLoweringPass::runOnOperation() {
       &getContext(), viewConverter);
   patterns.add<OpLowering<quiccir::JWIOp>>(
       &getContext(), viewConverter);
+  patterns.add<OpLowering<quiccir::AlPOp>>(
+      &getContext(), viewConverter);
+  patterns.add<OpLowering<quiccir::AlIOp>>(
+      &getContext(), viewConverter);
   patterns.add<OpLowering<quiccir::FrPOp>>(
       &getContext(), viewConverter);
   patterns.add<OpLowering<quiccir::FrIOp>>(
       &getContext(), viewConverter);
   patterns.add<OpLowering<quiccir::AddOp>>(
+      &getContext(), viewConverter);
+  patterns.add<OpLowering<quiccir::SubOp>>(
+      &getContext(), viewConverter);
+  patterns.add<OpLowering<quiccir::TransposeOp>>(
       &getContext(), viewConverter);
 
   // With the target and rewrite patterns defined, we can now attempt the

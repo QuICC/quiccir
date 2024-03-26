@@ -196,7 +196,8 @@ def Quiccir_TransposeOp : Quiccir_Op<"transpose", [Pure,
 
     let arguments = (ins
         AnyTensor:$input,
-        DenseI64ArrayAttr:$permutation
+        DenseI64ArrayAttr:$permutation,
+        OptionalAttr<I64Attr>:$implptr
     );
 
     let results = (
