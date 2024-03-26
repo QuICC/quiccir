@@ -20,6 +20,9 @@ namespace {
 struct QuiccirSetViewLayout : public QuiccirSetViewLayoutBase<QuiccirSetViewLayout> {
   using QuiccirSetViewLayoutBase<QuiccirSetViewLayout>::QuiccirSetViewLayoutBase;
 
+  QuiccirSetViewLayout(const std::array<std::array<std::string, 2>, 3> &layout) :
+  layout(layout) {};
+
   LogicalResult initializeOptions(StringRef options) final;
 
   void runOnOperation() final;
@@ -40,12 +43,22 @@ LogicalResult QuiccirSetViewLayout::initializeOptions(StringRef options) {
     layout[0][0] = "layPPP";
     layout[0][1] = "layMPP";
   }
-  layout[1][0] = "layPMP";
-  layout[1][1] = "layMMP";
-  layout[2][0] = "layPMM";
-  layout[2][1] = "layMMM";
-  // layout[1][0] = layOne[0];
-  // layout[2][0] = layTwo[0];
+   if (layOne.size() == 2) {
+    layout[0][0] = layOne[0];
+    layout[0][1] = layOne[1];
+  }
+  else {
+    layout[1][0] = "layPMP";
+    layout[1][1] = "layMMP";
+  }
+   if (layTwo.size() == 2) {
+    layout[0][0] = layTwo[0];
+    layout[0][1] = layTwo[1];
+  }
+  else {
+    layout[2][0] = "layPMM";
+    layout[2][1] = "layMMM";
+  }
   return success();
 }
 
@@ -105,6 +118,11 @@ void QuiccirSetViewLayout::runOnOperation() {
   //     signalPassFailure();
 }
 
-std::unique_ptr<Pass> mlir::quiccir::createSetViewLayoutPass() {
-  return std::make_unique<QuiccirSetViewLayout>();
+// std::unique_ptr<Pass> mlir::quiccir::createSetViewLayoutPass() {
+//   return std::make_unique<QuiccirSetViewLayout>();
+// }
+
+std::unique_ptr<Pass> mlir::quiccir::createSetViewLayoutPass(
+  const std::array<std::array<std::string, 2>, 3> &layout) {
+  return std::make_unique<QuiccirSetViewLayout>(layout);
 }

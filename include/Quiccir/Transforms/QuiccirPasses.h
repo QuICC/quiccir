@@ -10,6 +10,7 @@
 
 #include "mlir/Pass/Pass.h"
 
+
 namespace mlir {
 namespace quiccir {
 
@@ -26,7 +27,9 @@ std::unique_ptr<mlir::Pass> createLowerAllocPass();
 std::unique_ptr<mlir::Pass> createFinalizeViewToLLVMPass();
 
 /// Create a pass for addind missing view layout info
-std::unique_ptr<mlir::Pass> createSetViewLayoutPass();
+static std::array<std::array<std::string, 2>, 3> defaultLayout;
+std::unique_ptr<mlir::Pass> createSetViewLayoutPass(
+    const std::array<std::array<std::string, 2>, 3> &layout = defaultLayout);
 
 // /// Create a pass for lowering to operations in the `Linalg` and `Affine` dialects
 // std::unique_ptr<mlir::Pass> createLowerToLinalgPass();
