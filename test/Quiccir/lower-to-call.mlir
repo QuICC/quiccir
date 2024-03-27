@@ -37,4 +37,16 @@ module {
     // CHECK: %{{.*}} = builtin.unrealized_conversion_cast %{{.*}} : !quiccir.view<16x3x3xf32, "layoutUval"> to tensor<16x3x3xf32, "layoutUval">
     return
     }
+
+    // materialize to existing buffer
+    func.func @entryTranspose(%thisArr: !llvm.ptr<array<1 x ptr>>, %v: !quiccir.view<16x2x3xf32, "layoutIn">, %vtra: !quiccir.view<16x3x2xf32, "layoutTra">) {
+    %vt = builtin.unrealized_conversion_cast %v : !quiccir.view<16x2x3xf32, "layoutIn"> to tensor<16x2x3xf32, "layoutIn">
+    // CHECK: %{{.*}} = llvm.load %{{.*}} : !llvm.ptr<array<1 x ptr>>
+    // CHECK: llvm.extractvalue %{{.*}}[0] : !llvm.array<1 x ptr>
+    // CHECK: call @_ciface_quiccir_transpose_layoutTra_layoutIn(%{{.*}}, %{{.*}}, %{{.*}}) : (!llvm.ptr, !quiccir.view<16x3x2xf32, "layoutTra">, !quiccir.view<16x2x3xf32, "layoutIn">) -> ()
+    %tra = quiccir.transpose %vt permutation = [0, 2, 1] : tensor<16x2x3xf32, "layoutIn"> -> tensor<16x3x2xf32, "layoutTra"> attributes{implptr = 0 :i64}
+    // CHECK: %{{.*}} = builtin.unrealized_conversion_cast %{{.*}} : !quiccir.view<16x3x2xf32, "layoutTra"> to tensor<16x3x2xf32, "layoutTra">
+    quiccir.materialize %tra in %vtra : (tensor<16x3x2xf32, "layoutTra">, !quiccir.view<16x3x2xf32, "layoutTra">)
+    return
+    }
 }

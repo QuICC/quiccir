@@ -13,6 +13,7 @@
 #include "Quiccir/IR/QuiccirOps.h"
 #include "Quiccir/Transforms/QuiccirPasses.h"
 
+#include "mlir/Analysis/Liveness.h"
 #include "mlir/IR/BuiltinDialect.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
@@ -27,6 +28,22 @@ namespace {
 //===----------------------------------------------------------------------===//
 // QuiccirViewDeallocation
 //===----------------------------------------------------------------------===//
+Operation *getEndOperation(Value value, Operation *startOperation) {
+
+  Block *block = startOperation->getBlock();
+  // Resolve the last operation (must exist by definition).
+  Operation *endOperation = startOperation;
+  for (Operation *useOp : value.getUsers()) {
+    // Find the associated operation in the current block (if any).
+    useOp = block->findAncestorOpInBlock(*useOp);
+    // Check whether the use is in our block and after the current end
+    // operation.
+    if (useOp && endOperation->isBeforeInBlock(useOp))
+      endOperation = useOp;
+  }
+  return endOperation;
+}
+
 
 LogicalResult deallocateBuffers(Operation *op) {
   OpBuilder builder(op);
@@ -38,7 +55,7 @@ LogicalResult deallocateBuffers(Operation *op) {
     op->emitWarning() << "trying to deallocate unused view";
     return success();
   }
-  Operation *lastUser = *(view.user_begin()); // single link list
+  Operation *lastUser = getEndOperation(view, op);
   builder.setInsertionPointAfter(lastUser);
   builder.create<quiccir::DeallocOp>(loc, view);
   return success();

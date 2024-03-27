@@ -11,6 +11,7 @@
 // #include "mlir/IR/Builders.h"
 // #include "mlir/IR/OpImplementation.h"
 #include "mlir/Transforms/InliningUtils.h"
+#include "mlir/Dialect/Tensor/IR/Tensor.h"
 
 using namespace mlir;
 using namespace mlir::quiccir;
@@ -31,28 +32,36 @@ struct QuiccirInlinerInterface : public DialectInlinerInterface {
   //===--------------------------------------------------------------------===//
 
   /// All operations within Quiccir can be inlined.
-  bool isLegalToInline(Operation *, Region *, bool,
-                       IRMapping &) const final {
+  bool isLegalToInline(Operation *call, Operation *callable,
+                       bool wouldBeCloned) const final {
     return true;
   }
 
+  /// All operations within Quiccir can be inlined.
+  bool isLegalToInline(Operation *, Region *, bool, IRMapping &) const final {
+    return true;
+  }
+
+  // All functions within Quiccir can be inlined.
+  bool isLegalToInline(Region *, Region *, bool, IRMapping &) const final {
+    return true;
+  }
+
+  //===--------------------------------------------------------------------===//
+  // Transformation Hooks
+  //===--------------------------------------------------------------------===//
+
+  /// Attempts to materialize a conversion for a type mismatch between a call
+  /// from this dialect, and a callable region. This method should generate an
+  /// operation that takes 'input' as the only operand, and produces a single
+  /// result of 'resultType'. If a conversion can not be generated, nullptr
+  /// should be returned.
+  Operation *materializeCallConversion(OpBuilder &builder, Value input,
+                                       Type resultType,
+                                       Location conversionLoc) const final {
+    return builder.create<tensor::CastOp>(conversionLoc, resultType, input);
+  }
 };
-
-//===----------------------------------------------------------------------===//
-// Quiccir dialect.
-//===----------------------------------------------------------------------===//
-
-void QuiccirDialect::initialize() {
-  /// Add the defined operations in the dialect.
-  addOperations<
-#define GET_OP_LIST
-#include "Quiccir/IR/QuiccirOps.cpp.inc"
-      >();
-
-  addInterfaces<QuiccirInlinerInterface>();
-
-  registerTypes();
-}
 
 //===----------------------------------------------------------------------===//
 // DeallocOp
@@ -198,13 +207,20 @@ mlir::LogicalResult FrPOp::verify() {
   // right most is first logical
   auto modShape = modType.getShape();
   auto valShape = resultType.getShape();
-  if (modShape[0] != valShape[0]) {
+
+  if ((valShape[0] != ShapedType::kDynamic &&
+       modShape[0] != ShapedType::kDynamic) &&
+      modShape[0] != valShape[0]) {
     return emitError()
-           << "expected result first dimension to match mod first dimension";
+      << "expected result first dimension " << valShape[0]
+      << "to match mod first dimension " << modShape[0];
   }
-  if (modShape[2] != valShape[2]) {
+  if ((valShape[2] != ShapedType::kDynamic &&
+       modShape[2] != ShapedType::kDynamic) &&
+      modShape[2] != valShape[2]) {
     return emitError()
-           << "expected result third dimension to match mod third dimension";
+      << "expected result third dimension " << valShape[2]
+      << "to match mod third dimension " << modShape[2];
   }
 
   // Todo: check dim attribute consistency if available
@@ -241,13 +257,20 @@ mlir::LogicalResult FrIOp::verify() {
   // right most is first logical
   auto physShape = physType.getShape();
   auto valShape = resultType.getShape();
-  if (physShape[0] != valShape[0]) {
+
+  if ((valShape[0] != ShapedType::kDynamic &&
+       physShape[0] != ShapedType::kDynamic) &&
+      physShape[0] != valShape[0]) {
     return emitError()
-           << "expected result first dimension to match phys first dimension";
+      << "expected result first dimension " << valShape[0]
+      << "to match phys first dimension " << physShape[0];
   }
-  if (physShape[2] != valShape[2]) {
+  if ((valShape[2] != ShapedType::kDynamic &&
+       physShape[2] != ShapedType::kDynamic) &&
+      physShape[2] != valShape[2]) {
     return emitError()
-           << "expected result third dimension to match phys third dimension";
+      << "expected result third dimension " << valShape[2]
+      << "to match phys third dimension " << physShape[2];
   }
 
   // Todo: check dim attribute consistency if available
@@ -284,13 +307,20 @@ mlir::LogicalResult AlPOp::verify() {
   // right most is first logical
   auto modShape = modType.getShape();
   auto valShape = resultType.getShape();
-  if (modShape[0] != valShape[0]) {
+
+  if ((valShape[0] != ShapedType::kDynamic &&
+       modShape[0] != ShapedType::kDynamic) &&
+      modShape[0] != valShape[0]) {
     return emitError()
-           << "expected result first dimension to match mod first dimension";
+      << "expected result first dimension " << valShape[0]
+      << "to match mod first dimension " << modShape[0];
   }
-  if (modShape[2] != valShape[2]) {
+  if ((valShape[2] != ShapedType::kDynamic &&
+       modShape[2] != ShapedType::kDynamic) &&
+      modShape[2] != valShape[2]) {
     return emitError()
-           << "expected result third dimension to match mod third dimension";
+      << "expected result third dimension " << valShape[2]
+      << "to match mod third dimension " << modShape[2];
   }
 
   // Todo: check dim attribute consistency if available
@@ -327,13 +357,20 @@ mlir::LogicalResult AlIOp::verify() {
   // right most is first logical
   auto physShape = physType.getShape();
   auto valShape = resultType.getShape();
-  if (physShape[0] != valShape[0]) {
+
+  if ((valShape[0] != ShapedType::kDynamic &&
+       physShape[0] != ShapedType::kDynamic) &&
+      physShape[0] != valShape[0]) {
     return emitError()
-           << "expected result first dimension to match phys first dimension";
+      << "expected result first dimension " << valShape[0]
+      << "to match phys first dimension " << physShape[0];
   }
-  if (physShape[2] != valShape[2]) {
+  if ((valShape[2] != ShapedType::kDynamic &&
+       physShape[2] != ShapedType::kDynamic) &&
+      physShape[2] != valShape[2]) {
     return emitError()
-           << "expected result third dimension to match phys third dimension";
+      << "expected result third dimension " << valShape[2]
+      << "to match phys third dimension " << physShape[2];
   }
 
   // Todo: check dim attribute consistency if available
@@ -370,15 +407,21 @@ mlir::LogicalResult JWPOp::verify() {
   // right most is first logical
   auto modShape = modType.getShape();
   auto valShape = resultType.getShape();
-  if (modShape[0] != valShape[0]) {
-    return emitError()
-           << "expected result first dimension to match mod first dimension";
-  }
-  if (modShape[2] != valShape[2]) {
-    return emitError()
-           << "expected result third dimension to match mod third dimension";
-  }
 
+  if ((valShape[0] != ShapedType::kDynamic &&
+       modShape[0] != ShapedType::kDynamic) &&
+      modShape[0] != valShape[0]) {
+    return emitError()
+      << "expected result first dimension " << valShape[0]
+      << "to match mod first dimension " << modShape[0];
+  }
+  if ((valShape[2] != ShapedType::kDynamic &&
+       modShape[2] != ShapedType::kDynamic) &&
+      modShape[2] != valShape[2]) {
+    return emitError()
+      << "expected result third dimension " << valShape[2]
+      << "to match mod third dimension " << modShape[2];
+  }
   // Todo: check dim attribute consistency if available
 
   return mlir::success();
@@ -413,16 +456,39 @@ mlir::LogicalResult JWIOp::verify() {
   // right most is first logical
   auto physShape = physType.getShape();
   auto valShape = resultType.getShape();
-  if (physShape[0] != valShape[0]) {
+
+  if ((valShape[0] != ShapedType::kDynamic &&
+       physShape[0] != ShapedType::kDynamic) &&
+      physShape[0] != valShape[0]) {
     return emitError()
-           << "expected result first dimension to match phys first dimension";
+      << "expected result first dimension " << valShape[0]
+      << "to match phys first dimension " << physShape[0];
   }
-  if (physShape[2] != valShape[2]) {
+  if ((valShape[2] != ShapedType::kDynamic &&
+       physShape[2] != ShapedType::kDynamic) &&
+      physShape[2] != valShape[2]) {
     return emitError()
-           << "expected result third dimension to match phys third dimension";
+      << "expected result third dimension " << valShape[2]
+      << "to match phys third dimension " << physShape[2];
   }
 
   // Todo: check dim attribute consistency if available
 
   return mlir::success();
+}
+
+//===----------------------------------------------------------------------===//
+// QuiccirDialect
+//===----------------------------------------------------------------------===//
+
+void QuiccirDialect::initialize() {
+  /// Add the defined operations in the dialect.
+  addOperations<
+#define GET_OP_LIST
+#include "Quiccir/IR/QuiccirOps.cpp.inc"
+      >();
+
+  addInterfaces<QuiccirInlinerInterface>();
+
+  registerTypes();
 }
