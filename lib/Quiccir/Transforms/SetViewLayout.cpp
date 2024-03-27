@@ -43,17 +43,17 @@ LogicalResult QuiccirSetViewLayout::initializeOptions(StringRef options) {
     layout[0][0] = "layPPP";
     layout[0][1] = "layMPP";
   }
-   if (layOne.size() == 2) {
-    layout[0][0] = layOne[0];
-    layout[0][1] = layOne[1];
+  if (layOne.size() == 2) {
+    layout[1][0] = layOne[0];
+    layout[1][1] = layOne[1];
   }
   else {
     layout[1][0] = "layPMP";
     layout[1][1] = "layMMP";
   }
    if (layTwo.size() == 2) {
-    layout[0][0] = layTwo[0];
-    layout[0][1] = layTwo[1];
+    layout[2][0] = layTwo[0];
+    layout[2][1] = layTwo[1];
   }
   else {
     layout[2][0] = "layPMM";
