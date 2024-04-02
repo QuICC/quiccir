@@ -41,7 +41,7 @@ mlir::Type ViewType::parse(AsmParser &parser) {
   // Parse the size and elementType.
   SmallVector<int64_t> shape;
   Type elementType;
-  if (parser.parseDimensionList(shape, /*allowDynamic=*/false) ||
+  if (parser.parseDimensionList(shape, /*allowDynamic=*/true) ||
       parser.parseType(elementType))
     return nullptr;
   // Parse ','
@@ -63,7 +63,12 @@ mlir::Type ViewType::parse(AsmParser &parser) {
 void ViewType::print(AsmPrinter &printer) const {
   printer << "<";
   for (int64_t dim : getShape()) {
-    printer << dim;
+    if (dim == ShapedType::kDynamic) {
+      printer << '?';
+    }
+    else {
+      printer << dim;
+    }
     printer << 'x';
   }
   printer << getElementType();
