@@ -69,7 +69,8 @@ struct OpLowering : public ConversionPattern {
         }
       }
       // otherwise we need to insert a quicc.alloc
-      Value buffer = rewriter.create<AllocOp>(loc, retViewType, operandBuffer, op->getName().getStringRef());
+      std::string prodStr = op->getName().getStringRef().str()+perm2str(op);
+      Value buffer = rewriter.create<AllocOp>(loc, retViewType, operandBuffer, prodStr);
       // Make sure to allocate at the beginning of the block.
       // auto *parentBlock = buffer.getDefiningOp()->getBlock();
       // buffer.getDefiningOp()->moveBefore(&parentBlock->front());
