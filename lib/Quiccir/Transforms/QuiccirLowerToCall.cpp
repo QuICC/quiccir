@@ -103,14 +103,22 @@ struct OpLowering : public ConversionPattern {
     auto implPtr = rewriter.create<LLVM::ExtractValueOp>(loc, implArray, index);
 
     // opaque ptr to implementation becomes first operand
-    SmallVector <Type, 4> typeOperands = {implPtr.getType(), retViewType, operandBuffer.getType()};
+    // SmallVector <Type, 4> typeOperands = {implPtr.getType(), retViewType, operandBuffer.getType()};
+    SmallVector <Type, 4> typeOperands = {implPtr.getType(), retViewType};
+    for (auto val : operands) {
+      typeOperands.push_back(val.getType());
+    }
 
     // return val becomes second operand
     auto libraryCallSymbol = getLibraryCallSymbolRef<Top>(op, rewriter, typeOperands);
     if (failed(libraryCallSymbol))
       return failure();
 
-    SmallVector<Value, 4> newOperands = {implPtr, retBuffer, operandBuffer};
+    // SmallVector<Value, 4> newOperands = {implPtr, retBuffer, operandBuffer};
+    SmallVector<Value, 4> newOperands = {implPtr, retBuffer};
+    for (auto val : operands) {
+      newOperands.push_back(val);
+    }
     rewriter.create<func::CallOp>(
         loc, libraryCallSymbol->getValue(), TypeRange(), newOperands);
 
