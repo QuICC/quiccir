@@ -76,7 +76,7 @@ void setMissingLayout(Value val, llvm::StringRef enc) {
 }
 
 void QuiccirSetViewLayout::runOnOperation() {
-  auto module = getOperation();
+  // auto module = getOperation();
   auto *ctx = &getContext();
 
   RewritePatternSet patterns(ctx);
