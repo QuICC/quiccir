@@ -99,7 +99,7 @@ struct OpLowering : public ConversionPattern {
     if (!cast<Top>(*op).getImplptr()) {
         return rewriter.notifyMatchFailure(op, "Implementation attribute is missing");
     }
-    ArrayRef<int64_t> index = cast<Top>(*op).getImplptr().value();
+    SmallVector<int64_t, 1> index = {static_cast<int64_t>(cast<Top>(*op).getImplptr().value())};
     auto implPtr = rewriter.create<LLVM::ExtractValueOp>(loc, implArray, index);
 
     // opaque ptr to implementation becomes first operand
