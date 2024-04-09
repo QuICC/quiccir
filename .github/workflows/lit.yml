@@ -27,7 +27,26 @@ jobs:
           ls
           mkdir build && cd build
           cmake -G Ninja .. \
+          -DCMAKE_BUILD_TYPE=Release \
           -DMLIR_DIR=/lib/llvm-17/lib/cmake/mlir \
           -DLLVM_EXTERNAL_LIT=/usr/local/bin/lit
           ninja check-quiccir
 
+  test-debug-lit:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    container: docker.io/giacasti/ubuntu-llvm:22.04-17
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+
+      - name: build & test
+        run: |
+          ls
+          mkdir build && cd build
+          cmake -G Ninja .. \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DMLIR_DIR=/lib/llvm-17/lib/cmake/mlir \
+          -DLLVM_EXTERNAL_LIT=/usr/local/bin/lit
+          ninja check-quiccir
