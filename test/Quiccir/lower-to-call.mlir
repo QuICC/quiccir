@@ -72,4 +72,16 @@ module {
     %tra = quiccir.sub %at, %bt : tensor<16x2x3xf32, "layoutIn">, tensor<16x2x3xf32, "layoutIn"> -> tensor<16x2x3xf32, "layoutIn"> attributes{implptr = 0 :i64}
     return
     }
+
+    // create new buffer
+    func.func @entryAddAlloc(%thisArr: !llvm.ptr<array<1 x ptr>>, %a: !quiccir.view<16x2x3xf32, "layoutIn">, %b: !quiccir.view<16x2x3xf32, "layoutIn">) {
+    %at = builtin.unrealized_conversion_cast %a : !quiccir.view<16x2x3xf32, "layoutIn"> to tensor<16x2x3xf32, "layoutIn">
+    %bt = builtin.unrealized_conversion_cast %b : !quiccir.view<16x2x3xf32, "layoutIn"> to tensor<16x2x3xf32, "layoutIn">
+    // CHECK: %{{.*}} = quiccir.alloc(%{{.*}}) : !quiccir.view<16x2x3xf32, "layoutIn"> -> !quiccir.view<16x2x3xf32, "layoutIn"> {producer = "quiccir.add"}
+    // CHECK: %{{.*}} = llvm.load %{{.*}} : !llvm.ptr<array<1 x ptr>>
+    // CHECK: %[[THIS:.*]] = llvm.extractvalue %{{.*}}[0] : !llvm.array<1 x ptr>
+    // CHECK: call @_ciface_quiccir_add_layoutIn_layoutIn_layoutIn(%[[THIS]], %{{.*}}, %{{.*}}, %{{.*}}) : (!llvm.ptr, !quiccir.view<16x2x3xf32, "layoutIn">, !quiccir.view<16x2x3xf32, "layoutIn">, !quiccir.view<16x2x3xf32, "layoutIn">) -> ()
+    %tra = quiccir.add %at, %bt : tensor<16x2x3xf32, "layoutIn">, tensor<16x2x3xf32, "layoutIn"> -> tensor<16x2x3xf32, "layoutIn"> attributes{implptr = 0 :i64}
+    return
+    }
 }
