@@ -83,27 +83,49 @@ void QuiccirSetViewLayout::runOnOperation() {
   ConversionTarget target(*ctx);
 
   // Walk from root func
+  /// \todo clean-up with op traits
   WalkResult result = getOperation()->walk([&](Operation* op) {
       if (auto frIntOp = dyn_cast<FrIOp>(op)) {
         // set attributes if not set
-        Value in = frIntOp.getPhys();
-        setMissingLayout(in, layout[0][0]);
-        Value ret = frIntOp.getMods();
-        setMissingLayout(ret, layout[0][1]);
+        Value phys = frIntOp.getPhys();
+        setMissingLayout(phys, layout[0][0]);
+        Value mods = frIntOp.getMods();
+        setMissingLayout(mods, layout[0][1]);
+       }
+      if (auto frPrjOp = dyn_cast<FrPOp>(op)) {
+        // set attributes if not set
+        Value phys = frPrjOp.getPhys();
+        setMissingLayout(phys, layout[0][0]);
+        Value mods = frPrjOp.getMods();
+        setMissingLayout(mods, layout[0][1]);
        }
       if (auto alIntOp = dyn_cast<AlIOp>(op)) {
         // set attributes if not set
-        Value in = alIntOp.getPhys();
-        setMissingLayout(in, layout[1][0]);
-        Value ret = alIntOp.getMods();
-        setMissingLayout(ret, layout[1][1]);
+        Value phys = alIntOp.getPhys();
+        setMissingLayout(phys, layout[1][0]);
+        Value mods = alIntOp.getMods();
+        setMissingLayout(mods, layout[1][1]);
+      }
+      if (auto alPrjOp = dyn_cast<AlPOp>(op)) {
+        // set attributes if not set
+        Value phys = alPrjOp.getPhys();
+        setMissingLayout(phys, layout[1][0]);
+        Value mods = alPrjOp.getMods();
+        setMissingLayout(mods, layout[1][1]);
       }
       if (auto jwIntOp = dyn_cast<JWIOp>(op)) {
         // set attributes if not set
-        Value in = jwIntOp.getPhys();
-        setMissingLayout(in, layout[2][0]);
-        Value ret = jwIntOp.getMods();
-        setMissingLayout(ret, layout[2][1]);
+        Value phys = jwIntOp.getPhys();
+        setMissingLayout(phys, layout[2][0]);
+        Value mods = jwIntOp.getMods();
+        setMissingLayout(mods, layout[2][1]);
+      }
+      if (auto jwPrjOp = dyn_cast<JWPOp>(op)) {
+        // set attributes if not set
+        Value phys = jwPrjOp.getPhys();
+        setMissingLayout(phys, layout[2][0]);
+        Value mods = jwPrjOp.getMods();
+        setMissingLayout(mods, layout[2][1]);
       }
       // if (failed(deallocateBuffers(op)))
       //   return WalkResult::interrupt();
