@@ -97,14 +97,21 @@ mlir::LogicalResult MaterializeOp::verify() {
       << viewType.getRank();
   }
 
-  // Check size
-  if (tensorType.getShape() != viewType.getShape()) {
-    return emitOpError()
-      << "shape mismatch, tensor="
-      << tensorType.getShape()
-      << " while view="
-      << viewType.getShape();
+  // Check shape
+  auto tensorShape = tensorType.getShape();
+  auto viewShape = viewType.getShape();
+
+  for (std::size_t i = 0; i < tensorShape.size(); ++i) {
+    if (tensorShape[i] == ShapedType::kDynamic) {
+      continue;
+    }
+    if (tensorShape[i] != viewShape[i]){
+      return emitError()
+        << "shape mismatch, tensor= " << tensorShape
+        << " while view= " << viewShape;
+    }
   }
+
 
   // Check element type
   if (tensorType.getElementType() != viewType.getElementType()) {
@@ -213,14 +220,14 @@ mlir::LogicalResult FrPOp::verify() {
       modShape[0] != valShape[0]) {
     return emitError()
       << "expected result first dimension " << valShape[0]
-      << "to match mod first dimension " << modShape[0];
+      << " to match mod first dimension " << modShape[0];
   }
   if ((valShape[2] != ShapedType::kDynamic &&
        modShape[2] != ShapedType::kDynamic) &&
       modShape[2] != valShape[2]) {
     return emitError()
       << "expected result third dimension " << valShape[2]
-      << "to match mod third dimension " << modShape[2];
+      << " to match mod third dimension " << modShape[2];
   }
 
   // Todo: check dim attribute consistency if available
@@ -263,14 +270,14 @@ mlir::LogicalResult FrIOp::verify() {
       physShape[0] != valShape[0]) {
     return emitError()
       << "expected result first dimension " << valShape[0]
-      << "to match phys first dimension " << physShape[0];
+      << " to match phys first dimension " << physShape[0];
   }
   if ((valShape[2] != ShapedType::kDynamic &&
        physShape[2] != ShapedType::kDynamic) &&
       physShape[2] != valShape[2]) {
     return emitError()
       << "expected result third dimension " << valShape[2]
-      << "to match phys third dimension " << physShape[2];
+      << " to match phys third dimension " << physShape[2];
   }
 
   // Todo: check dim attribute consistency if available
@@ -313,14 +320,14 @@ mlir::LogicalResult AlPOp::verify() {
       modShape[0] != valShape[0]) {
     return emitError()
       << "expected result first dimension " << valShape[0]
-      << "to match mod first dimension " << modShape[0];
+      << " to match mod first dimension " << modShape[0];
   }
   if ((valShape[2] != ShapedType::kDynamic &&
        modShape[2] != ShapedType::kDynamic) &&
       modShape[2] != valShape[2]) {
     return emitError()
       << "expected result third dimension " << valShape[2]
-      << "to match mod third dimension " << modShape[2];
+      << " to match mod third dimension " << modShape[2];
   }
 
   // Todo: check dim attribute consistency if available
@@ -363,14 +370,14 @@ mlir::LogicalResult AlIOp::verify() {
       physShape[0] != valShape[0]) {
     return emitError()
       << "expected result first dimension " << valShape[0]
-      << "to match phys first dimension " << physShape[0];
+      << " to match phys first dimension " << physShape[0];
   }
   if ((valShape[2] != ShapedType::kDynamic &&
        physShape[2] != ShapedType::kDynamic) &&
       physShape[2] != valShape[2]) {
     return emitError()
       << "expected result third dimension " << valShape[2]
-      << "to match phys third dimension " << physShape[2];
+      << " to match phys third dimension " << physShape[2];
   }
 
   // Todo: check dim attribute consistency if available
@@ -413,14 +420,14 @@ mlir::LogicalResult JWPOp::verify() {
       modShape[0] != valShape[0]) {
     return emitError()
       << "expected result first dimension " << valShape[0]
-      << "to match mod first dimension " << modShape[0];
+      << " to match mod first dimension " << modShape[0];
   }
   if ((valShape[2] != ShapedType::kDynamic &&
        modShape[2] != ShapedType::kDynamic) &&
       modShape[2] != valShape[2]) {
     return emitError()
       << "expected result third dimension " << valShape[2]
-      << "to match mod third dimension " << modShape[2];
+      << " to match mod third dimension " << modShape[2];
   }
   // Todo: check dim attribute consistency if available
 
@@ -462,14 +469,14 @@ mlir::LogicalResult JWIOp::verify() {
       physShape[0] != valShape[0]) {
     return emitError()
       << "expected result first dimension " << valShape[0]
-      << "to match phys first dimension " << physShape[0];
+      << " to match phys first dimension " << physShape[0];
   }
   if ((valShape[2] != ShapedType::kDynamic &&
        physShape[2] != ShapedType::kDynamic) &&
       physShape[2] != valShape[2]) {
     return emitError()
       << "expected result third dimension " << valShape[2]
-      << "to match phys third dimension " << physShape[2];
+      << " to match phys third dimension " << physShape[2];
   }
 
   // Todo: check dim attribute consistency if available

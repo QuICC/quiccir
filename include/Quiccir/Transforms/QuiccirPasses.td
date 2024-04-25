@@ -60,17 +60,19 @@ def QuiccirSetViewLayout : Pass<"set-quiccir-view-lay", "func::FuncOp"> {
   ];
 }
 
-// def QuiccirLowerToLinalg : Pass<"convert-quiccir-to-linalg", "func::FuncOp"> {
-//   let summary = "Lower the operations from the quiccir dialect into linalg "
-//                 "loops";
-//   let constructor = "mlir::quiccir::createLowerToLinalgPass()";
-//   let dependentDialects = [
-//     "tosa::TosaDialect",
-//     "AffineDialect",
-//     "linalg::LinalgDialect",
-//     "func::FuncDialect",
-//     "memref::MemRefDialect",
-//     "bufferization::BufferizationDialect"];
-// }
+def QuiccirSetDimensions : Pass<"set-quiccir-dims", "func::FuncOp"> {
+  let summary = "Set View layout based on options and ops";
+  let constructor = "mlir::quiccir::createSetDimensionsPass()";
+  let dependentDialects = [
+    "func::FuncDialect",
+    "LLVM::LLVMDialect"];
+   let options = [
+    ListOption<"physDim", "phys", "int64_t",
+           "Set Dimensions for physical space">,
+    ListOption<"modsDim", "mods", "int64_t",
+           "Set Dimensions for modal space">,
+  ];
+}
+
 
 #endif // QUICCIR_QUICCIRPASSES
