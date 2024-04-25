@@ -110,7 +110,7 @@ void QuiccirSetDimensions::runOnOperation() {
         Value mods = jwIntOp.getMods();
         setMissingDimensions(mods, modsDim);
       }
-      if (auto frPrjOp = dyn_cast<FrIOp>(op)) {
+      if (auto frPrjOp = dyn_cast<FrPOp>(op)) {
         // set dimensions if not set
         Value phys = frPrjOp.getPhys();
         llvm::SmallVector<int64_t, 3> physDim{_phys[0], _phys[1], _phys[2]};
@@ -119,7 +119,7 @@ void QuiccirSetDimensions::runOnOperation() {
         Value mods = frPrjOp.getMods();
         setMissingDimensions(mods, modsDim);
       }
-      if (auto alPrjOp = dyn_cast<AlIOp>(op)) {
+      if (auto alPrjOp = dyn_cast<AlPOp>(op)) {
         // set dimensions if not set
         Value phys = alPrjOp.getPhys();
         llvm::SmallVector<int64_t, 3> physDim{_mods[1], _phys[2], _phys[0]};
@@ -128,7 +128,7 @@ void QuiccirSetDimensions::runOnOperation() {
         Value mods = alPrjOp.getMods();
         setMissingDimensions(mods, modsDim);
       }
-      if (auto jwPrjOp = dyn_cast<JWIOp>(op)) {
+      if (auto jwPrjOp = dyn_cast<JWPOp>(op)) {
         // set dimensions if not set
         Value phys = jwPrjOp.getPhys();
         llvm::SmallVector<int64_t, 3> physDim{_mods[2], _phys[0], _mods[1]};

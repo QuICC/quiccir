@@ -126,6 +126,51 @@ mlir::LogicalResult MaterializeOp::verify() {
 }
 
 //===----------------------------------------------------------------------===//
+// TramsposeOp
+//===----------------------------------------------------------------------===//
+
+mlir::LogicalResult TransposeOp::verify() {
+  auto opTensorType = getOperand().getType().dyn_cast<RankedTensorType>();
+  auto transposeType = getType().dyn_cast<RankedTensorType>();
+
+  // Check rank
+  if (opTensorType.getRank() != transposeType.getRank()) {
+    return emitOpError()
+      << "rank mismatch, tensor="
+      << opTensorType.getRank()
+      << " while tranpose="
+      << transposeType.getRank();
+  }
+
+  // Check shape
+  auto opTensorShape = opTensorType.getShape();
+  auto transposeShape = transposeType.getShape();
+
+  // Get permutation
+  auto perm = getPermutation();
+
+  for (std::size_t i = 0; i < opTensorShape.size(); ++i) {
+    if (opTensorShape[i] != transposeShape[perm[i]]){
+      return emitError()
+        << "shape mismatch, tensor= " << opTensorShape
+        << " while transpose= " << transposeShape;
+    }
+  }
+
+
+  // Check element type
+  if (opTensorType.getElementType() != transposeType.getElementType()) {
+    return emitOpError()
+      << "type mismatch, tensor="
+      << opTensorType.getElementType()
+      << " while transpose="
+      << transposeType.getElementType();
+  }
+
+  return mlir::success();
+}
+
+//===----------------------------------------------------------------------===//
 // QuadratureOp
 //===----------------------------------------------------------------------===//
 
