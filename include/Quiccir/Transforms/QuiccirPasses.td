@@ -79,19 +79,15 @@ def QuiccirViewWrapper : Pass<"quiccir-view-wrapper", "ModuleOp"> {
   let constructor = "mlir::quiccir::createViewWrapperPass()";
   let dependentDialects = [
     "func::FuncDialect",
-    "LLVM::LLVMDialect"];
+    "quiccir::QuiccirDialect"];
    let options = [
-    Option<"args", "args", "int64_t", /*default=*/"",
-           "Set number of input arguments">,
-    Option<"rets", "rets", "int64_t", /*default=*/"",
-           "Set number of return values">,
     ListOption<"argsDim", "dim-args", "int64_t",
            "Set Dimensions for arguments">,
     ListOption<"retsDim", "dim-rets", "int64_t",
            "Set Dimensions for returns">,
-    Option<"layArgs", "lay-args", "std::string", /*default=*/"",
+    Option<"layArgs", "lay-args", "std::string", /*default=*/"\"argLay\"",
            "Set View Layout for arguments">,
-    Option<"laRets", "lay-rets", "std::string", /*default=*/"",
+    Option<"layRets", "lay-rets", "std::string", /*default=*/"\"retLay\"",
            "Set View Layout for returns">
   ];
 }

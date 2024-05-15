@@ -13,6 +13,8 @@
 #include "Quiccir/Transforms/TypeConverter.h"
 
 #include "mlir/Dialect/Func/Transforms/FuncConversions.h"
+#include "llvm/Support/Error.h"
+#include "llvm/Support/Errc.h"
 
 using namespace mlir;
 using namespace mlir::quiccir;
@@ -20,11 +22,30 @@ using namespace mlir::quiccir;
 namespace {
 
 
+llvm::Expected<Type> setDimensionsEncoding(MLIRContext* ctx, Type valTy,
+  llvm::ArrayRef<std::int64_t> dims, std::string encoding) {
+  if (auto tensor = valTy.dyn_cast<RankedTensorType>()) {
+    auto eleTy = tensor.getElementType();
+    Attribute attEnc = get<StringAttr>(ctx, encoding);
+    auto plusDymsTy = get<RankedTensorType>(ctx, dims, eleTy,attEnc);
+    return plusDymsTy;
+  }
+  return llvm::createStringError(llvm::errc::invalid_argument, "Not a tensor");
+}
+
+
 struct QuiccirViewWrapperPass : public QuiccirViewWrapperBase<QuiccirViewWrapperPass> {
   using QuiccirViewWrapperBase<QuiccirViewWrapperPass>::QuiccirViewWrapperBase;
   void runOnOperation() final {
     auto module = getOperation();
-    // auto *ctx = &getContext();
+    auto *ctx = &getContext();
+
+    if (argsDim.size() == 0) {
+      module->emitError("missing dim-args option");
+    }
+    if (retsDim.size() == 0) {
+      module->emitError("missing dim-rets option");
+    }
 
     // Count func ops, there should be only one at this point
     std::size_t nFunc = 0;
@@ -33,6 +54,7 @@ struct QuiccirViewWrapperPass : public QuiccirViewWrapperBase<QuiccirViewWrapper
     });
 
     if (nFunc > 1) {
+      module->emitError("there should be only one function for this pass.");
       signalPassFailure();
       return;
     }
@@ -52,10 +74,18 @@ struct QuiccirViewWrapperPass : public QuiccirViewWrapperBase<QuiccirViewWrapper
       auto nIn = funcTy.getNumInputs();
       SmallVector<Type, 4> viewArgsTy;
       for (auto ty : retsTy) {
-        viewArgsTy.push_back(cnv.convertTensor(dyn_cast<RankedTensorType>(ty)));
+        llvm::Expected<Type> TypeOrError = setDimensionsEncoding(ctx, ty, {1,1,1}, layRets);
+        if (!TypeOrError) {
+          module->emitError(toString(TypeOrError.takeError()));
+        }
+        viewArgsTy.push_back(cnv.convertTensor(dyn_cast<RankedTensorType>(TypeOrError.get())));
       }
       for (auto ty : argsTy) {
-        viewArgsTy.push_back(cnv.convertTensor(dyn_cast<RankedTensorType>(ty)));
+        llvm::Expected<Type> TypeOrError = setDimensionsEncoding(ctx, ty, {2,2,2}, layArgs);
+        if (!TypeOrError) {
+          module->emitError(toString(TypeOrError.takeError()));
+        }
+        viewArgsTy.push_back(cnv.convertTensor(dyn_cast<RankedTensorType>(TypeOrError.get())));
       }
 
       // Insert func
@@ -69,29 +99,32 @@ struct QuiccirViewWrapperPass : public QuiccirViewWrapperBase<QuiccirViewWrapper
       builder.setInsertionPointToEnd(viewFuncBody);
       // Add casts view args -> tensors
       auto nArgs = viewFuncOp.getFunctionType().getNumInputs();
-      SmallVector<Value, 4> viewValues;
       SmallVector<Value, 4> callValues;
       auto nOut = nArgs - nIn;
       for (unsigned i = 0; i < nIn; ++i) {
         // FuncOp has not operands, get them from block
         Value arg = viewFuncBody->getArguments()[nOut+i];
-        // Value arg = viewFuncOp->getOperand(nOut+i);
         auto argCall = builder.create<UnrealizedConversionCastOp>(loc, argsTy[i], arg);
         callValues.push_back(argCall->getResult(0));
       }
-
       // Call to original tensor func
       auto call = builder.create<func::CallOp>(loc, funcOp, callValues);
       // Materialize returns to views
-
+      for (unsigned i = 0; i < nOut; ++i) {
+        // FuncOp has not operands, get them from block
+        Value view = viewFuncBody->getArguments()[i];
+        Value tensor = call->getResult(i);
+        builder.create<quiccir::MaterializeOp>(loc, tensor, view);
+      }
+      // Block terminator
       builder.create<func::ReturnOp>(loc);
-
     });
 
   }
 };
 } // namespace
 
-std::unique_ptr<Pass> mlir::quiccir::createViewWrapperPass() {
+std::unique_ptr<Pass> mlir::quiccir::createViewWrapperPass(
+  const QuiccirViewWrapperOptions &options) {
   return std::make_unique<QuiccirViewWrapperPass>();
 }

@@ -17,6 +17,8 @@
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Pass/Pass.h"
 
+#include "Quiccir/IR/QuiccirDialect.h"
+
 namespace mlir {
 namespace quiccir {
 

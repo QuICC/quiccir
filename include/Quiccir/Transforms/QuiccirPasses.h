@@ -10,9 +10,12 @@
 
 #include "mlir/Pass/Pass.h"
 
-
 namespace mlir {
 namespace quiccir {
+
+/// Generate the code for options
+#define GEN_PASS_DECL_QUICCIRVIEWWRAPPER
+#include "Quiccir/Transforms/QuiccirPasses.h.inc"
 
 /// Create a pass for adding quiccir deallocation ops
 std::unique_ptr<mlir::Pass> createViewDeallocationPass();
@@ -37,7 +40,8 @@ std::unique_ptr<mlir::Pass> createSetDimensionsPass(
     llvm::ArrayRef<int64_t> mods = {});
 
 /// Create a pass for adding a view wrapper for entry point
-std::unique_ptr<mlir::Pass> createViewWrapperPass();
+static QuiccirViewWrapperOptions defaultViewWrapper;
+std::unique_ptr<mlir::Pass> createViewWrapperPass(const QuiccirViewWrapperOptions &options = defaultViewWrapper);
 
 
 //===----------------------------------------------------------------------===//
