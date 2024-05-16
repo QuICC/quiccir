@@ -13,6 +13,7 @@
 #include "Quiccir/Transforms/TypeConverter.h"
 
 #include "mlir/Dialect/Func/Transforms/FuncConversions.h"
+#include "mlir/Dialect/LLVMIR/LLVMTypes.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/Errc.h"
 
@@ -40,11 +41,15 @@ struct QuiccirViewWrapperPass : public QuiccirViewWrapperBase<QuiccirViewWrapper
     auto module = getOperation();
     auto *ctx = &getContext();
 
-    if (argsDim.size() == 0) {
+    if (dimArgs.size() == 0) {
       module->emitError("missing dim-args option");
+      signalPassFailure();
+      return;
     }
-    if (retsDim.size() == 0) {
+    if (dimRets.size() == 0) {
       module->emitError("missing dim-rets option");
+      signalPassFailure();
+      return;
     }
 
     // Count func ops, there should be only one at this point
@@ -63,7 +68,7 @@ struct QuiccirViewWrapperPass : public QuiccirViewWrapperBase<QuiccirViewWrapper
       OpBuilder builder(funcOp);
 
       // Set name
-      std::string wrapperName = "wrapper_";
+      std::string wrapperName = "_view_";
       wrapperName += funcOp.getSymName().str();
 
       // Set input / outputs types
@@ -73,15 +78,21 @@ struct QuiccirViewWrapperPass : public QuiccirViewWrapperBase<QuiccirViewWrapper
       auto argsTy = funcTy.getInputs();
       auto nIn = funcTy.getNumInputs();
       SmallVector<Type, 4> viewArgsTy;
+      // Add ptr array
+      /// \todo count how many operators are needed
+      Type arrTy = LLVM::LLVMArrayType::get(ctx, LLVM::LLVMPointerType::get(ctx),
+      20);
+      Type ptrTy = LLVM::LLVMPointerType::get(arrTy);
+      viewArgsTy.push_back(ptrTy);
       for (auto ty : retsTy) {
-        llvm::Expected<Type> TypeOrError = setDimensionsEncoding(ctx, ty, {1,1,1}, layRets);
+        llvm::Expected<Type> TypeOrError = setDimensionsEncoding(ctx, ty, dimRets, layRets);
         if (!TypeOrError) {
           module->emitError(toString(TypeOrError.takeError()));
         }
         viewArgsTy.push_back(cnv.convertTensor(dyn_cast<RankedTensorType>(TypeOrError.get())));
       }
       for (auto ty : argsTy) {
-        llvm::Expected<Type> TypeOrError = setDimensionsEncoding(ctx, ty, {2,2,2}, layArgs);
+        llvm::Expected<Type> TypeOrError = setDimensionsEncoding(ctx, ty, dimArgs, layArgs);
         if (!TypeOrError) {
           module->emitError(toString(TypeOrError.takeError()));
         }
@@ -98,26 +109,29 @@ struct QuiccirViewWrapperPass : public QuiccirViewWrapperBase<QuiccirViewWrapper
       Block *viewFuncBody = viewFuncOp.addEntryBlock();
       builder.setInsertionPointToEnd(viewFuncBody);
       // Add casts view args -> tensors
-      auto nArgs = viewFuncOp.getFunctionType().getNumInputs();
+      auto nArgs = viewFuncOp.getFunctionType().getNumInputs()-1;
       SmallVector<Value, 4> callValues;
       auto nOut = nArgs - nIn;
       for (unsigned i = 0; i < nIn; ++i) {
         // FuncOp has not operands, get them from block
-        Value arg = viewFuncBody->getArguments()[nOut+i];
+        Value arg = viewFuncBody->getArguments()[nOut+i+1];
         auto argCall = builder.create<UnrealizedConversionCastOp>(loc, argsTy[i], arg);
         callValues.push_back(argCall->getResult(0));
       }
       // Call to original tensor func
+      /// \todo copy body of original function
       auto call = builder.create<func::CallOp>(loc, funcOp, callValues);
       // Materialize returns to views
       for (unsigned i = 0; i < nOut; ++i) {
         // FuncOp has not operands, get them from block
-        Value view = viewFuncBody->getArguments()[i];
+        Value view = viewFuncBody->getArguments()[i+1];
         Value tensor = call->getResult(i);
         builder.create<quiccir::MaterializeOp>(loc, tensor, view);
       }
       // Block terminator
       builder.create<func::ReturnOp>(loc);
+      // Set original as private
+      funcOp.setPrivate();
     });
 
   }
