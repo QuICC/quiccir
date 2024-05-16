@@ -26,6 +26,7 @@ using namespace mlir::quiccir;
 //===----------------------------------------------------------------------===//
 // AddOp
 //===----------------------------------------------------------------------===//
+/// \todo fix infer, need to check for attributes
 void AddOp::inferShapes() {
     if (tensor::preservesStaticInformation(getLhs().getType(),
         getResult().getType())) {
@@ -53,6 +54,7 @@ void AddOp::inferShapes() {
 //===----------------------------------------------------------------------===//
 // SubOp
 //===----------------------------------------------------------------------===//
+/// \todo fix infer, need to check for attributes
 void SubOp::inferShapes() {
     if (tensor::preservesStaticInformation(getLhs().getType(),
         getResult().getType())) {

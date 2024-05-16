@@ -40,8 +40,9 @@ std::unique_ptr<mlir::Pass> createSetDimensionsPass(
     llvm::ArrayRef<int64_t> mods = {});
 
 /// Create a pass for adding a view wrapper for entry point
-static QuiccirViewWrapperOptions defaultViewWrapper;
-std::unique_ptr<mlir::Pass> createViewWrapperPass(const QuiccirViewWrapperOptions &options = defaultViewWrapper);
+std::unique_ptr<mlir::Pass> createViewWrapperPass();
+/// Create a pass for adding a view wrapper for entry point with options
+std::unique_ptr<mlir::Pass> createViewWrapperPass(const QuiccirViewWrapperOptions &options);
 
 
 //===----------------------------------------------------------------------===//

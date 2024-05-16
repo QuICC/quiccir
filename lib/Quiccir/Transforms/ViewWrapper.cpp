@@ -20,8 +20,14 @@
 using namespace mlir;
 using namespace mlir::quiccir;
 
-namespace {
+namespace mlir::quiccir
+{
+  #define GEN_PASS_DEF_QUICCIRVIEWWRAPPER
+  #include "Quiccir/Transforms/QuiccirPasses.h.inc"
+} // namespace mlir::quiccir
 
+
+namespace {
 
 llvm::Expected<Type> setDimensionsEncoding(MLIRContext* ctx, Type valTy,
   llvm::ArrayRef<std::int64_t> dims, std::string encoding) {
@@ -35,8 +41,8 @@ llvm::Expected<Type> setDimensionsEncoding(MLIRContext* ctx, Type valTy,
 }
 
 
-struct QuiccirViewWrapperPass : public QuiccirViewWrapperBase<QuiccirViewWrapperPass> {
-  using QuiccirViewWrapperBase<QuiccirViewWrapperPass>::QuiccirViewWrapperBase;
+struct QuiccirViewWrapper : public quiccir::impl::QuiccirViewWrapperBase<QuiccirViewWrapper> {
+  using QuiccirViewWrapperBase<QuiccirViewWrapper>::QuiccirViewWrapperBase;
   void runOnOperation() final {
     auto module = getOperation();
     auto *ctx = &getContext();
@@ -138,7 +144,11 @@ struct QuiccirViewWrapperPass : public QuiccirViewWrapperBase<QuiccirViewWrapper
 };
 } // namespace
 
+std::unique_ptr<Pass> mlir::quiccir::createViewWrapperPass() {
+  return std::make_unique<QuiccirViewWrapper>();
+}
+
 std::unique_ptr<Pass> mlir::quiccir::createViewWrapperPass(
   const QuiccirViewWrapperOptions &options) {
-  return std::make_unique<QuiccirViewWrapperPass>();
+  return std::make_unique<QuiccirViewWrapper>(options);
 }
