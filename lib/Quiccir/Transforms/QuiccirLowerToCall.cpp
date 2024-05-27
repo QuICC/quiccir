@@ -69,7 +69,8 @@ struct OpLowering : public ConversionPattern {
         }
       }
       // otherwise we need to insert a quicc.alloc
-      Value buffer = rewriter.create<AllocOp>(loc, retViewType, operandBuffer, op->getName().getStringRef());
+      std::string prodStr = op->getName().getStringRef().str()+perm2str(op);
+      Value buffer = rewriter.create<AllocOp>(loc, retViewType, operandBuffer, prodStr);
       // Make sure to allocate at the beginning of the block.
       // auto *parentBlock = buffer.getDefiningOp()->getBlock();
       // buffer.getDefiningOp()->moveBefore(&parentBlock->front());
@@ -95,18 +96,29 @@ struct OpLowering : public ConversionPattern {
     }
 
     // get index from op attribute
-    ArrayRef<int64_t> index = cast<Top>(*op).getImplptr().value();
+    if (!cast<Top>(*op).getImplptr()) {
+        return rewriter.notifyMatchFailure(op, "Implementation attribute is missing");
+    }
+    SmallVector<int64_t, 1> index = {static_cast<int64_t>(cast<Top>(*op).getImplptr().value())};
     auto implPtr = rewriter.create<LLVM::ExtractValueOp>(loc, implArray, index);
 
     // opaque ptr to implementation becomes first operand
-    SmallVector <Type, 4> typeOperands = {implPtr.getType(), retViewType, operandBuffer.getType()};
+    // SmallVector <Type, 4> typeOperands = {implPtr.getType(), retViewType, operandBuffer.getType()};
+    SmallVector <Type, 4> typeOperands = {implPtr.getType(), retViewType};
+    for (auto val : operands) {
+      typeOperands.push_back(val.getType());
+    }
 
     // return val becomes second operand
     auto libraryCallSymbol = getLibraryCallSymbolRef<Top>(op, rewriter, typeOperands);
     if (failed(libraryCallSymbol))
       return failure();
 
-    SmallVector<Value, 4> newOperands = {implPtr, retBuffer, operandBuffer};
+    // SmallVector<Value, 4> newOperands = {implPtr, retBuffer, operandBuffer};
+    SmallVector<Value, 4> newOperands = {implPtr, retBuffer};
+    for (auto val : operands) {
+      newOperands.push_back(val);
+    }
     rewriter.create<func::CallOp>(
         loc, libraryCallSymbol->getValue(), TypeRange(), newOperands);
 
@@ -161,9 +173,19 @@ void QuiccirToCallLoweringPass::runOnOperation() {
       &getContext(), viewConverter);
   patterns.add<OpLowering<quiccir::JWIOp>>(
       &getContext(), viewConverter);
+  patterns.add<OpLowering<quiccir::AlPOp>>(
+      &getContext(), viewConverter);
+  patterns.add<OpLowering<quiccir::AlIOp>>(
+      &getContext(), viewConverter);
   patterns.add<OpLowering<quiccir::FrPOp>>(
       &getContext(), viewConverter);
   patterns.add<OpLowering<quiccir::FrIOp>>(
+      &getContext(), viewConverter);
+  patterns.add<OpLowering<quiccir::AddOp>>(
+      &getContext(), viewConverter);
+  patterns.add<OpLowering<quiccir::SubOp>>(
+      &getContext(), viewConverter);
+  patterns.add<OpLowering<quiccir::TransposeOp>>(
       &getContext(), viewConverter);
 
   // With the target and rewrite patterns defined, we can now attempt the

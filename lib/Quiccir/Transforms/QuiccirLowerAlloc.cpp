@@ -124,16 +124,25 @@ struct DeallocOpLowering : public ConversionPattern {
     typename DeallocOp::Adaptor adaptor(operands);
     Value view = adaptor.getView();
 
-    SmallVector <Type, 1> typeOperands = {view.getType()};
+    // It might happen that we need to dealloc views with same layout
+    // but different shape, so we insert a cast to a dynamic shape
+    // to have the library call generic
+
+    ViewType viewTy = view.getType().dyn_cast<ViewType>();
+    SmallVector<int64_t, 3>  shape = {ShapedType::kDynamic, ShapedType::kDynamic, ShapedType::kDynamic};
+
+    Type castViewTy = get<quiccir::ViewType>(view.getContext(), shape, viewTy.getElementType(), viewTy.getEncoding());
+    auto castOp = rewriter.create<UnrealizedConversionCastOp>(loc, castViewTy, view);
+
+    SmallVector <Type, 1> typeOperands = {castViewTy};
 
     // return val becomes first operand
     auto libraryCallSymbol = getLibraryCallSymbolRef<DeallocOp>(op, rewriter, typeOperands);
     if (failed(libraryCallSymbol))
       return failure();
 
-    SmallVector<Value, 1> newOperands = {view};
     auto callOp = rewriter.create<func::CallOp>(
-        loc, libraryCallSymbol->getValue(), TypeRange(), newOperands);
+        loc, libraryCallSymbol->getValue(), TypeRange(), castOp.getResults());
 
     // Replace op with lib call
     rewriter.replaceOp(op, callOp);

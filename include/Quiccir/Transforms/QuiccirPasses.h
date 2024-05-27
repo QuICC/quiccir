@@ -13,6 +13,10 @@
 namespace mlir {
 namespace quiccir {
 
+/// Generate the code for options
+#define GEN_PASS_DECL_QUICCIRVIEWWRAPPER
+#include "Quiccir/Transforms/QuiccirPasses.h.inc"
+
 /// Create a pass for adding quiccir deallocation ops
 std::unique_ptr<mlir::Pass> createViewDeallocationPass();
 
@@ -25,12 +29,20 @@ std::unique_ptr<mlir::Pass> createLowerAllocPass();
 /// Create a pass for lowering view in func/call/return/op
 std::unique_ptr<mlir::Pass> createFinalizeViewToLLVMPass();
 
-// /// Create a pass for lowering to operations in the `Affine` and `Std` dialects
-// std::unique_ptr<mlir::Pass> createLowerToAffinePass();
+/// Create a pass for adding missing view layout info
+static std::array<std::array<std::string, 2>, 3> defaultLayout;
+std::unique_ptr<mlir::Pass> createSetViewLayoutPass(
+    const std::array<std::array<std::string, 2>, 3> &layout = defaultLayout);
 
-// /// Create a pass for lowering to operations in the `Linalg` and `Affine` dialects
-// std::unique_ptr<mlir::Pass> createLowerToLinalgPass();
+/// Create a pass for adding missing dimensions
+std::unique_ptr<mlir::Pass> createSetDimensionsPass(
+    llvm::ArrayRef<int64_t> phys = {},
+    llvm::ArrayRef<int64_t> mods = {});
 
+/// Create a pass for adding a view wrapper for entry point
+std::unique_ptr<mlir::Pass> createViewWrapperPass();
+/// Create a pass for adding a view wrapper for entry point with options
+std::unique_ptr<mlir::Pass> createViewWrapperPass(const QuiccirViewWrapperOptions &options);
 
 
 //===----------------------------------------------------------------------===//

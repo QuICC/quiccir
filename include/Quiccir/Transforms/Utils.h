@@ -7,9 +7,12 @@
 #ifndef QUICCIR_TRANSFORMS_UTILS_H
 #define QUICCIR_TRANSFORMS_UTILS_H
 
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/BuiltinDialect.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
+
+#include "Quiccir/IR/QuiccirOps.h"
 
 namespace mlir {
 namespace quiccir {
@@ -17,6 +20,9 @@ namespace quiccir {
 //===----------------------------------------------------------------------===//
 // Quiccir Lower to call Utils
 //===----------------------------------------------------------------------===//
+
+/// return permutation as a string
+std::string perm2str(Operation* op);
 
 /// @brief Get a SymbolRefAttr containing the library function name for the op.
 /// If the library function does not exist, insert a declaration.
@@ -32,20 +38,20 @@ getLibraryCallSymbolRef(Operation *op, PatternRewriter &rewriter, ArrayRef<Type>
   auto implOp = cast<OpT>(op);
   std::string fnName = implOp.getOperationName().str();
   // Attributes for alloc op
-  if (isa<AllocOp>(op)) {
-    // replace with getProducer
-    for (const NamedAttribute att : op->getAttrs()) {
-      if (auto as = att.getValue().dyn_cast<StringAttr>()) {
-        std::string astr = as.str();
-        auto pos = astr.find("quiccir.");
-        astr.erase(pos, 8);
-        fnName += "_"+astr;
-      }
-    }
+  if (auto allocOp = dyn_cast<AllocOp>(op)) {
+    std::string astr = allocOp.getProducer().str();
+    auto pos = astr.find("quiccir.");
+    astr.erase(pos, 8);
+    fnName += "_"+astr;
   }
+  // Attribute for transpose op
+  fnName += perm2str(op);
   // Return types
   for (Type ret : op->getResultTypes()) {
     if (auto tensor = ret.dyn_cast<RankedTensorType>()) {
+      if (!tensor.getEncoding()) {
+        return rewriter.notifyMatchFailure(op, "Encoding attribute is missing");
+      }
       auto as = tensor.getEncoding().cast<StringAttr>();
       fnName += "_"+as.str();
     }

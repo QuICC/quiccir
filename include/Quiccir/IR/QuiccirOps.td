@@ -10,6 +10,8 @@
 
 include "Quiccir/IR/QuiccirDialect.td"
 include "Quiccir/IR/QuiccirTypes.td"
+include "Quiccir/Interfaces/ShapeInferenceOpInterface.td"
+include "Quiccir/Interfaces/FoldTensorCastIntoConsumerOpInterface.td"
 include "mlir/Interfaces/InferTypeOpInterface.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 
@@ -156,7 +158,7 @@ def Quiccir_QuadratureOp : Quiccir_Op<"quadrature", [Pure]> {
     let results = (outs AnyTensor:$uphys);
 
     let assemblyFormat = [{
-        $oprtr `,` $umods attr-dict `:`  type($oprtr) `,` type($umods)  `->` type($uphys)
+        $oprtr `,` $umods `:`  type($oprtr) `,` type($umods)  `->` type($uphys) attr-dict
     }];
 
     // Add additional verification logic to the constant operation. Setting this bit
@@ -174,10 +176,126 @@ def Quiccir_QuadratureOp : Quiccir_Op<"quadrature", [Pure]> {
 }
 
 //===----------------------------------------------------------------------===//
+// TransposeOp
+//===----------------------------------------------------------------------===//
+
+// def Quiccir_TransposeOp : Quiccir_Op<"transpose", [InferShapedTypeOpAdaptor, Pure]> {
+def Quiccir_TransposeOp : Quiccir_Op<"transpose", [Pure,
+    DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
+    let summary = "Transpose operator";
+
+    let description = [{
+        Permutes the dimensions based on permutation.
+
+        Example:
+
+        ```mlir
+        %out = quiccir.transpose %in permutation [0, 2, 1]: tensor<1x2x3xf32> -> tensor<1x3x2xf32>
+        ```
+    }];
+
+    let arguments = (ins
+        AnyTensor:$input,
+        DenseI64ArrayAttr:$permutation,
+        OptionalAttr<I64Attr>:$implptr
+    );
+
+    let results = (
+        outs AnyTensor:$output
+    );
+
+    let assemblyFormat = [{
+        $input `permutation` `=` $permutation `:` type($input) `->` type($output) attr-dict-with-keyword
+    }];
+
+    let hasVerifier = 1;
+}
+
+
+//===----------------------------------------------------------------------===//
+// AddOp
+//===----------------------------------------------------------------------===//
+
+def Quiccir_AddOp : Quiccir_Op<"add", [Pure, Commutative, Elementwise,
+    SameOperandsAndResultShape, SameOperandsAndResultElementType,
+    DeclareOpInterfaceMethods<FoldTensorCastIntoConsumerOpInterface>,
+    DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
+    let summary = "AddOp";
+    let description = [{
+        The `quiccir.add` operation implements a pointwise addition.
+        ?variadic?
+
+        Example:
+
+        ```mlir
+        %res = quiccir.add %lhs, %rhs: tensor<?x?x?x?>, tensor<?x?x?x?> -> tensor<?x?x?x?>
+        ```
+    }];
+
+    let arguments = (ins AnyTensor:$lhs, AnyTensor:$rhs,
+        OptionalAttr<I64Attr>:$implptr);
+    let results = (outs AnyTensor:$res);
+
+    let assemblyFormat = [{
+        $lhs `,` $rhs `:` type($rhs) `,` type($lhs) `->` type($res) attr-dict-with-keyword
+    }];
+
+    // let hasVerifier = 1;
+    // let hasCanonicalizeMethod = 1;
+
+    // let skipDefaultBuilders = 1;
+    // Allow building a FrPOp from the input operand.
+    let builders = [
+        OpBuilder<(ins "Value":$lhs, "Value":$rhs)>
+    ];
+}
+
+//===----------------------------------------------------------------------===//
+// SubOp
+//===----------------------------------------------------------------------===//
+
+def Quiccir_SubOp : Quiccir_Op<"sub", [Pure, Elementwise,
+    SameOperandsAndResultShape, SameOperandsAndResultElementType,
+    DeclareOpInterfaceMethods<FoldTensorCastIntoConsumerOpInterface>,
+    DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
+    let summary = "SubOp";
+    let description = [{
+        The `quiccir.sub` operation implements a pointwise subtraction.
+        ?variadic?
+
+        Example:
+
+        ```mlir
+        %res = quiccir.sub %lhs, %rhs: tensor<?x?x?x?>, tensor<?x?x?x?> -> tensor<?x?x?x?>
+        ```
+    }];
+
+    let arguments = (ins AnyTensor:$lhs, AnyTensor:$rhs,
+        OptionalAttr<I64Attr>:$implptr);
+    let results = (outs AnyTensor:$res);
+
+    let assemblyFormat = [{
+        $lhs `,` $rhs `:` type($rhs) `,` type($lhs) `->` type($res) attr-dict-with-keyword
+    }];
+
+    // let hasVerifier = 1;
+    // let hasCanonicalizeMethod = 1;
+
+    // let skipDefaultBuilders = 1;
+    // Allow building a FrPOp from the input operand.
+    let builders = [
+        OpBuilder<(ins "Value":$lhs, "Value":$rhs)>
+    ];
+}
+
+
+//===----------------------------------------------------------------------===//
 // FourierProjectorOp
 //===----------------------------------------------------------------------===//
 
-def Quiccir_FrPOp : Quiccir_Op<"fr.prj", [Pure]> {
+def Quiccir_FrPOp : Quiccir_Op<"fr.prj", [Pure,
+    DeclareOpInterfaceMethods<FoldTensorCastIntoConsumerOpInterface>,
+    DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
     let summary = "Fourier Transform modal to physical space";
     let description = [{
         The `quiccir.fr.prj` operation implements a generic Fourier projector.
@@ -207,19 +325,25 @@ def Quiccir_FrPOp : Quiccir_Op<"fr.prj", [Pure]> {
     }];
 
     let hasVerifier = 1;
+    // let hasCanonicalizeMethod = 1;
 
     // let skipDefaultBuilders = 1;
     // Allow building a FrPOp from the input operand.
     let builders = [
         OpBuilder<(ins "Value":$mods)>
     ];
+
+    let extraClassDefinition = inferTransformShapes;
 }
 
 //===----------------------------------------------------------------------===//
 // FourierIntegratorOp
 //===----------------------------------------------------------------------===//
 
-def Quiccir_FrIOp : Quiccir_Op<"fr.int", [Pure]> {
+
+def Quiccir_FrIOp : Quiccir_Op<"fr.int", [Pure,
+    DeclareOpInterfaceMethods<FoldTensorCastIntoConsumerOpInterface>,
+    DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
     let summary = "Fourier Transform from physical to modal space";
     let description = [{
         The `quiccir.fr.int` operation implements a generic Fourier integrator.
@@ -257,13 +381,17 @@ def Quiccir_FrIOp : Quiccir_Op<"fr.int", [Pure]> {
     let builders = [
         OpBuilder<(ins "Value":$phys)>
     ];
+
+    let extraClassDefinition = inferTransformShapes;
 }
 
 //===----------------------------------------------------------------------===//
 // AssociateLegendreProjectorOp
 //===----------------------------------------------------------------------===//
 
-def Quiccir_AlPOp : Quiccir_Op<"al.prj", [Pure]> {
+def Quiccir_AlPOp : Quiccir_Op<"al.prj", [Pure,
+    DeclareOpInterfaceMethods<FoldTensorCastIntoConsumerOpInterface>,
+    DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
     let summary = "AssociateLegendre Transform modal to physical space";
     let description = [{
         The `quiccir.al.prj` operation implements a generic AssociateLegendre projector.
@@ -299,13 +427,17 @@ def Quiccir_AlPOp : Quiccir_Op<"al.prj", [Pure]> {
     let builders = [
         OpBuilder<(ins "Value":$mods)>
     ];
+
+    let extraClassDefinition = inferTransformShapes;
 }
 
 //===----------------------------------------------------------------------===//
 // AssociateLegendreIntegratorOp
 //===----------------------------------------------------------------------===//
 
-def Quiccir_AlIOp : Quiccir_Op<"al.int", [Pure]> {
+def Quiccir_AlIOp : Quiccir_Op<"al.int", [Pure,
+    DeclareOpInterfaceMethods<FoldTensorCastIntoConsumerOpInterface>,
+    DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
     let summary = "AssociateLegendre Transform from physical to modal space";
     let description = [{
         The `quiccir.al.int` operation implements a generic AssociateLegendre integrator.
@@ -343,13 +475,17 @@ def Quiccir_AlIOp : Quiccir_Op<"al.int", [Pure]> {
     let builders = [
         OpBuilder<(ins "Value":$phys)>
     ];
+
+    let extraClassDefinition = inferTransformShapes;
 }
 
 //===----------------------------------------------------------------------===//
 // JonesWorlandProjectorOp
 //===----------------------------------------------------------------------===//
 
-def Quiccir_JWPOp : Quiccir_Op<"jw.prj", [Pure]> {
+def Quiccir_JWPOp : Quiccir_Op<"jw.prj", [Pure,
+    DeclareOpInterfaceMethods<FoldTensorCastIntoConsumerOpInterface>,
+    DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
     let summary = "Jone-Worland Transform modal to physical space";
     let description = [{
         The `quiccir.jw.prj` operation implements a generic Jones Worland projector.
@@ -389,13 +525,17 @@ def Quiccir_JWPOp : Quiccir_Op<"jw.prj", [Pure]> {
     let builders = [
         OpBuilder<(ins "Value":$mods)>
     ];
+
+    let extraClassDefinition = inferTransformShapes;
 }
 
 //===----------------------------------------------------------------------===//
 // JonesWorlandIntegratorOp
 //===----------------------------------------------------------------------===//
 
-def Quiccir_JWIOp : Quiccir_Op<"jw.int", [Pure]> {
+def Quiccir_JWIOp : Quiccir_Op<"jw.int", [Pure,
+    DeclareOpInterfaceMethods<FoldTensorCastIntoConsumerOpInterface>,
+    DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
     let summary = "Jone-Worland Transform from physical to modal space";
     let description = [{
         The `quiccir.jw.int` operation implements a generic Jones Worland integrator.
@@ -435,6 +575,8 @@ def Quiccir_JWIOp : Quiccir_Op<"jw.int", [Pure]> {
     let builders = [
         OpBuilder<(ins "Value":$phys)>
     ];
+
+    let extraClassDefinition = inferTransformShapes;
 }
 
 

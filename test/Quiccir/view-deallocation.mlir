@@ -12,7 +12,8 @@ module {
     func.func @wrap(%arg: !quiccir.view<1xf32, "layout">) {
         %view = quiccir.alloc(%arg) : !quiccir.view<1xf32, "layout"> -> !quiccir.view<1xf32, "layout"> {producer = "unknown"}
         call @user(%view) : (!quiccir.view<1xf32, "layout">) -> ()
-        // CHECK: quiccir.dealloc(%{{.*}}) : !quiccir.view<1xf32, "layout">
+        // CHECK: call @user(%[[V:.*]]) : (!quiccir.view<1xf32, "layout">) -> ()
+        // CHECK: quiccir.dealloc(%[[V]]) : !quiccir.view<1xf32, "layout">
         return
     }
 }

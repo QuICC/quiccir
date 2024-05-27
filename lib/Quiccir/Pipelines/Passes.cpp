@@ -32,6 +32,7 @@ void mlir::quiccir::quiccLibCallPipelineBuilder(OpPassManager &pm){
   // Lower to llvm
   pm.addPass(mlir::quiccir::createLowerAllocPass());
   pm.addPass(mlir::quiccir::createFinalizeViewToLLVMPass());
+  pm.addPass(mlir::createCanonicalizerPass());
   pm.addPass(mlir::createConvertFuncToLLVMPass());
   pm.addPass(mlir::createCanonicalizerPass());
 }

@@ -6,6 +6,10 @@ add_mlir_dialect_library(MLIRQuiccirPasses
     TypeConverter.cpp
     QuiccirLowerAlloc.cpp
     QuiccirViewDeallocation.cpp
+    SetViewLayout.cpp
+    SetDimensions.cpp
+    Utils.cpp
+    ViewWrapper.cpp
 
     ADDITIONAL_HEADER_DIRS
     ${PROJECT_SOURCE_DIR}/include/Quiccir
