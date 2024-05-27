@@ -76,7 +76,6 @@ void setMissingLayout(Value val, llvm::StringRef enc) {
 }
 
 void QuiccirSetViewLayout::runOnOperation() {
-  // auto module = getOperation();
   auto *ctx = &getContext();
 
   RewritePatternSet patterns(ctx);
@@ -127,22 +126,12 @@ void QuiccirSetViewLayout::runOnOperation() {
         Value mods = jwPrjOp.getMods();
         setMissingLayout(mods, layout[2][1]);
       }
-      // if (failed(deallocateBuffers(op)))
-      //   return WalkResult::interrupt();
       return WalkResult::advance();
     });
 
   if (result.wasInterrupted())
     signalPassFailure();
-
-
-  // if (failed(applyFullConversion(module, target, std::move(patterns))))
-  //     signalPassFailure();
 }
-
-// std::unique_ptr<Pass> mlir::quiccir::createSetViewLayoutPass() {
-//   return std::make_unique<QuiccirSetViewLayout>();
-// }
 
 std::unique_ptr<Pass> mlir::quiccir::createSetViewLayoutPass(
   const std::array<std::array<std::string, 2>, 3> &layout) {
