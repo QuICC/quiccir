@@ -2,6 +2,7 @@
 
 #include "Quiccir/Transforms/TypeConverter.h"
 #include "mlir/Dialect/LLVMIR/LLVMTypes.h"
+#include "mlir/Conversion/LLVMCommon/TypeConverter.h"
 
 //===----------------------------------------------------------------------===//
 // Quiccir View type conversion into llvm struct
@@ -36,8 +37,9 @@ mlir::Type ViewTypeToStructConverter::convertView(ViewType view) {
     /// data
     auto dataPtr = view.getElementType();
     if (auto complex = dyn_cast<mlir::ComplexType>(dataPtr)) {
+      LLVMTypeConverter llvmConv(ctx);
       structElementTypes.push_back(
-        mlir::LLVM::LLVMPointerType::get(complex.getElementType()));
+        mlir::LLVM::LLVMPointerType::get(llvmConv.convertType(complex)));
     }
     else {
       structElementTypes.push_back(
