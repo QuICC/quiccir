@@ -14,7 +14,7 @@ module {
     // CHECK: %{{.*}} = llvm.alloca %{{.*}} x !llvm.struct<(array<3 x i32>, ptr<i32>, i32, ptr<i32>, i32, ptr<f32>, i32)> : (i64) -> !llvm.ptr<struct<(array<3 x i32>, ptr<i32>, i32, ptr<i32>, i32, ptr<f32>, i32)>>
     // CHECK: lvm.store %{{.*}}, %{{.*}} : !llvm.ptr<struct<(array<3 x i32>, ptr<i32>, i32, ptr<i32>, i32, ptr<f32>, i32)>>
     // CHECK: %{{.*}} = builtin.unrealized_conversion_cast %{{.*}} : !llvm.ptr<struct<(array<3 x i32>, ptr<i32>, i32, ptr<i32>, i32, ptr<f32>, i32)>> to !quiccir.view<16x3x3xf32, "layoutUval">
-    // CHECK: call @_ciface_quiccir_alloc_jw_prj_layoutUval_layoutUmod(%{{.*}}, %{{.*}}) : (!quiccir.view<16x3x3xf32, "layoutUval">, !quiccir.view<16x2x3xf32, "layoutUmod">) -> ()
+    // CHECK: call @_ciface_quiccir_alloc_jw_prj_f32_layoutUval_f32_layoutUmod(%{{.*}}, %{{.*}}) : (!quiccir.view<16x3x3xf32, "layoutUval">, !quiccir.view<16x2x3xf32, "layoutUmod">) -> ()
     %0 = quiccir.alloc(%arg1) : !quiccir.view<16x2x3xf32, "layoutUmod"> -> !quiccir.view<16x3x3xf32, "layoutUval"> {producer = "quiccir.jw.prj"}
     call @user(%0) : (!quiccir.view<16x3x3xf32, "layoutUval">) -> ()
     return
@@ -22,7 +22,7 @@ module {
 
   func.func @entry2(%arg1: !quiccir.view<16x2x3xf32, "layoutUmod">) {
     // CHECK: %[[V:.*]] = builtin.unrealized_conversion_cast %{{.*}} : !quiccir.view<16x2x3xf32, "layoutUmod"> to !quiccir.view<?x?x?xf32, "layoutUmod"
-    // CHECK: call @_ciface_quiccir_dealloc_layoutUmod(%[[V]]) : (!quiccir.view<?x?x?xf32, "layoutUmod">) -> ()
+    // CHECK: call @_ciface_quiccir_dealloc_f32_layoutUmod(%[[V]]) : (!quiccir.view<?x?x?xf32, "layoutUmod">) -> ()
     quiccir.dealloc(%arg1) : !quiccir.view<16x2x3xf32, "layoutUmod">
     return
   }

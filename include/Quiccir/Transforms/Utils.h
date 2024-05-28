@@ -49,6 +49,11 @@ getLibraryCallSymbolRef(Operation *op, PatternRewriter &rewriter, ArrayRef<Type>
   // Return types
   for (Type ret : op->getResultTypes()) {
     if (auto tensor = ret.dyn_cast<RankedTensorType>()) {
+      auto eleTy = tensor.getElementType();
+      std::string tyStr;
+      llvm::raw_string_ostream tyOS(tyStr);
+      eleTy.print(tyOS);
+      fnName += "_"+tyStr;
       if (!tensor.getEncoding()) {
         return rewriter.notifyMatchFailure(op, "Encoding attribute is missing");
       }
@@ -56,6 +61,11 @@ getLibraryCallSymbolRef(Operation *op, PatternRewriter &rewriter, ArrayRef<Type>
       fnName += "_"+as.str();
     }
     if (auto view = ret.dyn_cast<ViewType>()) {
+      auto eleTy = view.getElementType();
+      std::string tyStr;
+      llvm::raw_string_ostream tyOS(tyStr);
+      eleTy.print(tyOS);
+      fnName += "_"+tyStr;
       auto as = view.getEncoding().cast<StringAttr>();
       fnName += "_"+as.str();
     }
@@ -63,10 +73,23 @@ getLibraryCallSymbolRef(Operation *op, PatternRewriter &rewriter, ArrayRef<Type>
   // Argument types
   for (Type arg : op->getOperandTypes()) {
     if (auto tensor = arg.dyn_cast<RankedTensorType>()) {
+      auto eleTy = tensor.getElementType();
+      std::string tyStr;
+      llvm::raw_string_ostream tyOS(tyStr);
+      eleTy.print(tyOS);
+      fnName += "_"+tyStr;
+      if (!tensor.getEncoding()) {
+        return rewriter.notifyMatchFailure(op, "Encoding attribute is missing");
+      }
       auto as = tensor.getEncoding().cast<StringAttr>();
       fnName += "_"+as.str();
     }
     if (auto view = arg.dyn_cast<ViewType>()) {
+      auto eleTy = view.getElementType();
+      std::string tyStr;
+      llvm::raw_string_ostream tyOS(tyStr);
+      eleTy.print(tyOS);
+      fnName += "_"+tyStr;
       auto as = view.getEncoding().cast<StringAttr>();
       fnName += "_"+as.str();
     }
