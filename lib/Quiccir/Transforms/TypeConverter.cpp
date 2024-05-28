@@ -34,8 +34,15 @@ mlir::Type ViewTypeToStructConverter::convertView(ViewType view) {
     structElementTypes.push_back(mlir::LLVM::LLVMPointerType::get(i32Type));
     structElementTypes.push_back(i32Type);
     /// data
-    structElementTypes.push_back(
-      mlir::LLVM::LLVMPointerType::get(view.getElementType()));
+    auto dataPtr = view.getElementType();
+    if (auto complex = dyn_cast<mlir::ComplexType>(dataPtr)) {
+      structElementTypes.push_back(
+        mlir::LLVM::LLVMPointerType::get(complex.getElementType()));
+    }
+    else {
+      structElementTypes.push_back(
+        mlir::LLVM::LLVMPointerType::get(dataPtr));
+    }
     structElementTypes.push_back(i32Type);
     /// struct
     return mlir::LLVM::LLVMStructType::getLiteral(ctx, structElementTypes);
