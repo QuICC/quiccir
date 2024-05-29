@@ -53,6 +53,10 @@ getLibraryCallSymbolRef(Operation *op, PatternRewriter &rewriter, ArrayRef<Type>
       std::string tyStr;
       llvm::raw_string_ostream tyOS(tyStr);
       eleTy.print(tyOS);
+      if (isa<ComplexType>(eleTy)) {
+        tyStr.erase(std::find(tyStr.begin(), tyStr.end(), '<'));
+        tyStr.erase(std::find(tyStr.begin(), tyStr.end(), '>'));
+      }
       fnName += "_"+tyStr;
       if (!tensor.getEncoding()) {
         return rewriter.notifyMatchFailure(op, "Encoding attribute is missing");
@@ -65,6 +69,10 @@ getLibraryCallSymbolRef(Operation *op, PatternRewriter &rewriter, ArrayRef<Type>
       std::string tyStr;
       llvm::raw_string_ostream tyOS(tyStr);
       eleTy.print(tyOS);
+      if (isa<ComplexType>(eleTy)) {
+        tyStr.erase(std::find(tyStr.begin(), tyStr.end(), '<'));
+        tyStr.erase(std::find(tyStr.begin(), tyStr.end(), '>'));
+      }
       fnName += "_"+tyStr;
       auto as = view.getEncoding().cast<StringAttr>();
       fnName += "_"+as.str();
@@ -77,6 +85,10 @@ getLibraryCallSymbolRef(Operation *op, PatternRewriter &rewriter, ArrayRef<Type>
       std::string tyStr;
       llvm::raw_string_ostream tyOS(tyStr);
       eleTy.print(tyOS);
+      if (isa<ComplexType>(eleTy)) {
+        tyStr.erase(std::find(tyStr.begin(), tyStr.end(), '<'));
+        tyStr.erase(std::find(tyStr.begin(), tyStr.end(), '>'));
+      }
       fnName += "_"+tyStr;
       if (!tensor.getEncoding()) {
         return rewriter.notifyMatchFailure(op, "Encoding attribute is missing");
@@ -89,6 +101,10 @@ getLibraryCallSymbolRef(Operation *op, PatternRewriter &rewriter, ArrayRef<Type>
       std::string tyStr;
       llvm::raw_string_ostream tyOS(tyStr);
       eleTy.print(tyOS);
+      if (isa<ComplexType>(eleTy)) {
+        tyStr.erase(std::find(tyStr.begin(), tyStr.end(), '<'));
+        tyStr.erase(std::find(tyStr.begin(), tyStr.end(), '>'));
+      }
       fnName += "_"+tyStr;
       auto as = view.getEncoding().cast<StringAttr>();
       fnName += "_"+as.str();

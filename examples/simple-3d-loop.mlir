@@ -6,7 +6,7 @@
 // !type_umod = !quiccir.view<7x3x6xf64, "C_DCCSC3D_t">
 
 
-func.func private @bwd(%Pol: tensor<?x?x?xf64>) -> (tensor<?x?x?xf64>) {
+func.func private @bwd(%Pol: tensor<?x?x?xcomplex<f64>>) -> (tensor<?x?x?xf64>) {
   // Pol
   %Pol1 = quiccir.jw.prj %Pol : tensor<?x?x?xf64> -> tensor<?x?x?xf64> attributes{implptr = 0 :i64}
   %Pol1T = quiccir.transpose %Pol1 permutation = [1, 2, 0] : tensor<?x?x?xf64> -> tensor<?x?x?xf64> attributes{implptr = 1 :i64}
@@ -16,7 +16,7 @@ func.func private @bwd(%Pol: tensor<?x?x?xf64>) -> (tensor<?x?x?xf64>) {
   return %Pol3 : tensor<?x?x?xf64>
 }
 
-func.func private @fwd(%R: tensor<?x?x?xf64>) -> (tensor<?x?x?xf64>) {
+func.func private @fwd(%R: tensor<?x?x?xf64>) -> (tensor<?x?x?xcomplex<f64>>) {
   // R
   %R1 = quiccir.fr.int %R : tensor<?x?x?xf64> -> tensor<?x?x?xf64> attributes{implptr = 10 :i64}
   %R1T = quiccir.transpose %R1 permutation = [2, 0, 1] : tensor<?x?x?xf64> -> tensor<?x?x?xf64> attributes{implptr = 11 :i64}
