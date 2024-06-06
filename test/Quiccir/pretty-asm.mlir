@@ -29,6 +29,26 @@ module {
 }
 
 module {
+    func.func @simple_no_arg() {
+        %ptr = memref.alloc() : memref<4xi32>
+        %idx = memref.alloc() : memref<4xi32>
+        %view = quiccir.alloc.data(%ptr, %idx) : (memref<4xi32>, memref<4xi32>) -> memref<4xf64> {layout = "unknown"}
+        return
+    }
+}
+
+module {
+    func.func @simple_no_arg() {
+        %ptr = memref.alloc() : memref<4xi32>
+        %idx = memref.alloc() : memref<4xi32>
+        %data = memref.alloc() : memref<4xf32>
+        %view = quiccir.assemble(%ptr, %idx), %data : (memref<4xi32>, memref<4xi32>), memref<4xf32> -> !quiccir.view<?x?x?xf32, "unknow">
+        return
+    }
+}
+
+
+module {
     func.func @simple_no_arg() -> tensor<16x3x2xf32> {
         %c0 = arith.constant 1.0 : f32
         %op = tensor.splat %c0 : tensor<16x3x2xf32>

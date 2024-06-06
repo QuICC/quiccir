@@ -128,6 +128,75 @@ def Quiccir_MaterializeOp : Quiccir_Op<"materialize", []> {
     let hasVerifier = 1;
 }
 
+//===----------------------------------------------------------------------===//
+// AllocDataOp
+//===----------------------------------------------------------------------===//
+
+def Quiccir_AllocDataOp : Quiccir_Op<"alloc.data", []> {
+    let summary = "Allocate memref data for a view";
+    let description = [{
+        The `quiccir.alloc.data` operation allocate a 1D memref that is
+        the container for the compressed data of the view.
+
+        In order to allocate the right amount of space for the data
+        we need to know view layout, and the pointers/indexes metadata.
+
+        Example:
+
+        ```mlir
+        %0 = quiccir.alloc.data(%ptr, %idx) : (memref<xi32>, memref<xi32>) ->
+            memref<?xf64>  {layout="layout"}
+        ```
+
+        For codegen we should lower this to a memref alloc of appropriate size
+
+    }];
+
+    let arguments = (ins AnyMemRef:$ptr, AnyMemRef:$idx, StrAttr:$layout);
+    let results = (outs AnyMemRef:$data);
+
+    let assemblyFormat = [{
+        `(` $ptr `,` $idx `)` `:` `(`type($ptr) `,` type($idx) `)` `->` type($data) attr-dict
+    }];
+
+    // let skipDefaultBuilders = 1;
+    // let builders = [
+    //     OpBuilder<(ins "MemRef":$ptr, "MemRef":$idx, "StringAttr":$layout), [{
+    //         return build($_builder, $_state, ptr, idx, layout);
+    //     }]>
+    // ];
+
+    // let hasVerifier = 1;
+}
+
+//===----------------------------------------------------------------------===//
+// AssembleOp
+//===----------------------------------------------------------------------===//
+
+def Quiccir_AssembleOp : Quiccir_Op<"assemble", []> {
+    let summary = "Assemble view from meta and data MemRefs";
+    let description = [{
+        The `quiccir.assemble` create a view from its data and meta data.
+
+        Example:
+
+        ```mlir
+        %0 = quiccir.assemble(%ptr, %idx), %data : (memref<xi32>, memref<xi32>), memref<?xf64> ->
+            !quiccir.view<?x?x?xf64, "layout">
+        ```
+
+    }];
+
+    let arguments = (ins AnyMemRef:$ptr, AnyMemRef:$idx, AnyMemRef:$data);
+    let results = (outs AnyView:$view);
+
+    let assemblyFormat = [{
+        `(` $ptr `,` $idx `)` `,` $data `:` `(`type($ptr) `,` type($idx) `)` `,` type($data) `->` type($view) attr-dict
+    }];
+
+    // let hasVerifier = 1;
+}
+
 
 //===----------------------------------------------------------------------===//
 // QuadratureOp
