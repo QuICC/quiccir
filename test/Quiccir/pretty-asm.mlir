@@ -32,7 +32,8 @@ module {
     func.func @simple_no_arg() {
         %ptr = memref.alloc() : memref<4xi32>
         %idx = memref.alloc() : memref<4xi32>
-        %view = quiccir.alloc.data(%ptr, %idx) : (memref<4xi32>, memref<4xi32>) -> memref<4xf64> {layout = "unknown"}
+        // CHECK: %{{.*}} = quiccir.alloc_data(%{{.*}}, %{{.*}}) : (memref<4xi32>, memref<4xi32>) -> memref<4xf64> {layout = "unknown"}
+        %view = quiccir.alloc_data(%ptr, %idx) : (memref<4xi32>, memref<4xi32>) -> memref<4xf64> {layout = "unknown"}
         return
     }
 }
@@ -42,11 +43,27 @@ module {
         %ptr = memref.alloc() : memref<4xi32>
         %idx = memref.alloc() : memref<4xi32>
         %data = memref.alloc() : memref<4xf32>
-        %view = quiccir.assemble(%ptr, %idx), %data : (memref<4xi32>, memref<4xi32>), memref<4xf32> -> !quiccir.view<?x?x?xf32, "unknow">
+        // CHECK: %{{.*}} = quiccir.assemble(%{{.*}}, %{{.*}}), %{{.*}} : (memref<4xi32>, memref<4xi32>), memref<4xf32> -> !quiccir.view<?x?x?xf32, "unknown">
+        %view = quiccir.assemble(%ptr, %idx), %data : (memref<4xi32>, memref<4xi32>), memref<4xf32> -> !quiccir.view<?x?x?xf32, "unknown">
         return
     }
 }
 
+module {
+    func.func @wrap(%arg: !quiccir.view<1xf32, "layout">)  {
+        // CHECK: quiccir.pointers %{{.*}} : !quiccir.view<1xf32, "layout"> -> memref<?xi32>
+        %ptr = quiccir.pointers %arg : !quiccir.view<1xf32, "layout"> -> memref<?xi32>
+        return
+    }
+}
+
+module {
+    func.func @wrap(%arg: !quiccir.view<1xf32, "layout">)  {
+        // CHECK: quiccir.indices %{{.*}} : !quiccir.view<1xf32, "layout"> -> memref<?xi32>
+        %idx = quiccir.indices %arg : !quiccir.view<1xf32, "layout"> -> memref<?xi32>
+        return
+    }
+}
 
 module {
     func.func @simple_no_arg() -> tensor<16x3x2xf32> {
