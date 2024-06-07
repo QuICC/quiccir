@@ -6,6 +6,7 @@ func.func @main (%arg: !quiccir.view<16x2x3xcomplex<f32>, "layoutUmod">) {
 
     %1 = quiccir.pointers %arg : !quiccir.view<16x2x3xcomplex<f32>, "layoutUmod"> -> memref<?xi32>
     // %10 = builtin.unrealized_conversion_cast %arg : !quiccir.view<16x2x3xcomplex<f32> to !llvm.struct<...>
+    // %11 = builtin.unrealized_conversion_cast %arg : memref<?xi32> to !llvm.struct<...>
     // copy relevant bit from view struct to memref struct
     // %1 = builtin.unrealized_conversion_cast !llvm.struct<> to memref<?xi32>
 
