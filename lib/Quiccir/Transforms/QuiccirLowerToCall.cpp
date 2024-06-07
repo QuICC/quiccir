@@ -69,8 +69,23 @@ struct OpLowering : public ConversionPattern {
         }
       }
       // otherwise we need to insert a quicc.alloc
-      std::string prodStr = op->getName().getStringRef().str()+perm2str(op);
-      Value buffer = rewriter.create<AllocOp>(loc, retViewType, operandBuffer, prodStr);
+      // std::string prodStr = op->getName().getStringRef().str()+perm2str(op);
+      // Value buffer = rewriter.create<AllocOp>(loc, retViewType, operandBuffer, prodStr);
+
+      // >>> updated
+      Type i32Type = IntegerType::get(op->getContext(), 32);
+      Type metaTy =
+      MemRefType::get({ShapedType::kDynamic}, i32Type);
+      Value ptr = rewriter.create<PointersOp>(loc, metaTy, operandBuffer);
+      Value idx = rewriter.create<IndicesOp>(loc, metaTy, operandBuffer);
+      ViewType viewTy = retViewType.cast<ViewType>();
+      Type dataTy = MemRefType::get({ShapedType::kDynamic},
+        viewTy.getElementType());
+      Value data = rewriter.create<AllocDataOp>(loc, dataTy, ptr, idx,
+        viewTy.getEncoding().cast<StringAttr>().str());
+      Value buffer = rewriter.create<AssembleOp>(loc, retViewType, ptr, idx, data);
+      // <<<
+
       // Make sure to allocate at the beginning of the block.
       // auto *parentBlock = buffer.getDefiningOp()->getBlock();
       // buffer.getDefiningOp()->moveBefore(&parentBlock->front());
@@ -164,7 +179,14 @@ void QuiccirToCallLoweringPass::runOnOperation() {
   // if any of these operations are *not* converted.
   target.addIllegalDialect<quiccir::QuiccirDialect>();
   // Also we need alloc / materialize to be legal
-  target.addLegalOp<quiccir::AllocOp, quiccir::MaterializeOp>();
+  target.addLegalOp<
+    quiccir::AllocOp,
+    quiccir::MaterializeOp,
+    quiccir::PointersOp,
+    quiccir::IndicesOp,
+    quiccir::AllocDataOp,
+    quiccir::AssembleOp
+    >();
 
   // Now that the conversion target has been defined, we just need to provide
   // the set of patterns that will lower the Quiccir operations.

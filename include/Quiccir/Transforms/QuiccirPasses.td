@@ -36,6 +36,14 @@ def QuiccirLowerAlloc : Pass<"lower-quiccir-alloc", "ModuleOp"> {
     "LLVM::LLVMDialect"];
 }
 
+def QuiccirConvertToLLVM : Pass<"convert-quiccir-to-llvm", "func::FuncOp"> {
+  let summary = "Convert quiccir dialect data ops int LLVM ops";
+  let constructor = "mlir::quiccir::createConvertToLLVMPass()";
+  let dependentDialects = [
+    "func::FuncDialect",
+    "LLVM::LLVMDialect"];
+}
+
 def QuiccirFinalizeViewToLLVM : Pass<"finalize-quiccir-view", "ModuleOp"> {
   let summary = "Lower View to llvm.struct for func/call/return ops";
   let constructor = "mlir::quiccir::createFinalizeViewToLLVMPass()";
