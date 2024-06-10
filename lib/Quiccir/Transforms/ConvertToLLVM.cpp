@@ -27,13 +27,14 @@ using namespace mlir::quiccir;
 namespace {
 
 //===----------------------------------------------------------------------===//
-// QuiccirConvertToLLVMPass RewritePatterns: PointersOp
+// QuiccirConvertToLLVMPass RewritePatterns: PointersOp and IndicesOp
 //===----------------------------------------------------------------------===//
 
-/// \todo this would cleanup a bit by ineriting from OpConverionsPattern
-struct PointerOpLowering : public ConversionPattern {
-  PointerOpLowering(MLIRContext *ctx)
-      : ConversionPattern(PointersOp::getOperationName(), /*benefit=*/1 , ctx) {}
+
+template <class Top>
+struct MetaOpLowering : public ConversionPattern {
+  MetaOpLowering(MLIRContext *ctx)
+      : ConversionPattern(Top::getOperationName(), /*benefit=*/1 , ctx) {}
 
   LogicalResult
   matchAndRewrite(Operation *op, ArrayRef<Value> operands,
@@ -42,7 +43,7 @@ struct PointerOpLowering : public ConversionPattern {
     auto loc = op->getLoc();
 
     // View Operand
-    typename PointersOp::Adaptor adaptor(operands);
+    typename Top::Adaptor adaptor(operands);
     Value operandView = *adaptor.getODSOperands(0).begin();
 
     // Struct Operand
@@ -55,32 +56,50 @@ struct PointerOpLowering : public ConversionPattern {
     // ret memref needs replaced by a struct
     auto retMemTy = (*op->result_type_begin()).cast<MemRefType>();
     LLVMTypeConverter llvmConverter(getContext());
-
     auto retStructTy = llvmConverter.convertType(retMemTy);
     // alloca struct
     Value structPtr = rewriter.create<LLVM::UndefOp>(loc, retStructTy);
 
-    // store on stack
+    // Set size from view struct to memref struct
+    int64_t shift = 0;
+    if constexpr (std::is_same_v<Top, IndicesOp>) {
+      shift += 2;
+    }
+    SmallVector<int64_t, 1> ptrSizePosView = {2+shift};
+    Value ptrSize = rewriter.create<LLVM::ExtractValueOp>(loc, operandStruct, ptrSizePosView);
+    // i32 -> i64
     Type I64Type = rewriter.getI64Type();
+    Value extPtrSize = rewriter.create<LLVM::ZExtOp>(loc, I64Type, ptrSize);
+    // Set size
+    SmallVector<int64_t, 2> ptrSizePosMem = {3, 0};
+    Value structPtr0 = rewriter.create<LLVM::InsertValueOp>(loc, structPtr, extPtrSize, ptrSizePosMem);
+    // Set stride
     Value one = rewriter.create<LLVM::ConstantOp>(loc, I64Type,
       rewriter.getIndexAttr(1));
+    SmallVector<int64_t, 2> stridePosMem = {4, 0};
+    Value structPtr1 = rewriter.create<LLVM::InsertValueOp>(loc, structPtr0, one, stridePosMem);
+
+    // Set ptr from view struct to memref struct
+    SmallVector<int64_t, 1> ptrPtrPosView = {1+shift};
+    Value ptrPtr = rewriter.create<LLVM::ExtractValueOp>(loc, operandStruct, ptrPtrPosView);
+    // ptr<i32> to ptr
+    Type opaquePtrTy = mlir::LLVM::LLVMPointerType::get(op->getContext());
+    Value opaquePtr = rewriter.create<mlir::LLVM::BitcastOp>(loc, opaquePtrTy, ptrPtr);
+    // Set ptr buf
+    SmallVector<int64_t, 1> ptrPtrPosMem = {0};
+    Value structPtr2 = rewriter.create<LLVM::InsertValueOp>(loc, structPtr1, opaquePtr, ptrPtrPosMem);
+    // Set aligned ptr
+    SmallVector<int64_t, 1> ptrPtrAlPosMem = {1};
+    Value structPtr3 = rewriter.create<LLVM::InsertValueOp>(loc, structPtr1, opaquePtr, ptrPtrAlPosMem);
+    // Set offset
+
+    // store on stack
     Type ptrRetStructTy = mlir::LLVM::LLVMPointerType::get(retStructTy);
     Value bufRetStruct = rewriter.create<LLVM::AllocaOp>(loc, ptrRetStructTy, one);
-    rewriter.create<LLVM::StoreOp>(loc, structPtr, bufRetStruct);
-
-
-    // Set from ptr from view struct to memref struct
-    SmallVector<int64_t, 1> ptrSizePosView = {2};
-    Value sizePtr = rewriter.create<LLVM::ExtractValueOp>(loc, operandStruct, ptrSizePosView);
-    // i32 -> i64
-    Value extSizePtr = rewriter.create<LLVM::ZExtOp>(loc, I64Type, sizePtr);
-
-    SmallVector<int64_t, 1> ptrSizePosMem = {3, 0};
-    Value structPtr0 = rewriter.create<LLVM::InsertValueOp>(loc, structPtr,  extSizePtr, ptrSizePosMem);
-
+    rewriter.create<LLVM::StoreOp>(loc, structPtr3, bufRetStruct);
 
     // cast back to memref
-    SmallVector<Value, 1> castOperands = {structPtr0};
+    SmallVector<Value, 1> castOperands = {bufRetStruct};
     auto newOp = rewriter.create<UnrealizedConversionCastOp>(loc, retMemTy, castOperands);
     rewriter.replaceOp(op, newOp);
 
@@ -136,7 +155,9 @@ void  QuiccirConvertToLLVMPass::runOnOperation() {
   // Now that the conversion target has been defined, we just need to provide
   // the set of patterns that will lower the Quiccir operations.
   RewritePatternSet patterns(&getContext());
-  patterns.add<PointerOpLowering>(
+  patterns.add<MetaOpLowering<PointersOp>>(
+      &getContext());
+  patterns.add<MetaOpLowering<IndicesOp>>(
       &getContext());
 
   // With the target and rewrite patterns defined, we can now attempt the

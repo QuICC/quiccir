@@ -10,7 +10,7 @@ func.func @main (%arg: !quiccir.view<16x2x3xcomplex<f32>, "layoutUmod">) {
     // copy relevant bit from view struct to memref struct
     // %1 = builtin.unrealized_conversion_cast !llvm.struct<> to memref<?xi32>
 
-    // %2 = quiccir.indices %arg : !quiccir.view<16x2x3xcomplex<f32>, "layoutUmod"> -> memref<?xi32>
+    %2 = quiccir.indices %arg : !quiccir.view<16x2x3xcomplex<f32>, "layoutUmod"> -> memref<?xi32>
     // // same as above
 
     // %3 = quiccir.alloc_data(%1, %2) : (memref<?xi32>, memref<?xi32>) -> memref<?xcomplex<f32>> {layout = "layoutUval"}
