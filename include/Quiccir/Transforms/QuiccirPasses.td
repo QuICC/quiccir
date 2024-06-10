@@ -49,7 +49,8 @@ def QuiccirFinalizeViewToLLVM : Pass<"finalize-quiccir-view", "ModuleOp"> {
   let constructor = "mlir::quiccir::createFinalizeViewToLLVMPass()";
   let dependentDialects = [
     "func::FuncDialect",
-    "LLVM::LLVMDialect"];
+    "LLVM::LLVMDialect",
+    "quiccir::QuiccirDialect"];
 }
 
 def QuiccirSetViewLayout : Pass<"set-quiccir-view-lay", "func::FuncOp"> {
