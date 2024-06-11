@@ -151,34 +151,93 @@ struct AssembleOpLowering : public ConversionPattern {
     Type retViewTy = *op->result_type_begin();
     Type retStructTy = viewConverter.convertType(retViewTy);
     Value retStruct = rewriter.create<LLVM::UndefOp>(loc, retStructTy);
-    /// \todo Set size
+    // Set dimensions
+    Type I32Type = rewriter.getI32Type();
+    Value dim0 = rewriter.create<LLVM::ConstantOp>(loc, I32Type,
+      retViewTy.cast<ViewType>().getShape()[0]);
+    Value dim1 = rewriter.create<LLVM::ConstantOp>(loc, I32Type,
+      retViewTy.cast<ViewType>().getShape()[1]);
+    Value dim2 = rewriter.create<LLVM::ConstantOp>(loc, I32Type,
+      retViewTy.cast<ViewType>().getShape()[2]);
+    // Insert dimensions
+    // Note, swap logical order to match QuICC
+    SmallVector<int64_t, 2> pos0 = {0, 2};
+    Value retStruct0 = rewriter.create<LLVM::InsertValueOp>(loc, retStruct, dim0, pos0);
+    SmallVector<int64_t, 2> pos1 = {0, 0};
+    Value retStruct1 = rewriter.create<LLVM::InsertValueOp>(loc, retStruct0, dim1, pos1);
+    SmallVector<int64_t, 2> pos2 = {0, 1};
+    Value retStruct2 = rewriter.create<LLVM::InsertValueOp>(loc, retStruct1, dim2, pos2);
 
     // Copy memref struct size/ptrs to view struct
-    // idx
-    // get ptr
+    // Get ptr ptr/pos
+    SmallVector<int64_t, 1> ptrPtrPosMem = {1};
+    Value ptrPtrOpaque = rewriter.create<LLVM::ExtractValueOp>(loc, ptrStruct, ptrPtrPosMem);
+    // ptr to ptr<i32>
+    Type i32PtrTy = mlir::LLVM::LLVMPointerType::get(I32Type);
+    Value ptrPtr = rewriter.create<mlir::LLVM::BitcastOp>(loc, i32PtrTy, ptrPtrOpaque);
+    // Set ptr ptr
+    SmallVector<int64_t, 1> ptrPtrPosView = {3};
+    Value retStruct3 = rewriter.create<LLVM::InsertValueOp>(loc, retStruct2, ptrPtr, ptrPtrPosView);
+    // Get size ptr
+    SmallVector<int64_t, 2> ptrSizePosMem = {3, 0};
+    Value ptrSize64 = rewriter.create<LLVM::ExtractValueOp>(loc, ptrStruct, ptrSizePosMem);
+    // i64 -> i32
+    Value ptrSize32 = rewriter.create<LLVM::TruncOp>(loc, I32Type, ptrSize64);
+    // Set size ptr
+    SmallVector<int64_t, 1> ptrSizePosView = {4};
+    Value retStruct4 = rewriter.create<LLVM::InsertValueOp>(loc, retStruct3, ptrSize32, ptrSizePosView);
+
+    // Get ptr idx/coo
     SmallVector<int64_t, 1> idxPtrPosMem = {1};
     Value idxPtrOpaque = rewriter.create<LLVM::ExtractValueOp>(loc, idxStruct, idxPtrPosMem);
     // ptr to ptr<i32>
-    Type I32Type = rewriter.getI32Type();
-    Type i32PtrTy = mlir::LLVM::LLVMPointerType::get(I32Type);
     Value idxPtr = rewriter.create<mlir::LLVM::BitcastOp>(loc, i32PtrTy, idxPtrOpaque);
-    // set ptr
-    SmallVector<int64_t, 1> idxPtrPosView = {1};
-    Value retStruct0 = rewriter.create<LLVM::InsertValueOp>(loc, retStruct, idxPtr, idxPtrPosView);
-    /// \todo get/set size
-
-    /// \todo ptr
+    // Set ptr idx
+    SmallVector<int64_t, 1> idxPtrPosView = {3};
+    Value retStruct5 = rewriter.create<LLVM::InsertValueOp>(loc, retStruct4, idxPtr, idxPtrPosView);
+    // Get size idx
+    SmallVector<int64_t, 2> idxSizePosMem = {3, 0};
+    Value idxSize64 = rewriter.create<LLVM::ExtractValueOp>(loc, idxStruct, idxSizePosMem);
+    // i64 -> i32
+    Value idxSize32 = rewriter.create<LLVM::TruncOp>(loc, I32Type, idxSize64);
+    // Set size idx
+    SmallVector<int64_t, 1> idxSizePosView = {4};
+    Value retStruct6 = rewriter.create<LLVM::InsertValueOp>(loc, retStruct5, idxSize32, idxSizePosView);
 
     /// \todo data
+    // Get ptr data
+    SmallVector<int64_t, 1> dataPtrPosMem = {1};
+    Value dataPtrOpaque = rewriter.create<LLVM::ExtractValueOp>(loc, dataStruct, dataPtrPosMem);
+    // ptr to ptr<...32>
+    Type eleTyMLIR = retViewTy.cast<ViewType>().getElementType();
+    Type eleTyLLVM = llvmConverter.convertType(eleTyMLIR);
+    Type eleTyptrTy = mlir::LLVM::LLVMPointerType::get(eleTyLLVM);
+    Value dataPtr = rewriter.create<mlir::LLVM::BitcastOp>(loc, eleTyptrTy, dataPtrOpaque);
+    // Set ptr data
+    SmallVector<int64_t, 1> dataPtrPosView = {5};
+    Value retStruct7 = rewriter.create<LLVM::InsertValueOp>(loc, retStruct6, dataPtr, dataPtrPosView);
+    // Get size data
+    SmallVector<int64_t, 2> dataSizePosMem = {3, 0};
+    Value dataSize64 = rewriter.create<LLVM::ExtractValueOp>(loc, dataStruct, dataSizePosMem);
+    // i64 -> i32
+    Value dataSize32 = rewriter.create<LLVM::TruncOp>(loc, I32Type, dataSize64);
+    // Set size data
+    SmallVector<int64_t, 1> dataSizePosView = {6};
+    Value retStruct8 = rewriter.create<LLVM::InsertValueOp>(loc, retStruct7, dataSize32, dataSizePosView);
 
+    // Allocate on stack view struct
+    quiccir::ViewTypeToPtrOfStructConverter ptrToStructConverter;
+    Type bufPtrToStructType = ptrToStructConverter.convertType(retViewTy);
+    Type I64Type = rewriter.getI64Type();
+    Value one = rewriter.create<LLVM::ConstantOp>(loc, I64Type,
+      rewriter.getIndexAttr(1));
+    Value bufPtrStruct = rewriter.create<LLVM::AllocaOp>(loc, bufPtrToStructType, one);
+    rewriter.create<LLVM::StoreOp>(loc, retStruct8, bufPtrStruct);
 
-    // Alloc on stack view struct
-
-    // Cast back to view
-    SmallVector<Value, 1> retCastOperand = {retStruct0};
-    Value retView = rewriter.create<UnrealizedConversionCastOp>(loc, retViewTy, retCastOperand)->getResult(0);
-
-    rewriter.replaceOp(op, retView);
+    // Replace op with cast back to view
+    SmallVector<Value, 1> castOperands = {bufPtrStruct};
+    auto newOp = rewriter.create<UnrealizedConversionCastOp>(loc, retViewTy, castOperands);
+    rewriter.replaceOp(op, newOp);
 
     return success();
   }
@@ -216,17 +275,16 @@ void  QuiccirConvertToLLVMPass::runOnOperation() {
 
   // We also define the Quiccir dialect as Illegal so that the conversion will fail
   // if any of these operations are *not* converted.
-  // target.addIllegalDialect<quiccir::QuiccirDialect>();
+  target.addIllegalDialect<quiccir::QuiccirDialect>();
   // // Also we need alloc / materialize to be legal
-  // target.addLegalOp<
-    // UnrealizedConversionCastOp
-  //   quiccir::AllocOp,
+  target.addLegalOp<
+    quiccir::AllocDataOp
   //   quiccir::MaterializeOp,
   //   quiccir::PointersOp,
   //   quiccir::IndicesOp,
   //   quiccir::AllocDataOp,
   //   quiccir::AssembleOp
-    // >();
+    >();
   // target.addIllegalOp<quiccir::PointersOp>();
 
   // Now that the conversion target has been defined, we just need to provide

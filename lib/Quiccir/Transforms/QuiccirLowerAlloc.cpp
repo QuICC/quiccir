@@ -76,7 +76,7 @@ struct AllocOpLowering : public ConversionPattern {
     Value bufPtrStruct = rewriter.create<LLVM::AllocaOp>(loc, bufPtrToStructType, one);
     rewriter.create<LLVM::StoreOp>(loc, buf2, bufPtrStruct);
 
-    // Replace op with  cast
+    // Replace op with cast
     SmallVector<Value, 1> castOperands = {bufPtrStruct};
     auto newOp = rewriter.create<UnrealizedConversionCastOp>(loc, retViewType, castOperands);
     rewriter.replaceOp(op, newOp);
