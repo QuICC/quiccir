@@ -11,14 +11,15 @@ func.func @main (%arg: !quiccir.view<16x2x3xcomplex<f32>, "layoutUmod">) {
     // %1 = builtin.unrealized_conversion_cast !llvm.struct<> to memref<?xi32>
 
     %2 = quiccir.indices %arg : !quiccir.view<16x2x3xcomplex<f32>, "layoutUmod"> -> memref<?xi32>
-    // // same as above
+    // same as above
 
-    // %3 = quiccir.alloc_data(%1, %2) : (memref<?xi32>, memref<?xi32>) -> memref<?xcomplex<f32>> {layout = "layoutUval"}
-    // // lower to call
+    %3 = quiccir.alloc_data(%1, %2) : (memref<?xi32>, memref<?xi32>) -> memref<?xcomplex<f32>> {layout = "layoutUval"}
+    // lower to call
 
-    // %4 = quiccir.assemble(%1, %2), %3 : (memref<?xi32>, memref<?xi32>), memref<?xcomplex<f32>> -> !quiccir.view<16x3x3xcomplex<f32>, "layoutUval">
+    %4 = quiccir.assemble(%1, %2), %3 : (memref<?xi32>, memref<?xi32>), memref<?xcomplex<f32>> -> !quiccir.view<16x3x3xcomplex<f32>, "layoutUval">
+    // cast memrefs to structs
     // // %10 = builtin.unrealized_conversion_cast %arg : !quiccir.view<16x2x3xcomplex<f32> to !llvm.struct<...>
-    // // copy relevant bit from view struct to memref struct
+    // // copy relevant bit from memref structs to view struct
 
     return
 }
