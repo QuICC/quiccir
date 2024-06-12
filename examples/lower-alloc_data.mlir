@@ -13,3 +13,5 @@ func.func @wrap (%ptr : memref<?xi32>, %idx : memref<?xi32>) {
 }
 
 }
+
+// ./bin/quiccir-opt ../examples/lower-alloc_data.mlir --convert-quiccir-to-llvm --lower-quiccir-alloc --convert-func-to-llvm

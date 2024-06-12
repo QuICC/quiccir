@@ -168,7 +168,6 @@ struct AllocDataOpLowering : public ConversionPattern {
         loc, libraryCallSymbol->getValue(), TypeRange(), newOperands);
 
 
-
     return success();
   }
 };

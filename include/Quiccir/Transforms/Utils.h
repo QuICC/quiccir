@@ -8,6 +8,7 @@
 #define QUICCIR_TRANSFORMS_UTILS_H
 
 #include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/IR/BuiltinDialect.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
@@ -47,6 +48,7 @@ getLibraryCallSymbolRef(Operation *op, PatternRewriter &rewriter, ArrayRef<Type>
   // Attribute for transpose op
   fnName += perm2str(op);
   // Return types
+  /// \todo remove code dupliation
   for (Type ret : op->getResultTypes()) {
     if (auto tensor = ret.dyn_cast<RankedTensorType>()) {
       auto eleTy = tensor.getElementType();
@@ -76,6 +78,17 @@ getLibraryCallSymbolRef(Operation *op, PatternRewriter &rewriter, ArrayRef<Type>
       fnName += "_"+tyStr;
       auto as = view.getEncoding().cast<StringAttr>();
       fnName += "_"+as.str();
+    }
+    if (auto memRef = ret.dyn_cast<MemRefType>()) {
+      auto eleTy = memRef.getElementType();
+      std::string tyStr;
+      llvm::raw_string_ostream tyOS(tyStr);
+      eleTy.print(tyOS);
+      if (isa<ComplexType>(eleTy)) {
+        tyStr.erase(std::find(tyStr.begin(), tyStr.end(), '<'));
+        tyStr.erase(std::find(tyStr.begin(), tyStr.end(), '>'));
+      }
+      fnName += "_"+tyStr;
     }
   }
   // Argument types
@@ -109,8 +122,25 @@ getLibraryCallSymbolRef(Operation *op, PatternRewriter &rewriter, ArrayRef<Type>
       auto as = view.getEncoding().cast<StringAttr>();
       fnName += "_"+as.str();
     }
+    if (auto memRef = arg.dyn_cast<MemRefType>()) {
+      auto eleTy = memRef.getElementType();
+      std::string tyStr;
+      llvm::raw_string_ostream tyOS(tyStr);
+      eleTy.print(tyOS);
+      if (isa<ComplexType>(eleTy)) {
+        tyStr.erase(std::find(tyStr.begin(), tyStr.end(), '<'));
+        tyStr.erase(std::find(tyStr.begin(), tyStr.end(), '>'));
+      }
+      fnName += "_"+tyStr;
+    }
   }
   std::replace(fnName.begin(), fnName.end(), '.', '_');
+
+  // Layout attr
+  if (auto allocDataOp = dyn_cast<AllocDataOp>(op)) {
+    fnName += "_"+allocDataOp.getLayoutAttrName().str();
+  }
+
   if (fnName.empty())
     return rewriter.notifyMatchFailure(op, "No library call defined for: ");
   fnName = "_ciface_"+fnName;
