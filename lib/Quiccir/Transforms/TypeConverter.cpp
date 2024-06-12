@@ -15,6 +15,27 @@ ViewTypeToStructConverter::ViewTypeToStructConverter() {
   addConversion([&](ViewType view) -> Type {
     return convertView(view);
   });
+
+  // Add generic source and target materializations to handle cases where
+  // non-LLVM types persist after an LLVM conversion.
+  addSourceMaterialization([&](OpBuilder &builder, Type resultType,
+                               ValueRange inputs,
+                               Location loc) -> std::optional<Value> {
+    if (inputs.size() != 1)
+      return std::nullopt;
+
+    return builder.create<UnrealizedConversionCastOp>(loc, resultType, inputs)
+        .getResult(0);
+  });
+  addTargetMaterialization([&](OpBuilder &builder, Type resultType,
+                               ValueRange inputs,
+                               Location loc) -> std::optional<Value> {
+    if (inputs.size() != 1)
+      return std::nullopt;
+
+    return builder.create<UnrealizedConversionCastOp>(loc, resultType, inputs)
+        .getResult(0);
+  });
 }
 
 mlir::Type ViewTypeToStructConverter::convertView(ViewType view) {
@@ -55,14 +76,35 @@ ViewTypeToPtrOfStructConverter::ViewTypeToPtrOfStructConverter() {
   addConversion([&](ViewType view) -> Type {
     return convertView(view);
   });
+
+  // Add generic source and target materializations to handle cases where
+  // non-LLVM types persist after an LLVM conversion.
+  addSourceMaterialization([&](OpBuilder &builder, Type resultType,
+                               ValueRange inputs,
+                               Location loc) -> std::optional<Value> {
+    if (inputs.size() != 1)
+      return std::nullopt;
+
+    return builder.create<UnrealizedConversionCastOp>(loc, resultType, inputs)
+        .getResult(0);
+  });
+  addTargetMaterialization([&](OpBuilder &builder, Type resultType,
+                               ValueRange inputs,
+                               Location loc) -> std::optional<Value> {
+    if (inputs.size() != 1)
+      return std::nullopt;
+
+    return builder.create<UnrealizedConversionCastOp>(loc, resultType, inputs)
+        .getResult(0);
+  });
 }
 
 mlir::Type ViewTypeToPtrOfStructConverter::convertView(ViewType view) {
-    /// Using ptr to struct instead of struct to avoid having to worry
-    /// abut ABI compatibility.
-    ViewTypeToStructConverter structConv;
-    auto strct = cast<mlir::LLVM::LLVMStructType>(structConv.convertView(view));
-    return mlir::LLVM::LLVMPointerType::get(strct);
+  /// Using ptr to struct instead of struct to avoid having to worry
+  /// abut ABI compatibility.
+  ViewTypeToStructConverter structConv;
+  auto strct = cast<mlir::LLVM::LLVMStructType>(structConv.convertView(view));
+  return mlir::LLVM::LLVMPointerType::get(strct);
 }
 
 TensorToViewConverter::TensorToViewConverter() {

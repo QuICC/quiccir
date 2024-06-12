@@ -12,7 +12,7 @@
 #include "Quiccir/Transforms/TypeConverter.h"
 #include "Quiccir/Transforms/Utils.h"
 
-#include "mlir/IR/BuiltinDialect.h"
+#include "mlir/Conversion/LLVMCommon/TypeConverter.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Bufferization/IR/BufferizableOpInterface.h"
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
@@ -20,6 +20,7 @@
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Pass/Pass.h"
+#include "mlir/IR/BuiltinDialect.h"
 #include "mlir/Transforms/DialectConversion.h"
 #include "llvm/ADT/Sequence.h"
 
@@ -118,61 +119,55 @@ struct AllocDataOpLowering : public ConversionPattern {
     auto loc = op->getLoc();
 
     LLVMTypeConverter llvmConverter(getContext());
-    // quiccir::ViewTypeToStructConverter structConverter;
-    // quiccir::ViewTypeToPtrOfStructConverter ptrToStructConverter;
 
-    // // Insert llvm.struct
-    // Type retViewType = (*op->result_type_begin()).cast<ViewType>();
-    // Type bufStructType = structConverter.convertType(retViewType);
-    // // undef
-    // Value bufStructScratch = rewriter.create<LLVM::UndefOp>(loc, bufStructType);
-    // // set dims
-    // Type I32Type = rewriter.getI32Type();
-    // Value dim0 = rewriter.create<LLVM::ConstantOp>(loc, I32Type,
-    //   retViewType.cast<ViewType>().getShape()[0]);
-    // Value dim1 = rewriter.create<LLVM::ConstantOp>(loc, I32Type,
-    //   retViewType.cast<ViewType>().getShape()[1]);
-    // Value dim2 = rewriter.create<LLVM::ConstantOp>(loc, I32Type,
-    //   retViewType.cast<ViewType>().getShape()[2]);
-    // // insert dims
-    // // swap logical order!
-    // SmallVector<int64_t, 2> pos0 = {0, 2};
-    // Value buf0 = rewriter.create<LLVM::InsertValueOp>(loc, bufStructScratch, dim0, pos0);
-    // SmallVector<int64_t, 2> pos1 = {0, 0};
-    // Value buf1 = rewriter.create<LLVM::InsertValueOp>(loc, buf0, dim1, pos1);
-    // SmallVector<int64_t, 2> pos2 = {0, 1};
-    // Value buf2 = rewriter.create<LLVM::InsertValueOp>(loc, buf1, dim2, pos2);
+    // MemRef Operands
+    typename AllocDataOp::Adaptor adaptor(operands);
+    Value ptrMemRef = *adaptor.getODSOperands(0).begin();
+    Value idxMemRef = *adaptor.getODSOperands(1).begin();
 
-    // // allocate on stack
-    // Type I64Type = rewriter.getI64Type();
-    // Value one = rewriter.create<LLVM::ConstantOp>(loc, I64Type,
-    //   rewriter.getIndexAttr(1));
-    // Type bufPtrToStructType = ptrToStructConverter.convertType(retViewType);
-    // Value bufPtrStruct = rewriter.create<LLVM::AllocaOp>(loc, bufPtrToStructType, one);
-    // rewriter.create<LLVM::StoreOp>(loc, buf2, bufPtrStruct);
+    // // Cast ptr
+    // Type ptrStructTy = llvmConverter.convertType(ptrMemRef.getType());
+    // Type ptr2ptrStructTy = mlir::LLVM::LLVMPointerType::get(ptrStructTy);
+    // SmallVector<Value, 1> ptrCastOperand = {ptrMemRef};
+    // Value ptrStruct = rewriter.create<UnrealizedConversionCastOp>(loc, ptr2ptrStructTy, ptrCastOperand)->getResult(0);
 
-    // // Replace op with cast
-    // SmallVector<Value, 1> castOperands = {bufPtrStruct};
-    // auto newOp = rewriter.create<UnrealizedConversionCastOp>(loc, retViewType, castOperands);
-    // rewriter.replaceOp(op, newOp);
+    // // Cast idx
+    // Type idxStructTy = llvmConverter.convertType(idxMemRef.getType());
+    // Type ptr2idxStructTy = mlir::LLVM::LLVMPointerType::get(idxStructTy);
+    // SmallVector<Value, 1> idxCastOperand = {idxMemRef};
+    // Value idxStruct = rewriter.create<UnrealizedConversionCastOp>(loc, ptr2idxStructTy, idxCastOperand)->getResult(0);
 
-    // // Insert library call for alloc
+    /// Alloc data struct
+    Type retMemTy = *op->result_type_begin();
+    Type retStructTy = llvmConverter.convertType(retMemTy);
+    Type ptr2retStructTy = mlir::LLVM::LLVMPointerType::get(retStructTy);
+    Type I64Type = rewriter.getI64Type();
+    Value one = rewriter.create<LLVM::ConstantOp>(loc, I64Type,
+      rewriter.getIndexAttr(1));
+    Value ptr2retStruct = rewriter.create<LLVM::AllocaOp>(loc, ptr2retStructTy, one);
 
-    // // Operands
-    // typename AllocDataOp::Adaptor adaptor(operands);
-    // Value viewProducer = adaptor.getProducerView();
+    // Replace op with cast
+    Value retStruct = rewriter.create<LLVM::LoadOp>(loc, ptr2retStruct);
+    SmallVector<Value, 1> castOperands = {retStruct};
+    Value retMem = rewriter.create<UnrealizedConversionCastOp>(loc, retMemTy, castOperands)->getResult(0);
+    rewriter.replaceOp(op, retMem);
 
-    // SmallVector <Type, 2> typeOperands = {retViewType, viewProducer.getType()};
+    /// \todo call op
+    // Insert library call for alloc data
 
-    // // return val becomes first operand
-    // auto libraryCallSymbol = getLibraryCallSymbolRef<AllocDataOp>(op, rewriter, typeOperands);
-    // if (failed(libraryCallSymbol))
-    //   return failure();
+    // Operands
+    SmallVector <Type, 3> typeOperands = {retMemTy, ptrMemRef.getType(), idxMemRef.getType()};
 
-    // Value bufView = *op->result_begin();
-    // SmallVector<Value, 2> newOperands = {bufView, viewProducer};
-    // rewriter.create<func::CallOp>(
-    //     loc, libraryCallSymbol->getValue(), TypeRange(), newOperands);
+    // return val becomes first operand
+    auto libraryCallSymbol = getLibraryCallSymbolRef<AllocDataOp>(op, rewriter, typeOperands);
+    if (failed(libraryCallSymbol))
+      return failure();
+
+    SmallVector<Value, 3> newOperands = {retMem, ptrMemRef, idxMemRef};
+    rewriter.create<func::CallOp>(
+        loc, libraryCallSymbol->getValue(), TypeRange(), newOperands);
+
+
 
     return success();
   }

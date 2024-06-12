@@ -49,8 +49,11 @@ struct MetaOpLowering : public ConversionPattern {
     // Type converter
     quiccir::ViewTypeToStructConverter viewConverter;
     Type operandStructTy = viewConverter.convertType(operandView.getType());
+    Type ptr2operandStructTy = mlir::LLVM::LLVMPointerType::get(operandStructTy);
     SmallVector<Value, 1> castOperandView = {operandView};
-    auto operandStruct = rewriter.create<UnrealizedConversionCastOp>(loc, operandStructTy, castOperandView)->getResult(0);
+    Value ptr2operandStruct = rewriter.create<UnrealizedConversionCastOp>(loc, ptr2operandStructTy, castOperandView)->getResult(0);
+    // Load struct
+    Value operandStruct = rewriter.create<LLVM::LoadOp>(loc, ptr2operandStruct);
 
     // ret memref needs replaced by a struct
     auto retMemTy = *op->result_type_begin();

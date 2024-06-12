@@ -34,6 +34,7 @@ struct QuiccirFinalizeViewToLLVMPass : public QuiccirFinalizeViewToLLVMBase<Quic
         typeConverter);
     populateCallOpTypeConversionPattern(patterns, typeConverter);
     populateReturnOpTypeConversionPattern(patterns, typeConverter);
+    populateAnyFunctionOpInterfaceTypeConversionPattern(patterns, typeConverter);
 
     // All dynamic rules below accept new function, call, return
     // provided that all quiccir view types have been fully rewritten.
