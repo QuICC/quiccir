@@ -138,7 +138,7 @@ getLibraryCallSymbolRef(Operation *op, PatternRewriter &rewriter, ArrayRef<Type>
 
   // Layout attr
   if (auto allocDataOp = dyn_cast<AllocDataOp>(op)) {
-    fnName += "_"+allocDataOp.getLayoutAttrName().str();
+    fnName += "_"+allocDataOp.getLayout().str();
   }
 
   if (fnName.empty())

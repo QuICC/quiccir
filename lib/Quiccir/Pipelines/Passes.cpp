@@ -26,15 +26,21 @@ void mlir::quiccir::quiccLibCallPipelineBuilder(OpPassManager &pm){
   pm.addPass(mlir::quiccir::createLowerToCallPass());
   pm.addPass(mlir::createCanonicalizerPass());
 
+  // Convert meta ops
   mlir::OpPassManager &nestedFuncPm = pm.nest<mlir::func::FuncOp>();
+  nestedFuncPm.addPass(mlir::quiccir::createConvertToLLVMPass());
+
+  // Insert dealloc
   nestedFuncPm.addPass(mlir::quiccir::createViewDeallocationPass());
 
   // Lower to llvm
   pm.addPass(mlir::quiccir::createLowerAllocPass());
+  pm.addPass(mlir::createConvertFuncToLLVMPass());
   pm.addPass(mlir::quiccir::createFinalizeViewToLLVMPass());
   pm.addPass(mlir::createCanonicalizerPass());
   pm.addPass(mlir::createConvertFuncToLLVMPass());
   pm.addPass(mlir::createCanonicalizerPass());
+  pm.addPass(mlir::createCSEPass());
 }
 
 //===----------------------------------------------------------------------===//
