@@ -125,6 +125,9 @@ struct AllocDataOpLowering : public ConversionPattern {
     Value ptrMemRef = *adaptor.getODSOperands(0).begin();
     Value idxMemRef = *adaptor.getODSOperands(1).begin();
 
+    // I64 Operand
+    Value lds = *adaptor.getODSOperands(2).begin();
+
     // // Cast ptr
     // Type ptrStructTy = llvmConverter.convertType(ptrMemRef.getType());
     // Type ptr2ptrStructTy = mlir::LLVM::LLVMPointerType::get(ptrStructTy);
@@ -156,14 +159,14 @@ struct AllocDataOpLowering : public ConversionPattern {
     // Insert library call for alloc data
 
     // Operands
-    SmallVector <Type, 3> typeOperands = {retMemTy, ptrMemRef.getType(), idxMemRef.getType()};
+    SmallVector <Type, 4> typeOperands = {retMemTy, ptrMemRef.getType(), idxMemRef.getType(), lds.getType()};
 
     // return val becomes first operand
     auto libraryCallSymbol = getLibraryCallSymbolRef<AllocDataOp>(op, rewriter, typeOperands);
     if (failed(libraryCallSymbol))
       return failure();
 
-    SmallVector<Value, 3> newOperands = {retMem, ptrMemRef, idxMemRef};
+    SmallVector<Value, 4> newOperands = {retMem, ptrMemRef, idxMemRef, lds};
     rewriter.create<func::CallOp>(
         loc, libraryCallSymbol->getValue(), TypeRange(), newOperands);
 
