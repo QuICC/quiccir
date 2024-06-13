@@ -5,7 +5,8 @@ module {
 func.func @main (%viewProd: !quiccir.view<16x2x3xcomplex<f32>, "layoutProd">) {
     %ptr = quiccir.pointers %viewProd : !quiccir.view<16x2x3xcomplex<f32>, "layoutProd"> -> memref<?xi32>
     %idx = quiccir.indices %viewProd : !quiccir.view<16x2x3xcomplex<f32>, "layoutProd"> -> memref<?xi32>
-    %data = quiccir.alloc_data(%ptr, %idx) : (memref<?xi32>, memref<?xi32>) -> memref<?xcomplex<f32>> {layout = "layoutNew"}
+    %lds = llvm.mlir.constant(3 : i64) : i64
+    %data = quiccir.alloc_data(%ptr, %idx), %lds : (memref<?xi32>, memref<?xi32>), i64 -> memref<?xcomplex<f32>> {layout = "layoutNew"}
     %view = quiccir.assemble(%ptr, %idx), %data : (memref<?xi32>, memref<?xi32>), memref<?xcomplex<f32>> -> !quiccir.view<16x3x3xcomplex<f32>, "layoutNew">
     return
 }

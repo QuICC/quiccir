@@ -79,9 +79,12 @@ struct OpLowering : public ConversionPattern {
       Value ptr = rewriter.create<PointersOp>(loc, metaTy, operandBuffer);
       Value idx = rewriter.create<IndicesOp>(loc, metaTy, operandBuffer);
       ViewType viewTy = retViewType.cast<ViewType>();
+      Type I64Type = rewriter.getI64Type();
+      Value lds = rewriter.create<LLVM::ConstantOp>(loc, I64Type,
+      rewriter.getI64IntegerAttr(viewTy.getShape()[1]));
       Type dataTy = MemRefType::get({ShapedType::kDynamic},
         viewTy.getElementType());
-      Value data = rewriter.create<AllocDataOp>(loc, dataTy, ptr, idx,
+      Value data = rewriter.create<AllocDataOp>(loc, dataTy, ptr, idx, lds,
         viewTy.getEncoding().cast<StringAttr>().str());
       Value buffer = rewriter.create<AssembleOp>(loc, retViewType, ptr, idx, data);
       // <<<

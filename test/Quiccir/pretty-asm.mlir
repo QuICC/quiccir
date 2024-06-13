@@ -32,8 +32,9 @@ module {
     func.func @simple_no_arg() {
         %ptr = memref.alloc() : memref<4xi32>
         %idx = memref.alloc() : memref<4xi32>
-        // CHECK: %{{.*}} = quiccir.alloc_data(%{{.*}}, %{{.*}}) : (memref<4xi32>, memref<4xi32>) -> memref<4xf64> {layout = "unknown"}
-        %view = quiccir.alloc_data(%ptr, %idx) : (memref<4xi32>, memref<4xi32>) -> memref<4xf64> {layout = "unknown"}
+        // CHECK: %{{.*}} = quiccir.alloc_data(%{{.*}}, %{{.*}}), %{{.*}} : (memref<4xi32>, memref<4xi32>), i64 -> memref<4xf64> {layout = "unknown"}
+        %lds = llvm.mlir.constant(3 : i64) : i64
+        %view = quiccir.alloc_data(%ptr, %idx), %lds : (memref<4xi32>, memref<4xi32>), i64 -> memref<4xf64> {layout = "unknown"}
         return
     }
 }

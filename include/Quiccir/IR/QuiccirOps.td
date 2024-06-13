@@ -136,15 +136,16 @@ def Quiccir_AllocDataOp : Quiccir_Op<"alloc_data", []> {
     let summary = "Allocate memref data for a view";
     let description = [{
         The `quiccir.alloc_data` operation allocate a 1D memref that is
-        the container for the compressed data of the view.
+        the buffer for the compressed data of a view.
 
         In order to allocate the right amount of space for the data
-        we need to know view layout, and the pointers/indexes metadata.
+        we need to know view layout, column height (possibly padded for FFT)
+        and the pointers/indexes metadata.
 
         Example:
 
         ```mlir
-        %0 = quiccir.alloc_data(%ptr, %idx) : (memref<xi32>, memref<xi32>) ->
+        %0 = quiccir.alloc_data(%ptr, %idx), %lds : (memref<xi32>, memref<xi32>), i64 ->
             memref<?xf64>  {layout="layout"}
         ```
 
@@ -152,11 +153,11 @@ def Quiccir_AllocDataOp : Quiccir_Op<"alloc_data", []> {
 
     }];
 
-    let arguments = (ins AnyMemRef:$ptr, AnyMemRef:$idx, StrAttr:$layout);
+    let arguments = (ins AnyMemRef:$ptr, AnyMemRef:$idx, I64:$lds, StrAttr:$layout);
     let results = (outs AnyMemRef:$data);
 
     let assemblyFormat = [{
-        `(` $ptr `,` $idx `)` `:` `(`type($ptr) `,` type($idx) `)` `->` type($data) attr-dict
+        `(` $ptr `,` $idx `)` `,` $lds `:` `(`type($ptr) `,` type($idx) `)` `,` type($lds) `->` type($data) attr-dict
     }];
 
     // let skipDefaultBuilders = 1;
