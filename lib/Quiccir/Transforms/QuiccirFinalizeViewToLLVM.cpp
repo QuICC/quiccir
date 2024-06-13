@@ -27,7 +27,7 @@ struct QuiccirFinalizeViewToLLVMPass : public QuiccirFinalizeViewToLLVMBase<Quic
     RewritePatternSet patterns(ctx);
     ConversionTarget target(*ctx);
 
-    quiccir::ViewTypeToPtrOfStructConverter typeConverter;
+    quiccir::QuiccirToPtrOfStructConverter typeConverter;
 
     // Populate with rules and apply rewriting rules.
     populateFunctionOpInterfaceTypeConversionPattern<func::FuncOp>(patterns,

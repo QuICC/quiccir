@@ -44,8 +44,8 @@ struct AllocOpLowering : public ConversionPattern {
 
     auto loc = op->getLoc();
 
-    quiccir::ViewTypeToStructConverter structConverter;
-    quiccir::ViewTypeToPtrOfStructConverter ptrToStructConverter;
+    quiccir::QuiccirToStructConverter structConverter;
+    quiccir::QuiccirToPtrOfStructConverter ptrToStructConverter;
 
     // Insert llvm.struct
     Type retViewType = (*op->result_type_begin()).cast<ViewType>();
@@ -150,8 +150,9 @@ struct AllocDataOpLowering : public ConversionPattern {
     Value ptr2retStruct = rewriter.create<LLVM::AllocaOp>(loc, ptr2retStructTy, one);
 
     // Replace op with cast
-    Value retStruct = rewriter.create<LLVM::LoadOp>(loc, ptr2retStruct);
-    SmallVector<Value, 1> castOperands = {retStruct};
+    // Value retStruct = rewriter.create<LLVM::LoadOp>(loc, ptr2retStruct);
+    // SmallVector<Value, 1> castOperands = {retStruct};
+    SmallVector<Value, 1> castOperands = {ptr2retStruct};
     Value retMem = rewriter.create<UnrealizedConversionCastOp>(loc, retMemTy, castOperands)->getResult(0);
     rewriter.replaceOp(op, retMem);
 
@@ -244,7 +245,7 @@ void QuiccirAllocLoweringPass::runOnOperation() {
   ConversionTarget target(getContext());
 
   // // Type converter
-  // quiccir::ViewTypeToStructConverter viewConverter;
+  // quiccir::QuiccirToStructConverter viewConverter;
 
   // We define the specific operations, or dialects, that are legal targets for
   // this lowering.
@@ -272,7 +273,7 @@ void QuiccirAllocLoweringPass::runOnOperation() {
 
   // void populateViewConversionPatterns(TypeConverter &typeConverter,
   // RewritePatternSet &patterns)
-  // patterns.add<ViewTypeToPtrOfStructConverter>(converter, &getContext());
+  // patterns.add<QuiccirToPtrOfStructConverter>(converter, &getContext());
 
   // With the target and rewrite patterns defined, we can now attempt the
   // conversion. The conversion will signal failure if any of our `illegal`

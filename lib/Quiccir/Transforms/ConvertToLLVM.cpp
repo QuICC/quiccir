@@ -47,7 +47,7 @@ struct MetaOpLowering : public ConversionPattern {
 
     // Struct Operand
     // Type converter
-    quiccir::ViewTypeToStructConverter viewConverter;
+    quiccir::QuiccirToStructConverter viewConverter;
     Type operandStructTy = viewConverter.convertType(operandView.getType());
     Type ptr2operandStructTy = mlir::LLVM::LLVMPointerType::get(operandStructTy);
     SmallVector<Value, 1> castOperandView = {operandView};
@@ -104,11 +104,16 @@ struct MetaOpLowering : public ConversionPattern {
     Value stackRetStruct = rewriter.create<LLVM::AllocaOp>(loc, ptrRetStructTy, one);
     rewriter.create<LLVM::StoreOp>(loc, structPtr4, stackRetStruct);
 
-    // Load and cast back to memref
-    Value retStruct = rewriter.create<LLVM::LoadOp>(loc, stackRetStruct);
-    SmallVector<Value, 1> castOperands = {retStruct};
+    // Cast back to memref
+    SmallVector<Value, 1> castOperands = {stackRetStruct};
     auto newOp = rewriter.create<UnrealizedConversionCastOp>(loc, retMemTy, castOperands);
     rewriter.replaceOp(op, newOp);
+
+    // // Load and cast back to memref
+    // Value retStruct = rewriter.create<LLVM::LoadOp>(loc, stackRetStruct);
+    // SmallVector<Value, 1> castOperands = {retStruct};
+    // auto newOp = rewriter.create<UnrealizedConversionCastOp>(loc, retMemTy, castOperands);
+    // rewriter.replaceOp(op, newOp);
 
     return success();
   }
@@ -135,22 +140,39 @@ struct AssembleOpLowering : public ConversionPattern {
     Value dataMemRef = *adaptor.getODSOperands(2).begin();
 
     // Struct Operands
-    // ptr
+    // // ptr
     LLVMTypeConverter llvmConverter(getContext());
-    Type ptrStructTy = llvmConverter.convertType(ptrMemRef.getType());
+    // Type ptrStructTy = llvmConverter.convertType(ptrMemRef.getType());
+    // SmallVector<Value, 1> ptrCastOperand = {ptrMemRef};
+    // Value ptrStruct = rewriter.create<UnrealizedConversionCastOp>(loc, ptrStructTy, ptrCastOperand)->getResult(0);
+    // // idx
+    // Type idxStructTy = llvmConverter.convertType(idxMemRef.getType());
+    // SmallVector<Value, 1> idxCastOperand = {idxMemRef};
+    // Value idxStruct = rewriter.create<UnrealizedConversionCastOp>(loc, idxStructTy, idxCastOperand)->getResult(0);
+    // // data
+    // Type dataStructTy = llvmConverter.convertType(dataMemRef.getType());
+    // SmallVector<Value, 1> dataCastOperand = {dataMemRef};
+    // Value dataStruct = rewriter.create<UnrealizedConversionCastOp>(loc, dataStructTy, dataCastOperand)->getResult(0);
+
+    // Ptr of Struct Operands
+    QuiccirToPtrOfStructConverter ptrStructConverter;
+    Type ptr2ptrStructTy = ptrStructConverter.convertType(ptrMemRef.getType());
     SmallVector<Value, 1> ptrCastOperand = {ptrMemRef};
-    Value ptrStruct = rewriter.create<UnrealizedConversionCastOp>(loc, ptrStructTy, ptrCastOperand)->getResult(0);
+    Value ptr2ptrStruct = rewriter.create<UnrealizedConversionCastOp>(loc, ptr2ptrStructTy, ptrCastOperand)->getResult(0);
+    Value ptrStruct = rewriter.create<LLVM::LoadOp>(loc, ptr2ptrStruct);
     // idx
-    Type idxStructTy = llvmConverter.convertType(idxMemRef.getType());
+    Type ptr2idxStructTy = ptrStructConverter.convertType(idxMemRef.getType());
     SmallVector<Value, 1> idxCastOperand = {idxMemRef};
-    Value idxStruct = rewriter.create<UnrealizedConversionCastOp>(loc, idxStructTy, idxCastOperand)->getResult(0);
+    Value ptr2idxStruct = rewriter.create<UnrealizedConversionCastOp>(loc, ptr2idxStructTy, idxCastOperand)->getResult(0);
+    Value idxStruct = rewriter.create<LLVM::LoadOp>(loc, ptr2idxStruct);
     // data
-    Type dataStructTy = llvmConverter.convertType(dataMemRef.getType());
+    Type ptr2dataStructTy = ptrStructConverter.convertType(dataMemRef.getType());
     SmallVector<Value, 1> dataCastOperand = {dataMemRef};
-    Value dataStruct = rewriter.create<UnrealizedConversionCastOp>(loc, dataStructTy, dataCastOperand)->getResult(0);
+    Value ptr2dataStruct = rewriter.create<UnrealizedConversionCastOp>(loc, ptr2dataStructTy, dataCastOperand)->getResult(0);
+    Value dataStruct = rewriter.create<LLVM::LoadOp>(loc, ptr2dataStruct);
 
     // Init view struct
-    quiccir::ViewTypeToStructConverter viewConverter;
+    quiccir::QuiccirToStructConverter viewConverter;
     Type retViewTy = *op->result_type_begin();
     Type retStructTy = viewConverter.convertType(retViewTy);
     Value retStruct = rewriter.create<LLVM::UndefOp>(loc, retStructTy);
@@ -229,7 +251,7 @@ struct AssembleOpLowering : public ConversionPattern {
     Value retStruct8 = rewriter.create<LLVM::InsertValueOp>(loc, retStruct7, dataSize32, dataSizePosView);
 
     // Allocate on stack view struct
-    quiccir::ViewTypeToPtrOfStructConverter ptrToStructConverter;
+    quiccir::QuiccirToPtrOfStructConverter ptrToStructConverter;
     Type bufPtrToStructType = ptrToStructConverter.convertType(retViewTy);
     Type I64Type = rewriter.getI64Type();
     Value one = rewriter.create<LLVM::ConstantOp>(loc, I64Type,
@@ -266,7 +288,7 @@ void  QuiccirConvertToLLVMPass::runOnOperation() {
   ConversionTarget target(getContext());
 
   // // Type converter
-  // quiccir::ViewTypeToStructConverter viewConverter;
+  // quiccir::QuiccirToStructConverter viewConverter;
 
   // We define the specific operations, or dialects, that are legal targets for
   // this lowering.

@@ -95,14 +95,14 @@ struct QuiccirViewWrapper : public quiccir::impl::QuiccirViewWrapperBase<Quiccir
         if (!TypeOrError) {
           module->emitError(toString(TypeOrError.takeError()));
         }
-        viewArgsTy.push_back(cnv.convertTensor(dyn_cast<RankedTensorType>(TypeOrError.get())));
+        viewArgsTy.push_back(cnv.convertType(dyn_cast<RankedTensorType>(TypeOrError.get())));
       }
       for (auto ty : argsTy) {
         llvm::Expected<Type> TypeOrError = setDimensionsEncoding(ctx, ty, dimArgs, layArgs);
         if (!TypeOrError) {
           module->emitError(toString(TypeOrError.takeError()));
         }
-        viewArgsTy.push_back(cnv.convertTensor(dyn_cast<RankedTensorType>(TypeOrError.get())));
+        viewArgsTy.push_back(cnv.convertType(dyn_cast<RankedTensorType>(TypeOrError.get())));
       }
 
       // Insert func

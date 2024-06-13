@@ -18,26 +18,34 @@ namespace quiccir {
 //===----------------------------------------------------------------------===//
 
 /// Quiccir View to a llvm.struct converter.
-class ViewTypeToStructConverter : public TypeConverter {
+class QuiccirToStructConverter : public TypeConverter {
 public:
-  ViewTypeToStructConverter();
+  using TypeConverter::convertType;
+
+  QuiccirToStructConverter();
 
   // !quiccir.view --> llvm.struct<...>
   mlir::Type convertView(ViewType view);
 };
 
 /// Quiccir View to a llvm.ptr<struct> converter.
-class ViewTypeToPtrOfStructConverter : public TypeConverter {
+class QuiccirToPtrOfStructConverter : public TypeConverter {
 public:
-  ViewTypeToPtrOfStructConverter();
+  using TypeConverter::convertType;
+
+  QuiccirToPtrOfStructConverter();
 
   // !quiccir.view --> llvm.ptr<struct<...>>
   mlir::Type convertView(ViewType view);
+  // memref --> llvm.ptr<struct<...>>
+  mlir::Type convertMemRef(MemRefType mem);
 };
 
 /// Tensor to Quiccir View converter.
 class TensorToViewConverter : public TypeConverter {
 public:
+  using TypeConverter::convertType;
+
   TensorToViewConverter();
 
   // tensor --> !quiccir.view

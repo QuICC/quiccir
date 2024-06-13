@@ -10,7 +10,7 @@
 
 using namespace mlir::quiccir;
 
-ViewTypeToStructConverter::ViewTypeToStructConverter() {
+QuiccirToStructConverter::QuiccirToStructConverter() {
   addConversion([](Type type) { return type; });
   addConversion([&](ViewType view) -> Type {
     return convertView(view);
@@ -38,7 +38,7 @@ ViewTypeToStructConverter::ViewTypeToStructConverter() {
   });
 }
 
-mlir::Type ViewTypeToStructConverter::convertView(ViewType view) {
+mlir::Type QuiccirToStructConverter::convertView(ViewType view) {
     /// Types contained by the struct dims[?],
     /// pos prt, pos size, coo ptr, coo size, data ptr, data size
     /// type of meta data could be an optional attribute
@@ -71,10 +71,13 @@ mlir::Type ViewTypeToStructConverter::convertView(ViewType view) {
     return mlir::LLVM::LLVMStructType::getLiteral(ctx, structElementTypes);
 }
 
-ViewTypeToPtrOfStructConverter::ViewTypeToPtrOfStructConverter() {
+QuiccirToPtrOfStructConverter::QuiccirToPtrOfStructConverter() {
   addConversion([](Type type) { return type; });
   addConversion([&](ViewType view) -> Type {
     return convertView(view);
+  });
+  addConversion([&](MemRefType memRef) -> Type {
+    return convertMemRef(memRef);
   });
 
   // Add generic source and target materializations to handle cases where
@@ -99,11 +102,19 @@ ViewTypeToPtrOfStructConverter::ViewTypeToPtrOfStructConverter() {
   });
 }
 
-mlir::Type ViewTypeToPtrOfStructConverter::convertView(ViewType view) {
+mlir::Type QuiccirToPtrOfStructConverter::convertView(ViewType view) {
   /// Using ptr to struct instead of struct to avoid having to worry
   /// abut ABI compatibility.
-  ViewTypeToStructConverter structConv;
+  QuiccirToStructConverter structConv;
   auto strct = cast<mlir::LLVM::LLVMStructType>(structConv.convertView(view));
+  return mlir::LLVM::LLVMPointerType::get(strct);
+}
+
+mlir::Type QuiccirToPtrOfStructConverter::convertMemRef(MemRefType memRef) {
+  /// Using ptr to struct instead of struct to avoid having to worry
+  /// abut ABI compatibility.
+  LLVMTypeConverter llvmConv(memRef.getContext());
+  auto strct = cast<mlir::LLVM::LLVMStructType>(llvmConv.convertType(memRef));
   return mlir::LLVM::LLVMPointerType::get(strct);
 }
 
