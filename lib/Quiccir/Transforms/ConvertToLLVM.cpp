@@ -201,7 +201,7 @@ struct AssembleOpLowering : public ConversionPattern {
     Type i32PtrTy = mlir::LLVM::LLVMPointerType::get(I32Type);
     Value ptrPtr = rewriter.create<mlir::LLVM::BitcastOp>(loc, i32PtrTy, ptrPtrOpaque);
     // Set ptr ptr
-    SmallVector<int64_t, 1> ptrPtrPosView = {3};
+    SmallVector<int64_t, 1> ptrPtrPosView = {1};
     Value retStruct3 = rewriter.create<LLVM::InsertValueOp>(loc, retStruct2, ptrPtr, ptrPtrPosView);
     // Get size ptr
     SmallVector<int64_t, 2> ptrSizePosMem = {3, 0};
@@ -209,7 +209,7 @@ struct AssembleOpLowering : public ConversionPattern {
     // i64 -> i32
     Value ptrSize32 = rewriter.create<LLVM::TruncOp>(loc, I32Type, ptrSize64);
     // Set size ptr
-    SmallVector<int64_t, 1> ptrSizePosView = {4};
+    SmallVector<int64_t, 1> ptrSizePosView = {2};
     Value retStruct4 = rewriter.create<LLVM::InsertValueOp>(loc, retStruct3, ptrSize32, ptrSizePosView);
 
     // Get ptr idx/coo
