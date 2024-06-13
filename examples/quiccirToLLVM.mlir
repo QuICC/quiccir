@@ -14,3 +14,6 @@ func.func @main (%viewProd: !quiccir.view<16x2x3xcomplex<f32>, "layoutProd">) {
 }
 
 // ./bin/quiccir-opt ../examples/quiccirToLLVM.mlir --convert-quiccir-to-llvm --lower-quiccir-alloc --convert-func-to-llvm --canonicalize --cse --finalize-quiccir-view --canonicalize
+
+
+// ./bin/quiccir-opt ../examples/quiccirToLLVM.mlir --quiccir-view-deallocation

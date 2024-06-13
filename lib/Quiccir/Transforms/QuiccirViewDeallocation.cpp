@@ -78,9 +78,8 @@ struct  QuiccirViewDeallocationPass
 void  QuiccirViewDeallocationPass::runOnOperation() {
 
   // Walk from root func
-  WalkResult result = getOperation()->walk([&](quiccir::AllocOp op) {
+  WalkResult result = getOperation()->walk([&](quiccir::AssembleOp op) {
       // llvm::errs() << op.getOperationName() << '\n';
-      // return deallocateBuffers(op);
       if (failed(deallocateBuffers(op)))
         return WalkResult::interrupt();
       return WalkResult::advance();

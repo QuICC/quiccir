@@ -170,6 +170,38 @@ def Quiccir_AllocDataOp : Quiccir_Op<"alloc_data", []> {
     // let hasVerifier = 1;
 }
 
+// //===----------------------------------------------------------------------===//
+// // DeallocDataOp
+// //===----------------------------------------------------------------------===//
+
+// def Quiccir_DeallocDataOp : Quiccir_Op<"dealloc_data", []> {
+//     let summary = "Deallocate view data buffer";
+//     let description = [{
+//         The `quiccir.dealloc_data` operation deallocate a view buffer.
+
+//         Example:
+
+//         ```mlir
+//         quiccir.dealloc_data(%arg) : !quiccir.view<?x?x?xf64, "layout">
+//         ```
+//     }];
+
+//     let arguments = (ins AnyView:$view);
+
+//     let assemblyFormat = [{
+//         `(` $view `)` `:` qualified(type($view)) attr-dict
+//     }];
+
+//     // let skipDefaultBuilders = 1;
+//     // let builders = [
+//     //     OpBuilder<(ins "Value":$view), [{
+//     //         return build($_builder, $_state, view);
+//     //     }]>
+//     // ];
+
+//     let hasVerifier = 1;
+// }
+
 //===----------------------------------------------------------------------===//
 // AssembleOp
 //===----------------------------------------------------------------------===//

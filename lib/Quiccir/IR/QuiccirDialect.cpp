@@ -68,13 +68,37 @@ struct QuiccirInlinerInterface : public DialectInlinerInterface {
 // DeallocOp
 //===----------------------------------------------------------------------===//
 
+namespace details
+{
+  /// \todo reduce duplication
+  /// assumes no control flow
+  Operation *getEndOperation(Value value, Operation *startOperation) {
+
+  Block *block = startOperation->getBlock();
+  // Resolve the last operation (must exist by definition).
+  Operation *endOperation = startOperation;
+  for (Operation *useOp : value.getUsers()) {
+    // Find the associated operation in the current block (if any).
+    useOp = block->findAncestorOpInBlock(*useOp);
+    // Check whether the use is in our block and after the current end
+    // operation.
+    if (useOp && endOperation->isBeforeInBlock(useOp))
+      endOperation = useOp;
+  }
+  return endOperation;
+}
+
+} // namespace details
+
+
+
 mlir::LogicalResult DeallocOp::verify() {
   // Check that this is the last use of the operand
   Value view = getOperand();
-  Operation *lastUser = *(view.user_begin()); // single link list
+  Operation *lastUser = details::getEndOperation(view, view.getDefiningOp());
   if (lastUser != *this) {
     return lastUser->emitError()
-      << "found uses of dealloc operand";
+      << "found uses of dealloc operand: " << lastUser;
   }
   return mlir::success();
 }

@@ -303,7 +303,8 @@ void  QuiccirConvertToLLVMPass::runOnOperation() {
   target.addIllegalDialect<quiccir::QuiccirDialect>();
   // // Also we need alloc / materialize to be legal
   target.addLegalOp<
-    quiccir::AllocDataOp
+    quiccir::AllocDataOp,
+    quiccir::DeallocOp
   //   quiccir::MaterializeOp,
   //   quiccir::PointersOp,
   //   quiccir::IndicesOp,
