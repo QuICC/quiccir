@@ -30,9 +30,48 @@ using namespace mlir::quiccir;
 namespace {
 
 //===----------------------------------------------------------------------===//
-// QuiccirToStd RewritePatterns: Jones Worland operations
+// QuiccirToStd RewritePatterns: Transform operations
 //===----------------------------------------------------------------------===//
 
+SmallVector<Value, 2> getIdxPtr(Operation* op, ConversionPatternRewriter &rewriter, Value operandBuffer)
+{
+  auto loc = op->getLoc();
+  if (auto traOp = dyn_cast<TransposeOp>(op)) {
+    // get function arguments
+    auto func = op->getParentOp();
+    // FuncOp has not operands, get them from block
+    Block &funcBlock = func->getRegions()[0].getBlocks().front();
+    std::uint32_t metaArrLoc = 0;
+    Value ptrMetaArray = funcBlock.getArguments()[metaArrLoc];
+    if (!ptrMetaArray.getType().isa<LLVM::LLVMPointerType>()) {
+      func->emitError() << "expecting pointer as first func arg.";
+      return {};
+    }
+
+    // load implementation array
+    Value metaArray = rewriter.create<LLVM::LoadOp>(loc, ptrMetaArray);
+    if (!metaArray.getType().isa<LLVM::LLVMArrayType>()) {
+      func->emitError() << "expecting pointer to array.";
+      return {};
+    }
+
+    /// \todo look at consumer to identify stage
+    SmallVector<int64_t, 1> indexPtr = {2};
+    Value ptr = rewriter.create<LLVM::ExtractValueOp>(loc, metaArray, indexPtr);
+    SmallVector<int64_t, 1> indexIdx = {3};
+    Value idx = rewriter.create<LLVM::ExtractValueOp>(loc, metaArray, indexIdx);
+    return {ptr, idx};
+  }
+  else {
+    // Otherwise we get ptr and idx from producer view
+    Type i32Type = IntegerType::get(op->getContext(), 32);
+    Type metaTy =
+    MemRefType::get({ShapedType::kDynamic}, i32Type);
+    Value ptr = rewriter.create<PointersOp>(loc, metaTy, operandBuffer);
+    Value idx = rewriter.create<IndicesOp>(loc, metaTy, operandBuffer);
+    return {ptr, idx};
+  }
+}
 /// \todo this would cleanup a bit by ineriting from OpConverionsPattern
 template <class Top>
 struct OpLowering : public ConversionPattern {
@@ -72,21 +111,19 @@ struct OpLowering : public ConversionPattern {
       // std::string prodStr = op->getName().getStringRef().str()+perm2str(op);
       // Value buffer = rewriter.create<AllocOp>(loc, retViewType, operandBuffer, prodStr);
 
-      // >>> updated
-      Type i32Type = IntegerType::get(op->getContext(), 32);
-      Type metaTy =
-      MemRefType::get({ShapedType::kDynamic}, i32Type);
-      Value ptr = rewriter.create<PointersOp>(loc, metaTy, operandBuffer);
-      Value idx = rewriter.create<IndicesOp>(loc, metaTy, operandBuffer);
+      // >>> updated with quicc.data_alloc
+      // If the producer is a transpose Op, load meta from input
+      auto ptrIdx = getIdxPtr(op, rewriter, operandBuffer);
+
       ViewType viewTy = retViewType.cast<ViewType>();
       Type I64Type = rewriter.getI64Type();
       Value lds = rewriter.create<LLVM::ConstantOp>(loc, I64Type,
       rewriter.getI64IntegerAttr(viewTy.getShape()[1]));
       Type dataTy = MemRefType::get({ShapedType::kDynamic},
         viewTy.getElementType());
-      Value data = rewriter.create<AllocDataOp>(loc, dataTy, ptr, idx, lds,
+      Value data = rewriter.create<AllocDataOp>(loc, dataTy, ptrIdx[0], ptrIdx[1], lds,
         viewTy.getEncoding().cast<StringAttr>().str());
-      Value buffer = rewriter.create<AssembleOp>(loc, retViewType, ptr, idx, data);
+      Value buffer = rewriter.create<AssembleOp>(loc, retViewType, ptrIdx[0], ptrIdx[1], data);
       // <<<
 
       // Make sure to allocate at the beginning of the block.
@@ -100,9 +137,10 @@ struct OpLowering : public ConversionPattern {
     auto func = op->getParentOp();
     // FuncOp has not operands, get them from block
     Block &funcBlock = func->getRegions()[0].getBlocks().front();
-    Value ptrImplArray = funcBlock.getArguments()[0];
+    std::uint32_t thisArrLoc = 1;
+    Value ptrImplArray = funcBlock.getArguments()[thisArrLoc];
     if (!ptrImplArray.getType().isa<LLVM::LLVMPointerType>()) {
-      func->emitError() << "expecting pointer as first func arg.";
+      func->emitError() << "expecting pointer as second func arg.";
       return failure();
     }
 

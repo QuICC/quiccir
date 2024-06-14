@@ -84,12 +84,24 @@ struct QuiccirViewWrapper : public quiccir::impl::QuiccirViewWrapperBase<Quiccir
       auto argsTy = funcTy.getInputs();
       auto nIn = funcTy.getNumInputs();
       SmallVector<Type, 4> viewArgsTy;
+      // Add meta (idx/ptr) array
+      /// \todo count how many meta are needed
+      /// \todo split idx ptr?
+      Type I32Type = builder.getI32Type();
+      Type memTy = MemRefType::get({ShapedType::kDynamic}, I32Type);
+      QuiccirToStructConverter structConverter;
+      Type memStructTy = structConverter.convertType(memTy);
+      Type arrMemTy = LLVM::LLVMArrayType::get(ctx, memStructTy,
+      6);
+      Type ptrMemTy = LLVM::LLVMPointerType::get(arrMemTy);
+      viewArgsTy.push_back(ptrMemTy);
       // Add ptr array
       /// \todo count how many operators are needed
       Type arrTy = LLVM::LLVMArrayType::get(ctx, LLVM::LLVMPointerType::get(ctx),
       20);
       Type ptrTy = LLVM::LLVMPointerType::get(arrTy);
       viewArgsTy.push_back(ptrTy);
+      // Add return arguments
       for (auto ty : retsTy) {
         llvm::Expected<Type> TypeOrError = setDimensionsEncoding(ctx, ty, dimRets, layRets);
         if (!TypeOrError) {
@@ -97,6 +109,7 @@ struct QuiccirViewWrapper : public quiccir::impl::QuiccirViewWrapperBase<Quiccir
         }
         viewArgsTy.push_back(cnv.convertType(dyn_cast<RankedTensorType>(TypeOrError.get())));
       }
+      // Add input arguments
       for (auto ty : argsTy) {
         llvm::Expected<Type> TypeOrError = setDimensionsEncoding(ctx, ty, dimArgs, layArgs);
         if (!TypeOrError) {
@@ -115,12 +128,13 @@ struct QuiccirViewWrapper : public quiccir::impl::QuiccirViewWrapperBase<Quiccir
       Block *viewFuncBody = viewFuncOp.addEntryBlock();
       builder.setInsertionPointToEnd(viewFuncBody);
       // Add casts view args -> tensors
-      auto nArgs = viewFuncOp.getFunctionType().getNumInputs()-1;
+      std::uint32_t nExtrArgs = 2; // meta and this arrays
+      auto nArgs = viewFuncOp.getFunctionType().getNumInputs()-nExtrArgs;
       SmallVector<Value, 4> callValues;
       auto nOut = nArgs - nIn;
-      for (unsigned i = 0; i < nIn; ++i) {
+      for (std::uint32_t i = 0; i < nIn; ++i) {
         // FuncOp has not operands, get them from block
-        Value arg = viewFuncBody->getArguments()[nOut+i+1];
+        Value arg = viewFuncBody->getArguments()[nOut+i+nExtrArgs];
         auto argCall = builder.create<UnrealizedConversionCastOp>(loc, argsTy[i], arg);
         callValues.push_back(argCall->getResult(0));
       }
@@ -128,9 +142,9 @@ struct QuiccirViewWrapper : public quiccir::impl::QuiccirViewWrapperBase<Quiccir
       /// \todo copy body of original function
       auto call = builder.create<func::CallOp>(loc, funcOp, callValues);
       // Materialize returns to views
-      for (unsigned i = 0; i < nOut; ++i) {
+      for (std::uint32_t i = 0; i < nOut; ++i) {
         // FuncOp has not operands, get them from block
-        Value view = viewFuncBody->getArguments()[i+1];
+        Value view = viewFuncBody->getArguments()[i+nExtrArgs];
         Value tensor = call->getResult(i);
         builder.create<quiccir::MaterializeOp>(loc, tensor, view);
       }
