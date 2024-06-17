@@ -36,7 +36,7 @@ namespace {
 SmallVector<Value, 2> getIdxPtr(Operation* op, ConversionPatternRewriter &rewriter, Value operandBuffer)
 {
   auto loc = op->getLoc();
-  if (auto traOp = dyn_cast<TransposeOp>(op)) {
+  if (isa<TransposeOp>(op)) {
     // get function arguments
     auto func = op->getParentOp();
     // FuncOp has not operands, get them from block
@@ -48,27 +48,33 @@ SmallVector<Value, 2> getIdxPtr(Operation* op, ConversionPatternRewriter &rewrit
       return {};
     }
 
-    // load implementation array
+    // Load implementation array
     Value metaArray = rewriter.create<LLVM::LoadOp>(loc, ptrMetaArray);
     if (!metaArray.getType().isa<LLVM::LLVMArrayType>()) {
       func->emitError() << "expecting pointer to array.";
       return {};
     }
 
-    /// \todo look at consumer to identify stage
-    /// here always doing Transpose stage 0 to 1
+    // Look at consumer to identify stage
     Operation *user = *op->user_begin();
     SmallVector<int64_t, 1> indexPtr;
     SmallVector<int64_t, 1> indexIdx;
-    if (auto op = dyn_cast<AlIOp>(user)) {
+    if (isa<FrIOp>(user) || isa<FrPOp>(user)) {
+      indexPtr.push_back(0);
+      indexIdx.push_back(1);
+    }
+    if (isa<AlIOp>(user) || isa<AlPOp>(user)) {
       indexPtr.push_back(2);
       indexIdx.push_back(3);
     }
-    else if (auto op = dyn_cast<JWIOp>(user)) {
+    else if (isa<JWIOp>(user) || isa<JWPOp>(user)) {
       indexPtr.push_back(4);
       indexIdx.push_back(5);
     }
-
+    if (indexPtr.size() == 0 || indexIdx.size() == 0) {
+      func->emitError() << "unable to recognize tranpose stage";
+      return {};
+    }
     Value ptrStruct = rewriter.create<LLVM::ExtractValueOp>(loc, metaArray, indexPtr);
     Type I32Type = rewriter.getI32Type();
     Type memTy = MemRefType::get({ShapedType::kDynamic}, I32Type);
