@@ -89,7 +89,7 @@ struct QuiccirViewWrapper : public quiccir::impl::QuiccirViewWrapperBase<Quiccir
       /// \todo split idx ptr?
       Type I32Type = builder.getI32Type();
       Type memTy = MemRefType::get({ShapedType::kDynamic}, I32Type);
-      QuiccirToStructConverter structConverter;
+      QuiccirToPtrOfStructConverter structConverter;
       Type memStructTy = structConverter.convertType(memTy);
       Type arrMemTy = LLVM::LLVMArrayType::get(ctx, memStructTy,
       6);

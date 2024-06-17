@@ -56,10 +56,27 @@ SmallVector<Value, 2> getIdxPtr(Operation* op, ConversionPatternRewriter &rewrit
     }
 
     /// \todo look at consumer to identify stage
-    SmallVector<int64_t, 1> indexPtr = {2};
-    Value ptr = rewriter.create<LLVM::ExtractValueOp>(loc, metaArray, indexPtr);
-    SmallVector<int64_t, 1> indexIdx = {3};
-    Value idx = rewriter.create<LLVM::ExtractValueOp>(loc, metaArray, indexIdx);
+    /// here always doing Transpose stage 0 to 1
+    Operation *user = *op->user_begin();
+    SmallVector<int64_t, 1> indexPtr;
+    SmallVector<int64_t, 1> indexIdx;
+    if (auto op = dyn_cast<AlIOp>(user)) {
+      indexPtr.push_back(2);
+      indexIdx.push_back(3);
+    }
+    else if (auto op = dyn_cast<JWIOp>(user)) {
+      indexPtr.push_back(4);
+      indexIdx.push_back(5);
+    }
+
+    Value ptrStruct = rewriter.create<LLVM::ExtractValueOp>(loc, metaArray, indexPtr);
+    Type I32Type = rewriter.getI32Type();
+    Type memTy = MemRefType::get({ShapedType::kDynamic}, I32Type);
+    SmallVector<Value, 1> ptrOperands = {ptrStruct};
+    Value ptr = rewriter.create<UnrealizedConversionCastOp>(loc, memTy, ptrOperands)->getResult(0);
+    Value idxStruct = rewriter.create<LLVM::ExtractValueOp>(loc, metaArray, indexIdx);
+    SmallVector<Value, 1> idxOperands = {idxStruct};
+    Value idx = rewriter.create<UnrealizedConversionCastOp>(loc, memTy, idxOperands)->getResult(0);
     return {ptr, idx};
   }
   else {

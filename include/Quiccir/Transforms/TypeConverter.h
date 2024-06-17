@@ -26,6 +26,8 @@ public:
 
   // !quiccir.view --> llvm.struct<...>
   mlir::Type convertView(ViewType view);
+  // memref --> llvm.ptr<struct<...>>
+  mlir::Type convertMemRef(MemRefType mem);
 };
 
 /// Quiccir View to a llvm.ptr<struct> converter.

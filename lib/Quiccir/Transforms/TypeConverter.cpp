@@ -15,6 +15,9 @@ QuiccirToStructConverter::QuiccirToStructConverter() {
   addConversion([&](ViewType view) -> Type {
     return convertView(view);
   });
+  addConversion([&](MemRefType memRef) -> Type {
+    return convertMemRef(memRef);
+  });
 
   // Add generic source and target materializations to handle cases where
   // non-LLVM types persist after an LLVM conversion.
@@ -69,6 +72,11 @@ mlir::Type QuiccirToStructConverter::convertView(ViewType view) {
     structElementTypes.push_back(i32Type);
     /// struct
     return mlir::LLVM::LLVMStructType::getLiteral(ctx, structElementTypes);
+}
+
+mlir::Type QuiccirToStructConverter::convertMemRef(MemRefType memRef) {
+  LLVMTypeConverter llvmConv(memRef.getContext());
+  return llvmConv.convertType(memRef);
 }
 
 QuiccirToPtrOfStructConverter::QuiccirToPtrOfStructConverter() {
