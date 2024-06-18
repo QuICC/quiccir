@@ -48,9 +48,25 @@ Operation *getEndOperation(Value value, Operation *startOperation) {
 LogicalResult deallocateBuffers(Operation *op) {
   OpBuilder builder(op);
   auto loc = op->getLoc();
-  // ret val
+  // Ret val
   Value view = *op->result_begin();
-  // find pos last user (assumes no copies, i.e. no control flow)
+
+  // Check that we allocated the data via quiccir
+  auto assOp = dyn_cast<quiccir::AssembleOp>(op);
+  auto dataProdOp = assOp.getData().getDefiningOp();
+
+  // If there is no producer, then it must be a block argument
+  // do nothing
+  if (!dataProdOp) {
+    return success();
+  }
+
+  // If we allocation is not from quiccir, do nothing
+  if (!isa<quiccir::AllocDataOp>(dataProdOp)) {
+    return success();
+  }
+
+  // Find pos last user (again, assumes no copies, i.e. no control flow)
   if (view.getUsers().empty()) {
     op->emitWarning() << "trying to deallocate unused view";
     return success();
