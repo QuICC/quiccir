@@ -258,8 +258,8 @@ void QuiccirAllocLoweringPass::runOnOperation() {
   // We also define the Quiccir dialect as Illegal so that the conversion will fail
   // if any of these operations are *not* converted.
   target.addIllegalDialect<quiccir::QuiccirDialect>();
-  // Also we need alloc / materialize to be legal
-  // target.addLegalOp<quiccir::AllocOp, quiccir::MaterializeOp>();
+  // Also we need assemble / materialize to be legal
+  target.addLegalOp<quiccir::AssembleOp, quiccir::MaterializeOp>();
 
   // Now that the conversion target has been defined, we just need to provide
   // the set of patterns that will lower the Quiccir operations.
