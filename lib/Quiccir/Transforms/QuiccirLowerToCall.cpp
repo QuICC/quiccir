@@ -255,7 +255,6 @@ void QuiccirToCallLoweringPass::runOnOperation() {
   target.addIllegalDialect<quiccir::QuiccirDialect>();
   // Also we need alloc / materialize to be legal
   target.addLegalOp<
-    quiccir::AllocOp,
     quiccir::MaterializeOp,
     quiccir::PointersOp,
     quiccir::IndicesOp,

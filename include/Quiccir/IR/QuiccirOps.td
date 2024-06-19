@@ -16,54 +16,6 @@ include "mlir/Interfaces/InferTypeOpInterface.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 
 //===----------------------------------------------------------------------===//
-// AllocOp
-//===----------------------------------------------------------------------===//
-
-def Quiccir_AllocOp : Quiccir_Op<"alloc", []> {
-    let summary = "Allocate view";
-    let description = [{
-        The `quiccir.alloc` operation allocate a new view buffer.
-
-        In order to allocate the right amount of space for the data
-        and the meta data (and populate the metadata?) we need to
-        know the producer kind and the input view.
-
-        Example:
-
-        ```mlir
-        %0 = quiccir.alloc(%arg) : !quiccir.view<?x?x?xf64, "layout"> ->
-            !quiccir.view<?x?x?xf64, "layout">  {producer="quiccir.op"}
-        ```
-
-        For codegen we should lower this to something like
-        ```mlir
-        %uphys_pos = memref.alloc() : memref<?xi32>
-        %uphys_coo = memref.alloc() : memref<?xi32>
-        %uphys_val = memref.alloc() : memref<?xf64>
-        %uphys = quiccir.assemble(%uphys_pos, %uphys_coo, %uphys_val) : !quiccir.view<?x?x?xf64, "layout">
-        ```
-        or use directly the sparse tensor facilities
-
-    }];
-
-    let arguments = (ins AnyView:$producerView, StrAttr:$producer);
-    let results = (outs AnyView:$view);
-
-    let assemblyFormat = [{
-        `(` $producerView `)` `:` qualified(type($producerView)) `->` qualified(type($view)) attr-dict
-    }];
-
-    // let skipDefaultBuilders = 1;
-    let builders = [
-        OpBuilder<(ins "ViewType":$viewType, "Value":$producerViewType, "StringAttr":$producerName), [{
-            return build($_builder, $_state, viewType, producerViewType, producerName);
-        }]>
-    ];
-
-    // let hasVerifier = 1;
-}
-
-//===----------------------------------------------------------------------===//
 // DeallocOp
 //===----------------------------------------------------------------------===//
 

@@ -38,13 +38,6 @@ getLibraryCallSymbolRef(Operation *op, PatternRewriter &rewriter, ArrayRef<Type>
   // lib call name mangling
   auto implOp = cast<OpT>(op);
   std::string fnName = implOp.getOperationName().str();
-  // Attributes for alloc op
-  if (auto allocOp = dyn_cast<AllocOp>(op)) {
-    std::string astr = allocOp.getProducer().str();
-    auto pos = astr.find("quiccir.");
-    astr.erase(pos, 8);
-    fnName += "_"+astr;
-  }
   // Attribute for transpose op
   fnName += perm2str(op);
   // Return types

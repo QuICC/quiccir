@@ -30,81 +30,6 @@ using namespace mlir::quiccir;
 namespace {
 
 //===----------------------------------------------------------------------===//
-// QuiccirToStd RewritePatterns: Alloc
-//===----------------------------------------------------------------------===//
-
-/// \todo this would cleanup a bit by ineriting from OpConverionsPattern
-struct AllocOpLowering : public ConversionPattern {
-  AllocOpLowering(MLIRContext *ctx)
-      : ConversionPattern(quiccir::AllocOp::getOperationName(), /*benefit=*/1 , ctx) {}
-
-  LogicalResult
-  matchAndRewrite(Operation *op, ArrayRef<Value> operands,
-                  ConversionPatternRewriter &rewriter) const final {
-
-    auto loc = op->getLoc();
-
-    quiccir::QuiccirToStructConverter structConverter;
-    quiccir::QuiccirToPtrOfStructConverter ptrToStructConverter;
-
-    // Insert llvm.struct
-    Type retViewType = (*op->result_type_begin()).cast<ViewType>();
-    Type bufStructType = structConverter.convertType(retViewType);
-    // undef
-    Value bufStructScratch = rewriter.create<LLVM::UndefOp>(loc, bufStructType);
-    // set dims
-    Type I32Type = rewriter.getI32Type();
-    Value dim0 = rewriter.create<LLVM::ConstantOp>(loc, I32Type,
-      retViewType.cast<ViewType>().getShape()[0]);
-    Value dim1 = rewriter.create<LLVM::ConstantOp>(loc, I32Type,
-      retViewType.cast<ViewType>().getShape()[1]);
-    Value dim2 = rewriter.create<LLVM::ConstantOp>(loc, I32Type,
-      retViewType.cast<ViewType>().getShape()[2]);
-    // insert dims
-    // swap logical order!
-    SmallVector<int64_t, 2> pos0 = {0, 2};
-    Value buf0 = rewriter.create<LLVM::InsertValueOp>(loc, bufStructScratch, dim0, pos0);
-    SmallVector<int64_t, 2> pos1 = {0, 0};
-    Value buf1 = rewriter.create<LLVM::InsertValueOp>(loc, buf0, dim1, pos1);
-    SmallVector<int64_t, 2> pos2 = {0, 1};
-    Value buf2 = rewriter.create<LLVM::InsertValueOp>(loc, buf1, dim2, pos2);
-
-    // allocate on stack
-    Type I64Type = rewriter.getI64Type();
-    Value one = rewriter.create<LLVM::ConstantOp>(loc, I64Type,
-      rewriter.getIndexAttr(1));
-    Type bufPtrToStructType = ptrToStructConverter.convertType(retViewType);
-    Value bufPtrStruct = rewriter.create<LLVM::AllocaOp>(loc, bufPtrToStructType, one);
-    rewriter.create<LLVM::StoreOp>(loc, buf2, bufPtrStruct);
-
-    // Replace op with cast
-    SmallVector<Value, 1> castOperands = {bufPtrStruct};
-    auto newOp = rewriter.create<UnrealizedConversionCastOp>(loc, retViewType, castOperands);
-    rewriter.replaceOp(op, newOp);
-
-    // Insert library call for alloc
-
-    // Operands
-    typename AllocOp::Adaptor adaptor(operands);
-    Value viewProducer = adaptor.getProducerView();
-
-    SmallVector <Type, 2> typeOperands = {retViewType, viewProducer.getType()};
-
-    // return val becomes first operand
-    auto libraryCallSymbol = getLibraryCallSymbolRef<AllocOp>(op, rewriter, typeOperands);
-    if (failed(libraryCallSymbol))
-      return failure();
-
-    Value bufView = *op->result_begin();
-    SmallVector<Value, 2> newOperands = {bufView, viewProducer};
-    rewriter.create<func::CallOp>(
-        loc, libraryCallSymbol->getValue(), TypeRange(), newOperands);
-
-    return success();
-  }
-};
-
-//===----------------------------------------------------------------------===//
 // QuiccirToStd RewritePatterns: AllocData
 //===----------------------------------------------------------------------===//
 
@@ -264,8 +189,6 @@ void QuiccirAllocLoweringPass::runOnOperation() {
   // Now that the conversion target has been defined, we just need to provide
   // the set of patterns that will lower the Quiccir operations.
   RewritePatternSet patterns(&getContext());
-  patterns.add<AllocOpLowering>(
-      &getContext());
   patterns.add<AllocDataOpLowering>(
       &getContext());
   patterns.add<DeallocOpLowering>(

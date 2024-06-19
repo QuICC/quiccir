@@ -1,16 +1,8 @@
 // RUN: quiccir-opt %s | FileCheck %s
 
 module {
-    func.func @wrap(%arg: !quiccir.view<1xf32, "layout">) {
-        // CHECK: %{{.*}} = quiccir.alloc(%{{.*}}) : !quiccir.view<1xf32, "layout"> -> !quiccir.view<1xf32, "layout"> {producer = "unknown"}
-        %view = quiccir.alloc(%arg) : !quiccir.view<1xf32, "layout"> -> !quiccir.view<1xf32, "layout"> {producer = "unknown"}
-        return
-    }
-}
-
-module {
-    func.func @wrap(%arg: !quiccir.view<1xf32, "layout">) {
-        %view = quiccir.alloc(%arg) : !quiccir.view<1xf32, "layout"> -> !quiccir.view<1xf32, "layout"> {producer = "unknown"}
+    func.func @wrap(%ptr: memref<?xi32>, %idx: memref<?xi32>, %data: memref<?xf32>) {
+        %view = quiccir.assemble(%ptr, %idx), %data : (memref<?xi32>, memref<?xi32>), memref<?xf32> -> !quiccir.view<1xf32, "layout">
         // CHECK: quiccir.dealloc(%{{.*}}) : !quiccir.view<1xf32, "layout">
         quiccir.dealloc(%view) : !quiccir.view<1xf32, "layout">
         return
@@ -21,9 +13,8 @@ module {
     func.func @wrap(%arg: !quiccir.view<1xf32, "layout">)  {
         %c0 = arith.constant 1.0 : f32
         %t = tensor.splat %c0 : tensor<1xf32, "layout">
-        %v = quiccir.alloc(%arg) : !quiccir.view<1xf32, "layout"> -> !quiccir.view<1xf32, "layout"> {producer = "unknown"}
         // CHECK: quiccir.materialize %{{.*}} in %{{.*}} : (tensor<1xf32, "layout">, !quiccir.view<1xf32, "layout">)
-        quiccir.materialize %t in %v : (tensor<1xf32, "layout">, !quiccir.view<1xf32, "layout">)
+        quiccir.materialize %t in %arg : (tensor<1xf32, "layout">, !quiccir.view<1xf32, "layout">)
         return
     }
 }
