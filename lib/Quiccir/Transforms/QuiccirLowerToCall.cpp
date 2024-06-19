@@ -48,21 +48,21 @@ SmallVector<Value, 2> getIdxPtr(Operation* op, ConversionPatternRewriter &rewrit
     std::uint32_t metaArrLoc = 0;
     Value ptrMetaArray = funcBlock.getArguments()[metaArrLoc];
     if (!ptrMetaArray.getType().isa<LLVM::LLVMPointerType>()) {
-      func->emitError() << "expecting pointer as first func arg.";
+      func->emitError() << "expecting pointer as first func arg";
       return {};
     }
 
     // Load implementation array
     Value metaArray = rewriter.create<LLVM::LoadOp>(loc, ptrMetaArray);
     if (!metaArray.getType().isa<LLVM::LLVMArrayType>()) {
-      func->emitError() << "expecting pointer to array.";
+      func->emitError() << "expecting pointer to array";
       return {};
     }
 
     // Look at consumer to identify stage
     auto users = op->getUsers();
     if (users.empty()) {
-      func->emitError() << "there is no user, cannot identify transform stage.";
+      func->emitError() << "there is no user, cannot identify transform stage";
       return {};
     }
     Operation *user = *users.begin();
@@ -143,7 +143,7 @@ struct OpLowering : public ConversionPattern {
       auto ptrIdx = getIdxPtr(op, rewriter, operandBuffer);
       if (ptrIdx.size() < 2) {
         return llvm::createStringError(llvm::errc::invalid_argument,
-          "Could not retrieve meta data.");
+          "could not retrieve meta data");
       }
       ViewType viewTy = retViewType.cast<ViewType>();
       Type I64Type = rewriter.getI64Type();
@@ -174,7 +174,7 @@ struct OpLowering : public ConversionPattern {
     std::uint32_t thisArrLoc = 1;
     Value ptrImplArray = funcBlock.getArguments()[thisArrLoc];
     if (!ptrImplArray.getType().isa<LLVM::LLVMPointerType>()) {
-      func->emitError() << "expecting pointer as second func arg.";
+      func->emitError() << "expecting pointer as second func arg";
       return failure();
     }
 
