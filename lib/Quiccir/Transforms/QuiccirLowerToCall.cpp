@@ -23,6 +23,8 @@
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
 #include "llvm/ADT/Sequence.h"
+#include "llvm/Support/Error.h"
+#include "llvm/Support/Errc.h"
 
 using namespace mlir;
 using namespace mlir::quiccir;
@@ -37,6 +39,8 @@ SmallVector<Value, 2> getIdxPtr(Operation* op, ConversionPatternRewriter &rewrit
 {
   auto loc = op->getLoc();
   if (isa<TransposeOp>(op)) {
+    // If the producer is a transpose Op, load meta from input
+
     // get function arguments
     auto func = op->getParentOp();
     // FuncOp has not operands, get them from block
@@ -56,7 +60,12 @@ SmallVector<Value, 2> getIdxPtr(Operation* op, ConversionPatternRewriter &rewrit
     }
 
     // Look at consumer to identify stage
-    Operation *user = *op->user_begin();
+    auto users = op->getUsers();
+    if (users.empty()) {
+      func->emitError() << "there is no user, cannot identify transform stage.";
+      return {};
+    }
+    Operation *user = *users.begin();
     SmallVector<int64_t, 1> indexPtr;
     SmallVector<int64_t, 1> indexIdx;
     if (isa<FrIOp>(user) || isa<FrPOp>(user)) {
@@ -117,7 +126,7 @@ struct OpLowering : public ConversionPattern {
 
     // Here we should allocate a new view.
     // However, if the consumer is quicc.materialize we simply write in that buffer
-    auto genRetBuffer = [&](Operation *op) -> Value {
+    auto genRetBuffer = [&](Operation *op) -> llvm::Expected<Value> {
       for (auto indexedResult : llvm::enumerate(op->getResults())) {
         Value result = indexedResult.value();
         if (result.hasOneUse()) {
@@ -130,14 +139,12 @@ struct OpLowering : public ConversionPattern {
           }
         }
       }
-      // otherwise we need to insert a quicc.alloc
-      // std::string prodStr = op->getName().getStringRef().str()+perm2str(op);
-      // Value buffer = rewriter.create<AllocOp>(loc, retViewType, operandBuffer, prodStr);
-
-      // >>> updated with quicc.data_alloc
-      // If the producer is a transpose Op, load meta from input
+      // otherwise we need to allocate a new buffer
       auto ptrIdx = getIdxPtr(op, rewriter, operandBuffer);
-
+      if (ptrIdx.size() < 2) {
+        return llvm::createStringError(llvm::errc::invalid_argument,
+          "Could not retrieve meta data.");
+      }
       ViewType viewTy = retViewType.cast<ViewType>();
       Type I64Type = rewriter.getI64Type();
       Value lds = rewriter.create<LLVM::ConstantOp>(loc, I64Type,
@@ -147,14 +154,18 @@ struct OpLowering : public ConversionPattern {
       Value data = rewriter.create<AllocDataOp>(loc, dataTy, ptrIdx[0], ptrIdx[1], lds,
         viewTy.getEncoding().cast<StringAttr>().str());
       Value buffer = rewriter.create<AssembleOp>(loc, retViewType, ptrIdx[0], ptrIdx[1], data);
-      // <<<
 
       // Make sure to allocate at the beginning of the block.
       // auto *parentBlock = buffer.getDefiningOp()->getBlock();
       // buffer.getDefiningOp()->moveBefore(&parentBlock->front());
       return buffer;
     };
-    Value retBuffer = genRetBuffer(op);
+    llvm::Expected<Value> ValueOrError = genRetBuffer(op);
+    if (!ValueOrError) {
+      op->emitError(toString(ValueOrError.takeError()));
+      return failure();
+    }
+    Value retBuffer = ValueOrError.get();
 
     // get function arguments
     auto func = op->getParentOp();
