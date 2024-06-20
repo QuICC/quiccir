@@ -43,6 +43,9 @@ def Quiccir_ViewType : Quiccir_Type<"View", "view", [ShapedTypeInterface]> {
     /// Clone view.
     ViewType cloneWith(std::optional<ArrayRef<int64_t>> shape,
                          Type elementType) const;
+
+    /// Set Lds
+    void setLds(const int64_t lds);
   }];
 
   // let skipDefaultBuilders = 1;

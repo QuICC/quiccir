@@ -146,13 +146,18 @@ struct OpLowering : public ConversionPattern {
           "could not retrieve meta data");
       }
       ViewType viewTy = retViewType.cast<ViewType>();
+      if (isa<FrIOp>(op)) {
+        // lds size depends potentially on consumer op
+        // i.e. the buffer might need padding
+        auto operandTy = (operandBuffer.getType()).cast<ViewType>();
+        int64_t lds = operandTy.getShape()[1]/2+1;
+        if (lds > viewTy.getShape()[1]) {
+          viewTy.setLds(lds);
+        }
+      }
       Type I64Type = rewriter.getI64Type();
-      /// \todo
-      // lds size depends potentially on consumer op
-      // i.e. the buffer might need padding for the
-      // FourierOps
       Value lds = rewriter.create<LLVM::ConstantOp>(loc, I64Type,
-      rewriter.getI64IntegerAttr(viewTy.getShape()[1]));
+      rewriter.getI64IntegerAttr(viewTy.getLds()));
 
       Type dataTy = MemRefType::get({ShapedType::kDynamic},
         viewTy.getElementType());

@@ -33,6 +33,9 @@ ViewType ViewType::cloneWith(std::optional<ArrayRef<int64_t>> shape,
   return ViewType::get(getContext(), getShape(), elementType, getEncoding(), getLds());
 }
 
+void ViewType::setLds(const int64_t lds) {
+  getImpl()->lds = lds;
+}
 
 mlir::Type ViewType::parse(AsmParser &parser) {
   // Parse '<'.
