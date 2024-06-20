@@ -134,6 +134,6 @@ TensorToViewConverter::TensorToViewConverter() {
 }
 
 mlir::Type TensorToViewConverter::convertTensor(mlir::RankedTensorType tensor) {
-  return ViewType::get(tensor.getContext(), tensor.getShape(),
+  return ViewType::get(tensor.getShape(),
     tensor.getElementType(), tensor.getEncoding());
 }

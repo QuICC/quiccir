@@ -30,7 +30,7 @@ void QuiccirDialect::registerTypes() {
 
 ViewType ViewType::cloneWith(std::optional<ArrayRef<int64_t>> shape,
                          Type elementType) const {
-  return ViewType::get(getContext(), getShape(), elementType, getEncoding());
+  return ViewType::get(getContext(), getShape(), elementType, getEncoding(), getLds());
 }
 
 
@@ -53,11 +53,25 @@ mlir::Type ViewType::parse(AsmParser &parser) {
   if (parser.parseAttribute(encoding))
     return nullptr;
 
+  // Parse ',' optionally
+  int64_t lds = ShapedType::kDynamic;
+  if (::mlir::succeeded(parser.parseOptionalComma())) {
+    // Parse "lds"
+    if (parser.parseKeyword("lds"))
+      return nullptr;
+    // Parse '='
+    if (parser.parseEqual())
+      return nullptr;
+    // Parse lds.
+    if (parser.parseInteger(lds))
+      return nullptr;
+  }
+
   // Parse '>'.
   if (parser.parseGreater())
     return nullptr;
 
-  return ViewType::get(parser.getContext(), shape, elementType, encoding);
+  return ViewType::get(parser.getContext(), shape, elementType, encoding, lds);
 }
 
 void ViewType::print(AsmPrinter &printer) const {
@@ -75,6 +89,11 @@ void ViewType::print(AsmPrinter &printer) const {
   printer << ',';
   printer << ' ';
   printer.printStrippedAttrOrType(getEncoding());
+  if (getLds() != ShapedType::kDynamic) {
+    printer << ", lds = ";
+    printer << getLds();
+    printer << ' ';
+  }
   printer << '>';
 }
 

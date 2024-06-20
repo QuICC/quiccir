@@ -147,8 +147,13 @@ struct OpLowering : public ConversionPattern {
       }
       ViewType viewTy = retViewType.cast<ViewType>();
       Type I64Type = rewriter.getI64Type();
+      /// \todo
+      // lds size depends potentially on consumer op
+      // i.e. the buffer might need padding for the
+      // FourierOps
       Value lds = rewriter.create<LLVM::ConstantOp>(loc, I64Type,
       rewriter.getI64IntegerAttr(viewTy.getShape()[1]));
+
       Type dataTy = MemRefType::get({ShapedType::kDynamic},
         viewTy.getElementType());
       Value data = rewriter.create<AllocDataOp>(loc, dataTy, ptrIdx[0], ptrIdx[1], lds,
