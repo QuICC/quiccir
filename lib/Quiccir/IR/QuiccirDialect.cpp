@@ -12,6 +12,7 @@
 // #include "mlir/IR/OpImplementation.h"
 #include "mlir/Transforms/InliningUtils.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
+#include "mlir/Dialect/Complex/IR/Complex.h"
 
 using namespace mlir;
 using namespace mlir::quiccir;
@@ -239,6 +240,18 @@ mlir::LogicalResult FrPOp::verify() {
   auto modType = mod.getType().dyn_cast<RankedTensorType>();
   auto resultType = getType().dyn_cast<RankedTensorType>();
 
+  // Check element Types
+  if (!llvm::isa<ComplexType>(modType.getElementType())) {
+    return emitOpError()
+           << "operand #1 expected to be of type complex, instead "
+           << modType.getElementType();
+  }
+  if (llvm::isa<ComplexType>(resultType.getElementType())) {
+    return emitOpError()
+           << "result expected not to be of type complex, instead "
+           << resultType.getElementType();
+  }
+
   // If unranked, there is nothing to check
   if (!modType || !resultType)
     return mlir::success();
@@ -288,6 +301,18 @@ mlir::LogicalResult FrIOp::verify() {
   auto phys = getOperand();
   auto physType = phys.getType().dyn_cast<RankedTensorType>();
   auto resultType = getType().dyn_cast<RankedTensorType>();
+
+  // Check element Types
+  if (llvm::isa<ComplexType>(physType.getElementType())) {
+    return emitOpError()
+           << "operand #1 expected not to be of type complex, instead "
+           << physType.getElementType();
+  }
+  if (!llvm::isa<ComplexType>(resultType.getElementType())) {
+    return emitOpError()
+           << "result expected to be of type complex, instead "
+           << resultType.getElementType();
+  }
 
   // If unranked, there is nothing to check
   if (!physType || !resultType)
@@ -339,6 +364,18 @@ mlir::LogicalResult AlPOp::verify() {
   auto modType = mod.getType().dyn_cast<RankedTensorType>();
   auto resultType = getType().dyn_cast<RankedTensorType>();
 
+  // Check element Types
+  if (!llvm::isa<ComplexType>(modType.getElementType())) {
+    return emitOpError()
+           << "operand #1 expected to be of type complex, instead "
+           << modType.getElementType();
+  }
+  if (!llvm::isa<ComplexType>(resultType.getElementType())) {
+    return emitOpError()
+           << "result expected to be of type complex, instead "
+           << resultType.getElementType();
+  }
+
   // If unranked, there is nothing to check
   if (!modType || !resultType)
     return mlir::success();
@@ -388,6 +425,18 @@ mlir::LogicalResult AlIOp::verify() {
   auto phys = getOperand();
   auto physType = phys.getType().dyn_cast<RankedTensorType>();
   auto resultType = getType().dyn_cast<RankedTensorType>();
+
+  // Check element Types
+  if (!llvm::isa<ComplexType>(physType.getElementType())) {
+    return emitOpError()
+           << "operand #1 expected to be of type complex, instead "
+           << physType.getElementType();
+  }
+  if (!llvm::isa<ComplexType>(resultType.getElementType())) {
+    return emitOpError()
+           << "result expected to be of type complex, instead "
+           << resultType.getElementType();
+  }
 
   // If unranked, there is nothing to check
   if (!physType || !resultType)
@@ -439,6 +488,18 @@ mlir::LogicalResult JWPOp::verify() {
   auto modType = mod.getType().dyn_cast<RankedTensorType>();
   auto resultType = getType().dyn_cast<RankedTensorType>();
 
+  // Check element Types
+  if (!llvm::isa<ComplexType>(modType.getElementType())) {
+    return emitOpError()
+           << "operand #1 expected to be of type complex, instead "
+           << modType.getElementType();
+  }
+  if (!llvm::isa<ComplexType>(resultType.getElementType())) {
+    return emitOpError()
+           << "result expected to be of type complex, instead "
+           << resultType.getElementType();
+  }
+
   // If unranked, there is nothing to check
   if (!modType || !resultType)
     return mlir::success();
@@ -487,6 +548,18 @@ mlir::LogicalResult JWIOp::verify() {
   auto phys = getOperand();
   auto physType = phys.getType().dyn_cast<RankedTensorType>();
   auto resultType = getType().dyn_cast<RankedTensorType>();
+
+  // Check element Types
+  if (!llvm::isa<ComplexType>(physType.getElementType())) {
+    return emitOpError()
+           << "operand #1 expected to be of type complex, instead "
+           << physType.getElementType();
+  }
+  if (!llvm::isa<ComplexType>(resultType.getElementType())) {
+    return emitOpError()
+           << "result expected to be of type complex, instead "
+           << resultType.getElementType();
+  }
 
   // If unranked, there is nothing to check
   if (!physType || !resultType)

@@ -46,29 +46,46 @@ getLibraryCallSymbolRef(Operation *op, PatternRewriter &rewriter, ArrayRef<Type>
   }
   // Attribute for transpose op
   fnName += perm2str(op);
+
+  auto addMangledTypeEncoding = [&](auto val) -> bool {
+    auto eleTy = val.getElementType();
+      std::string tyStr;
+      llvm::raw_string_ostream tyOS(tyStr);
+      eleTy.print(tyOS);
+      if (isa<ComplexType>(eleTy)) {
+        tyStr.erase(std::find(tyStr.begin(), tyStr.end(), '<'));
+        tyStr.erase(std::find(tyStr.begin(), tyStr.end(), '>'));
+      }
+      fnName += "_"+tyStr;
+      if (!val.getEncoding()) {
+        return false;
+      }
+      Attribute att = val.getEncoding();
+      auto as = att.cast<StringAttr>();
+      fnName += "_"+as.str();
+      return true;
+  };
+
   // Return types
   for (Type ret : op->getResultTypes()) {
     if (auto tensor = ret.dyn_cast<RankedTensorType>()) {
-      if (!tensor.getEncoding()) {
+      if (!addMangledTypeEncoding(tensor)) {
         return rewriter.notifyMatchFailure(op, "Encoding attribute is missing");
       }
-      auto as = tensor.getEncoding().cast<StringAttr>();
-      fnName += "_"+as.str();
     }
     if (auto view = ret.dyn_cast<ViewType>()) {
-      auto as = view.getEncoding().cast<StringAttr>();
-      fnName += "_"+as.str();
+      addMangledTypeEncoding(view);
     }
   }
   // Argument types
   for (Type arg : op->getOperandTypes()) {
     if (auto tensor = arg.dyn_cast<RankedTensorType>()) {
-      auto as = tensor.getEncoding().cast<StringAttr>();
-      fnName += "_"+as.str();
+      if (!addMangledTypeEncoding(tensor)) {
+        return rewriter.notifyMatchFailure(op, "Encoding attribute is missing");
+      }
     }
     if (auto view = arg.dyn_cast<ViewType>()) {
-      auto as = view.getEncoding().cast<StringAttr>();
-      fnName += "_"+as.str();
+      addMangledTypeEncoding(view);
     }
   }
   std::replace(fnName.begin(), fnName.end(), '.', '_');
