@@ -24,9 +24,21 @@ module {
     // CHECK: %[[VIEW:.*]] = quiccir.assemble(%[[PTR]], %[[IDX]]), %[[DATA]] : (memref<?xi32>, memref<?xi32>), memref<?xcomplex<f32>> -> !quiccir.view<16x3x3xcomplex<f32>, "layoutUval">
     // CHECK: %{{.*}} = llvm.load %{{.*}} : !llvm.ptr<array<2 x ptr>>
     // CHECK: llvm.extractvalue %{{.*}}[1] : !llvm.array<2 x ptr>
-    // CHECK: call @_ciface_quiccir_jw_prj_complexf32_layoutUval_complexf32_layoutUmod(%{{.*}}, %[[VIEW]], %{{.*}}) : (!llvm.ptr, !quiccir.view<16x3x3xcomplex<f32>, "layoutUval">, !quiccir.view<16x2x3xcomplex<f32>, "layoutUmod">) -> ()
-    %ret = quiccir.jw.prj %umod : tensor<16x2x3xcomplex<f32>, "layoutUmod"> -> tensor<16x3x3xcomplex<f32>, "layoutUval"> attributes{implptr = 1 :i64}
-    // CHECK: %{{.*}} = builtin.unrealized_conversion_cast %{{.*}} : !quiccir.view<16x3x3xcomplex<f32>, "layoutUval"> to tensor<16x3x3xcomplex<f32>, "layoutUval">
+    // CHECK: call @_ciface_quiccir_jw_prj_layoutUval_layoutUmod(%{{.*}}, %{{.*}}, %{{.*}}) : (!llvm.ptr, !quiccir.view<16x3x3xf32, "layoutUval">, !quiccir.view<16x2x3xf32, "layoutUmod">) -> ()
+    %ret = quiccir.jw.prj %umod : tensor<16x2x3xf32, "layoutUmod"> -> tensor<16x3x3xf32, "layoutUval"> attributes{implptr = 1 :i64}
+    // CHECK: %{{.*}} = builtin.unrealized_conversion_cast %{{.*}} : !quiccir.view<16x3x3xf32, "layoutUval"> to tensor<16x3x3xf32, "layoutUval">
+    return
+    }
+
+    // create new buffer
+    func.func @entryFrPrjAlloc(%thisArr: !llvm.ptr<array<2 x ptr>>, %vumod: !quiccir.view<16x2x3xf32, "layoutUmod">) {
+    %umod = builtin.unrealized_conversion_cast %vumod : !quiccir.view<16x2x3xf32, "layoutUmod"> to tensor<16x2x3xf32, "layoutUmod">
+    // CHECK: %{{.*}} = quiccir.alloc(%{{.*}}) : !quiccir.view<16x2x3xf32, "layoutUmod"> -> !quiccir.view<16x3x3xf32, "layoutUval"> {producer = "quiccir.fr.prj"}
+    // CHECK: %{{.*}} = llvm.load %{{.*}} : !llvm.ptr<array<2 x ptr>>
+    // CHECK: llvm.extractvalue %{{.*}}[1] : !llvm.array<2 x ptr>
+    // CHECK: call @_ciface_quiccir_fr_prj_layoutUval_layoutUmod(%{{.*}}, %{{.*}}, %{{.*}}) : (!llvm.ptr, !quiccir.view<16x3x3xf32, "layoutUval">, !quiccir.view<16x2x3xf32, "layoutUmod">) -> ()
+    %ret = quiccir.fr.prj %umod : tensor<16x2x3xf32, "layoutUmod"> -> tensor<16x3x3xf32, "layoutUval"> attributes{implptr = 1 :i64}
+    // CHECK: %{{.*}} = builtin.unrealized_conversion_cast %{{.*}} : !quiccir.view<16x3x3xf32, "layoutUval"> to tensor<16x3x3xf32, "layoutUval">
     return
     }
 
@@ -35,6 +47,7 @@ module {
     %vt = builtin.unrealized_conversion_cast %v : !quiccir.view<16x2x3xf32, "layoutIn"> to tensor<16x2x3xf32, "layoutIn">
     // CHECK: %{{.*}} = llvm.load %{{.*}} : !llvm.ptr<array<1 x ptr>>
     // CHECK: %{{.*}} = llvm.extractvalue %{{.*}}[0] : !llvm.array<1 x ptr>
+    // CHECK: call @_ciface_quiccir_transpose_021_f32_layoutOut_f32_layoutIn(%{{.*}}, %{{.*}}, %{{.*}}) : (!llvm.ptr, !quiccir.view<16x3x2xf32, "layoutOut">, !quiccir.view<16x2x3xf32, "layoutIn">) -> ()
     // CHECK: call @_ciface_quiccir_transpose_021_f32_layoutOut_f32_layoutIn(%{{.*}}, %{{.*}}, %{{.*}}) : (!llvm.ptr, !quiccir.view<16x3x2xf32, "layoutOut">, !quiccir.view<16x2x3xf32, "layoutIn">) -> ()
     %tra = quiccir.transpose %vt permutation = [0, 2, 1] : tensor<16x2x3xf32, "layoutIn"> -> tensor<16x3x2xf32, "layoutOut"> attributes{implptr = 0 :i64}
     // CHECK: %{{.*}} = builtin.unrealized_conversion_cast %{{.*}} : !quiccir.view<16x3x2xf32, "layoutOut"> to tensor<16x3x2xf32, "layoutOut">
