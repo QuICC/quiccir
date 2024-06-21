@@ -146,9 +146,8 @@ struct OpLowering : public ConversionPattern {
           "could not retrieve meta data");
       }
       ViewType viewTy = retViewType.cast<ViewType>();
+      // Set lds for ops needing padding for FFT buffer
       if (isa<FrIOp>(op)) {
-        // lds size depends potentially on consumer op
-        // i.e. the buffer might need padding
         auto operandTy = (operandBuffer.getType()).cast<ViewType>();
         int64_t lds = operandTy.getShape()[1]/2+1;
         if (lds > viewTy.getShape()[1]) {
@@ -156,12 +155,17 @@ struct OpLowering : public ConversionPattern {
         }
       }
       Type I64Type = rewriter.getI64Type();
-      Value lds = rewriter.create<LLVM::ConstantOp>(loc, I64Type,
-      rewriter.getI64IntegerAttr(viewTy.getLds()));
+      int64_t lds = viewTy.getShape()[1];
+      // If lds is set, retrieve it
+      if (viewTy.getLds() != ShapedType::kDynamic) {
+        lds = viewTy.getLds();
+      }
+      Value ldsVal = rewriter.create<LLVM::ConstantOp>(loc, I64Type,
+      rewriter.getI64IntegerAttr(lds));
 
       Type dataTy = MemRefType::get({ShapedType::kDynamic},
         viewTy.getElementType());
-      Value data = rewriter.create<AllocDataOp>(loc, dataTy, ptrIdx[0], ptrIdx[1], lds,
+      Value data = rewriter.create<AllocDataOp>(loc, dataTy, ptrIdx[0], ptrIdx[1], ldsVal,
         viewTy.getEncoding().cast<StringAttr>().str());
       Value buffer = rewriter.create<AssembleOp>(loc, retViewType, ptrIdx[0], ptrIdx[1], data);
 
