@@ -154,6 +154,20 @@ struct OpLowering : public ConversionPattern {
           viewTy.setLds(lds);
         }
       }
+      if (isa<TransposeOp>(op)) {
+        // Check consumer, if FrPOp then the buffer might need padding
+        auto users = op->getUsers();
+        if (!users.empty()) {
+          Operation *user = *users.begin();
+          if (auto proj = dyn_cast<FrPOp>(user)) {
+            auto physTy = proj.getPhys().getType().cast<RankedTensorType>();
+            int64_t lds = physTy.getShape()[1]/2+1;
+            if (lds > viewTy.getShape()[1]) {
+              viewTy.setLds(lds);
+            }
+          }
+        }
+      }
       Type I64Type = rewriter.getI64Type();
       int64_t lds = viewTy.getShape()[1];
       // If lds is set, retrieve it
