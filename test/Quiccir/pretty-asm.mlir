@@ -1,16 +1,8 @@
 // RUN: quiccir-opt %s | FileCheck %s
 
 module {
-    func.func @wrap(%arg: !quiccir.view<1xf32, "layout">) {
-        // CHECK: %{{.*}} = quiccir.alloc(%{{.*}}) : !quiccir.view<1xf32, "layout"> -> !quiccir.view<1xf32, "layout"> {producer = "unknown"}
-        %view = quiccir.alloc(%arg) : !quiccir.view<1xf32, "layout"> -> !quiccir.view<1xf32, "layout"> {producer = "unknown"}
-        return
-    }
-}
-
-module {
-    func.func @wrap(%arg: !quiccir.view<1xf32, "layout">) {
-        %view = quiccir.alloc(%arg) : !quiccir.view<1xf32, "layout"> -> !quiccir.view<1xf32, "layout"> {producer = "unknown"}
+    func.func @wrap(%ptr: memref<?xi32>, %idx: memref<?xi32>, %data: memref<?xf32>) {
+        %view = quiccir.assemble(%ptr, %idx), %data : (memref<?xi32>, memref<?xi32>), memref<?xf32> -> !quiccir.view<1xf32, "layout">
         // CHECK: quiccir.dealloc(%{{.*}}) : !quiccir.view<1xf32, "layout">
         quiccir.dealloc(%view) : !quiccir.view<1xf32, "layout">
         return
@@ -21,9 +13,46 @@ module {
     func.func @wrap(%arg: !quiccir.view<1xf32, "layout">)  {
         %c0 = arith.constant 1.0 : f32
         %t = tensor.splat %c0 : tensor<1xf32, "layout">
-        %v = quiccir.alloc(%arg) : !quiccir.view<1xf32, "layout"> -> !quiccir.view<1xf32, "layout"> {producer = "unknown"}
         // CHECK: quiccir.materialize %{{.*}} in %{{.*}} : (tensor<1xf32, "layout">, !quiccir.view<1xf32, "layout">)
-        quiccir.materialize %t in %v : (tensor<1xf32, "layout">, !quiccir.view<1xf32, "layout">)
+        quiccir.materialize %t in %arg : (tensor<1xf32, "layout">, !quiccir.view<1xf32, "layout">)
+        return
+    }
+}
+
+module {
+    func.func @simple_no_arg() {
+        %ptr = memref.alloc() : memref<4xi32>
+        %idx = memref.alloc() : memref<4xi32>
+        // CHECK: %{{.*}} = quiccir.alloc_data(%{{.*}}, %{{.*}}), %{{.*}} : (memref<4xi32>, memref<4xi32>), i64 -> memref<4xf64> {layout = "unknown"}
+        %lds = llvm.mlir.constant(3 : i64) : i64
+        %view = quiccir.alloc_data(%ptr, %idx), %lds : (memref<4xi32>, memref<4xi32>), i64 -> memref<4xf64> {layout = "unknown"}
+        return
+    }
+}
+
+module {
+    func.func @simple_no_arg() {
+        %ptr = memref.alloc() : memref<4xi32>
+        %idx = memref.alloc() : memref<4xi32>
+        %data = memref.alloc() : memref<4xf32>
+        // CHECK: %{{.*}} = quiccir.assemble(%{{.*}}, %{{.*}}), %{{.*}} : (memref<4xi32>, memref<4xi32>), memref<4xf32> -> !quiccir.view<?x?x?xf32, "unknown">
+        %view = quiccir.assemble(%ptr, %idx), %data : (memref<4xi32>, memref<4xi32>), memref<4xf32> -> !quiccir.view<?x?x?xf32, "unknown">
+        return
+    }
+}
+
+module {
+    func.func @wrap(%arg: !quiccir.view<1xf32, "layout">)  {
+        // CHECK: quiccir.pointers %{{.*}} : !quiccir.view<1xf32, "layout"> -> memref<?xi32>
+        %ptr = quiccir.pointers %arg : !quiccir.view<1xf32, "layout"> -> memref<?xi32>
+        return
+    }
+}
+
+module {
+    func.func @wrap(%arg: !quiccir.view<1xf32, "layout">)  {
+        // CHECK: quiccir.indices %{{.*}} : !quiccir.view<1xf32, "layout"> -> memref<?xi32>
+        %idx = quiccir.indices %arg : !quiccir.view<1xf32, "layout"> -> memref<?xi32>
         return
     }
 }
