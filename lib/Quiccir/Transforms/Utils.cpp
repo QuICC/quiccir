@@ -19,11 +19,8 @@ std::string perm2str(Operation* op) {
 }
 
 std::string kind2str(Operation* op) {
-  if (auto jwPOp = dyn_cast<JWPOp>(op)) {
-    auto kind = jwPOp.getKind();
-    if (kind.has_value()) {
-      return "_"+kind.value().str();
-    }
+  if (auto trOp = dyn_cast<TransformOpInterface>(op)) {
+    return trOp.getKind();
   }
   return std::string{};
 }

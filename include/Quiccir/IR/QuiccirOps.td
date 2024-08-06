@@ -12,8 +12,10 @@ include "Quiccir/IR/QuiccirDialect.td"
 include "Quiccir/IR/QuiccirTypes.td"
 include "Quiccir/Interfaces/ShapeInferenceOpInterface.td"
 include "Quiccir/Interfaces/FoldTensorCastIntoConsumerOpInterface.td"
+include "Quiccir/Interfaces/TransformOpInterface.td"
 include "mlir/Interfaces/InferTypeOpInterface.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
+
 
 //===----------------------------------------------------------------------===//
 // DeallocOp
@@ -591,7 +593,8 @@ def Quiccir_AlIOp : Quiccir_Op<"al.int", [Pure,
 
 def Quiccir_JWPOp : Quiccir_Op<"jw.prj", [Pure,
     DeclareOpInterfaceMethods<FoldTensorCastIntoConsumerOpInterface>,
-    DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
+    DeclareOpInterfaceMethods<ShapeInferenceOpInterface>,
+    DeclareOpInterfaceMethods<TransformOpInterface>]> {
     let summary = "Jone-Worland Transform modal to physical space";
     let description = [{
         The `quiccir.jw.prj` operation implements a generic Jones Worland projector.
