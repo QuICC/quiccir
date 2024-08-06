@@ -18,5 +18,15 @@ std::string perm2str(Operation* op) {
   return permStr;
 }
 
+std::string kind2str(Operation* op) {
+  if (auto jwPOp = dyn_cast<JWPOp>(op)) {
+    auto kind = jwPOp.getKind();
+    if (kind.has_value()) {
+      return "_"+kind.value().str();
+    }
+  }
+  return std::string{};
+}
+
 } // namespace quiccir
 } // namespace mlir

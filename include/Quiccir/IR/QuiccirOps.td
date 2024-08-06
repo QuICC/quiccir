@@ -617,7 +617,8 @@ def Quiccir_JWPOp : Quiccir_Op<"jw.prj", [Pure,
 
     let arguments = (ins AnyTensor:$mods
         , OptionalAttr<I64Attr>:$implptr
-        , OptionalAttr<I64Attr>:$dim);
+        , OptionalAttr<I64Attr>:$dim
+        , OptionalAttr<StrAttr>:$kind);
     let results = (outs AnyTensor:$phys);
 
     let assemblyFormat = [{
