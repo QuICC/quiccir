@@ -13,8 +13,14 @@
 #define QUICCIR_INTERFACES_TRANSFORMOPINTERFACE
 
 include "mlir/IR/OpBase.td"
+include "mlir/Interfaces/SideEffectInterfaces.td"
+include "Quiccir/Interfaces/ShapeInferenceOpInterface.td"
+include "Quiccir/Interfaces/FoldTensorCastIntoConsumerOpInterface.td"
 
-def TransformOpInterface : OpInterface<"TransformOpInterface"> {
+def TransformOpInterface : OpInterface<"TransformOpInterface", [
+  DeclareOpInterfaceMethods<FoldTensorCastIntoConsumerOpInterface>,
+  DeclareOpInterfaceMethods<ShapeInferenceOpInterface>
+  ]> {
   let description = [{
     Interface to access methods that are in common to all transform ops.
   }];
