@@ -17,8 +17,9 @@
 #define GET_OP_CLASSES
 #include "Quiccir/IR/QuiccirOps.cpp.inc"
 
-/// Include the auto-generated definitions for the shape inference interfaces.
+/// Include the auto-generated definitions for the interfaces.
 #include "Quiccir/Interfaces/ShapeInferenceOpInterface.cpp.inc"
+#include "Quiccir/Interfaces/TransformOpInterface.cpp.inc"
 
 using namespace mlir;
 using namespace mlir::quiccir;

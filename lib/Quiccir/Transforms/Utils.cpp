@@ -18,5 +18,12 @@ std::string perm2str(Operation* op) {
   return permStr;
 }
 
+std::string kind2str(Operation* op) {
+  if (auto trOp = dyn_cast<TransformOpInterface>(op)) {
+    return trOp.getKind();
+  }
+  return std::string{};
+}
+
 } // namespace quiccir
 } // namespace mlir
