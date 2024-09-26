@@ -401,7 +401,11 @@ def Quiccir_SubOp : Quiccir_Op<"sub", [Pure, Elementwise,
 //===----------------------------------------------------------------------===//
 
 def Quiccir_CrossOp : Quiccir_Op<"cross", [Pure,
-    SameOperandsAndResultShape, SameOperandsAndResultElementType]> {
+    SameOperandsShape,
+    SameOperandsElementType,
+    SameOperandsAndResultShape,
+    SameOperandsAndResultElementType,
+    DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
     let summary = "Cross product of 2 vectors";
     let description = [{
         The `quiccir.cross` operation implements a cross product of 2 vectors

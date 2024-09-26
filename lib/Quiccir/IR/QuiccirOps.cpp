@@ -116,3 +116,30 @@ void TransposeOp::inferShapes() {
     }
     getInput().setType(inType.clone(newInShape));
 }
+
+//===----------------------------------------------------------------------===//
+// CrossOp
+//===----------------------------------------------------------------------===//
+void CrossOp::inferShapes() {
+    // if (tensor::preservesStaticInformation(getLhs().getType(),
+    //     getResult().getType())) {
+    //     getLhs().setType(getResult().getType());
+    // }
+    // else {
+    //     LLVM_DEBUG(llvm::dbgs() << "Result has less info then Lhs\n");
+    // }
+    // if (tensor::preservesStaticInformation(getRhs().getType(),
+    //     getResult().getType())) {
+    //     getRhs().setType(getResult().getType());
+    // }
+    // else {
+    //     LLVM_DEBUG(llvm::dbgs() << "Result has less info then Rhs\n");
+    // }
+    // if (tensor::preservesStaticInformation(getResult().getType(),
+    //     getLhs().getType())) {
+    //     getResult().setType(getLhs().getType());
+    // }
+    // else {
+    //     LLVM_DEBUG(llvm::dbgs() << "Lhs has less info then result\n");
+    // }
+}
