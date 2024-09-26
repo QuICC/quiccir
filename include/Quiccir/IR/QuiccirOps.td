@@ -396,6 +396,58 @@ def Quiccir_SubOp : Quiccir_Op<"sub", [Pure, Elementwise,
     ];
 }
 
+//===----------------------------------------------------------------------===//
+// CrossOp
+//===----------------------------------------------------------------------===//
+
+def Quiccir_CrossOp : Quiccir_Op<"cross", [Pure,
+    SameOperandsAndResultShape, SameOperandsAndResultElementType]> {
+    let summary = "Cross product of 2 vectors";
+    let description = [{
+        The `quiccir.cross` operation implements a cross product of 2 vectors
+        in component wise form, each component is a tensor.
+
+        This operation takes 6 tensors representing the vectors,
+        it returns 3 tensors the cross product.
+
+        Attributes:
+        - implptr, index to retrieve backend class implementation
+        - kind, described the constant scaling factor
+
+        (The scaling factor should be exposed in Mlir for code generation)
+
+        Example:
+
+        ```mlir
+        %C0, %C1, %C2 = quiccir.cross (%V0, %V1, %V2), (%U0, %U1, %U2) :
+        (tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>), (tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>) ->
+        (tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>)
+        attributes{implptr = 0, kind = "inertia"}
+        ```
+    }];
+
+    let arguments = (ins AnyTensor:$V0, AnyTensor:$V1, AnyTensor:$V2
+        , AnyTensor:$U0, AnyTensor:$U1, AnyTensor:$U2
+        , OptionalAttr<I64Attr>:$implptr
+        , OptionalAttr<StrAttr>:$kind);
+    let results = (outs AnyTensor:$C0, AnyTensor:$C1, AnyTensor:$C2);
+
+    let assemblyFormat = [{
+        `(` $V0 `,` $V1 `,` $V2 `)` `,` `(` $U0 `,` $U1 `,` $U2 `)` `:` `(` type($V0) `,` type($V1) `,` type($V2) `)`
+        `,` `(` type($U0) `,` type($U1) `,` type($U2) `)`  `->` `(` type($C0) `,` type($C1) `,` type($C2) `)`
+        attr-dict-with-keyword
+    }];
+
+    // let hasVerifier = 1;
+    // let hasCanonicalizeMethod = 1;
+
+    // let skipDefaultBuilders = 1;
+    // Allow building a CrossOp from the input operands.
+    let builders = [
+        OpBuilder<(ins "Value":$V0, "Value":$V1, "Value":$V2, "Value":$U0, "Value":$U1, "Value":$U2)>
+    ];
+}
+
 
 //===----------------------------------------------------------------------===//
 // FourierProjectorOp
