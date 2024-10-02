@@ -179,7 +179,7 @@ func.func private @nlVector(%UR: tensor<?x?x?xf64>, %UTheta: tensor<?x?x?xf64>, 
     %Cross:3 = quiccir.cross(%UR, %UTheta, %UPhi), (%CurlR, %CurlTheta, %CurlPhi) :
         (tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>), (tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>) ->
         (tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>)
-        attributes{implptr = 61}
+        attributes{implptr = 61, kind = "inertia"}
     // // Add buoyancy
     // %Buoy = quiccir.mul.const(%T) : (tensor<?x?x?xf64>) -> tensor<?x?x?xf64>
     //     attributes{implptr = 61, kind = "R"}

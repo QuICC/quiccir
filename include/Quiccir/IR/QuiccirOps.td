@@ -12,6 +12,7 @@ include "Quiccir/IR/QuiccirDialect.td"
 include "Quiccir/IR/QuiccirTypes.td"
 include "Quiccir/Interfaces/ShapeInferenceOpInterface.td"
 include "Quiccir/Interfaces/FoldTensorCastIntoConsumerOpInterface.td"
+include "Quiccir/Interfaces/KindOpInterface.td"
 include "Quiccir/Interfaces/TransformOpInterface.td"
 include "mlir/Interfaces/InferTypeOpInterface.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
@@ -405,7 +406,8 @@ def Quiccir_CrossOp : Quiccir_Op<"cross", [Pure,
     SameOperandsElementType,
     SameOperandsAndResultShape,
     SameOperandsAndResultElementType,
-    DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
+    DeclareOpInterfaceMethods<ShapeInferenceOpInterface>,
+    DeclareOpInterfaceMethods<KindOpInterface>]> {
     let summary = "Cross product of 2 vectors";
     let description = [{
         The `quiccir.cross` operation implements a cross product of 2 vectors
