@@ -120,14 +120,16 @@ struct OpLowering : public ConversionPattern {
     typename Top::Adaptor adaptor(operands);
     Value operandBuffer = *adaptor.getODSOperands(0).begin();
 
-    // Insert an allocation for the result of this operation.
+    // Insert an allocation for each of the results of this operation.
     auto retTensorType = (*op->result_type_begin()).cast<TensorType>();
     auto retViewType = getTypeConverter()->convertType(retTensorType);
 
     // Here we should allocate a new view.
     // However, if the consumer is quicc.materialize we simply write in that buffer
-    auto genRetBuffer = [&](Operation *op) -> llvm::Expected<Value> {
+    auto genRetBuffer = [&](Operation *op) -> llvm::Expected<SmallVector<Value, 3>> {
+      SmallVector<Value, 3> buffers;
       for (auto indexedResult : llvm::enumerate(op->getResults())) {
+        llvm::outs() << "indexedResult loop\n";
         Value result = indexedResult.value();
         if (result.hasOneUse()) {
           /// single use, check if the user is materializeOP
@@ -135,65 +137,69 @@ struct OpLowering : public ConversionPattern {
           if (auto op = dyn_cast<MaterializeOp>(user)) {
             Value buffer = op.getView();
             rewriter.eraseOp(op);
-            return buffer;
+            buffers.push_back(buffer);
           }
         }
-      }
-      // otherwise we need to allocate a new buffer
-      auto ptrIdx = getIdxPtr(op, rewriter, operandBuffer);
-      if (ptrIdx.size() < 2) {
-        return llvm::createStringError(llvm::errc::invalid_argument,
-          "could not retrieve meta data");
-      }
-      ViewType viewTy = retViewType.cast<ViewType>();
-      // Set lds for ops needing padding for FFT buffer
-      if (isa<FrIOp>(op)) {
-        auto operandTy = (operandBuffer.getType()).cast<ViewType>();
-        int64_t lds = operandTy.getShape()[1]/2+1;
-        if (lds > viewTy.getShape()[1]) {
-          viewTy.setLds(lds);
-        }
-      }
-      if (isa<TransposeOp>(op)) {
-        // Check consumer, if FrPOp then the buffer might need padding
-        auto users = op->getUsers();
-        if (!users.empty()) {
-          Operation *user = *users.begin();
-          if (auto proj = dyn_cast<FrPOp>(user)) {
-            auto physTy = proj.getPhys().getType().cast<RankedTensorType>();
-            int64_t lds = physTy.getShape()[1]/2+1;
-            if (lds > viewTy.getShape()[1]) {
-              viewTy.setLds(lds);
+        else
+        {
+          // otherwise we need to allocate a new buffer
+          auto ptrIdx = getIdxPtr(op, rewriter, operandBuffer);
+          if (ptrIdx.size() < 2) {
+            return llvm::createStringError(llvm::errc::invalid_argument,
+              "could not retrieve meta data");
+          }
+          auto retTensorTy = result.getType().cast<TensorType>();
+          ViewType retViewTy = getTypeConverter()->convertType(retTensorTy).cast<ViewType>();
+          // Set lds for ops needing padding for FFT buffer
+          if (isa<FrIOp>(op)) {
+            auto operandTy = (operandBuffer.getType()).cast<ViewType>();
+            int64_t lds = operandTy.getShape()[1]/2+1;
+            if (lds > retViewTy.getShape()[1]) {
+              retViewTy.setLds(lds);
             }
           }
+          if (isa<TransposeOp>(op)) {
+            // Check consumer, if FrPOp then the buffer might need padding
+            auto users = op->getUsers();
+            if (!users.empty()) {
+              Operation *user = *users.begin();
+              if (auto proj = dyn_cast<FrPOp>(user)) {
+                auto physTy = proj.getPhys().getType().cast<RankedTensorType>();
+                int64_t lds = physTy.getShape()[1]/2+1;
+                if (lds > retViewTy.getShape()[1]) {
+                  retViewTy.setLds(lds);
+                }
+              }
+            }
+          }
+          Type I64Type = rewriter.getI64Type();
+          int64_t lds = retViewTy.getShape()[1];
+          // If lds is set, retrieve it
+          if (retViewTy.getLds() != ShapedType::kDynamic) {
+            lds = retViewTy.getLds();
+          }
+          Value ldsVal = rewriter.create<LLVM::ConstantOp>(loc, I64Type,
+          rewriter.getI64IntegerAttr(lds));
+
+          Type dataTy = MemRefType::get({ShapedType::kDynamic},
+            retViewTy.getElementType());
+          Value data = rewriter.create<AllocDataOp>(loc, dataTy, ptrIdx[0], ptrIdx[1], ldsVal,
+            retViewTy.getEncoding().cast<StringAttr>().str());
+          Value buffer = rewriter.create<AssembleOp>(loc, retViewTy, ptrIdx[0], ptrIdx[1], data);
+          buffers.push_back(buffer);
+        // Make sure to allocate at the beginning of the block.
+        // auto *parentBlock = buffer.getDefiningOp()->getBlock();
+        // buffer.getDefiningOp()->moveBefore(&parentBlock->front());
         }
       }
-      Type I64Type = rewriter.getI64Type();
-      int64_t lds = viewTy.getShape()[1];
-      // If lds is set, retrieve it
-      if (viewTy.getLds() != ShapedType::kDynamic) {
-        lds = viewTy.getLds();
-      }
-      Value ldsVal = rewriter.create<LLVM::ConstantOp>(loc, I64Type,
-      rewriter.getI64IntegerAttr(lds));
-
-      Type dataTy = MemRefType::get({ShapedType::kDynamic},
-        viewTy.getElementType());
-      Value data = rewriter.create<AllocDataOp>(loc, dataTy, ptrIdx[0], ptrIdx[1], ldsVal,
-        viewTy.getEncoding().cast<StringAttr>().str());
-      Value buffer = rewriter.create<AssembleOp>(loc, retViewType, ptrIdx[0], ptrIdx[1], data);
-
-      // Make sure to allocate at the beginning of the block.
-      // auto *parentBlock = buffer.getDefiningOp()->getBlock();
-      // buffer.getDefiningOp()->moveBefore(&parentBlock->front());
-      return buffer;
+      return buffers;
     };
-    llvm::Expected<Value> ValueOrError = genRetBuffer(op);
+    llvm::Expected<SmallVector<Value, 3>> ValueOrError = genRetBuffer(op);
     if (!ValueOrError) {
       op->emitError(toString(ValueOrError.takeError()));
       return failure();
     }
-    Value retBuffer = ValueOrError.get();
+    SmallVector<Value, 3> retBuffers = ValueOrError.get();
 
     // get function arguments
     auto func = op->getParentOp();
@@ -233,16 +239,23 @@ struct OpLowering : public ConversionPattern {
       return failure();
 
     // SmallVector<Value, 4> newOperands = {implPtr, retBuffer, operandBuffer};
-    SmallVector<Value, 4> newOperands = {implPtr, retBuffer};
+    SmallVector<Value, 4> newOperands = {implPtr};
+    for (auto ret : retBuffers) {
+      newOperands.push_back(ret);
+    }
     for (auto val : operands) {
       newOperands.push_back(val);
     }
     rewriter.create<func::CallOp>(
         loc, libraryCallSymbol->getValue(), TypeRange(), newOperands);
 
-    SmallVector<Value, 1> castOperands = {retBuffer};
-    auto newOp = rewriter.create<UnrealizedConversionCastOp>(loc, retTensorType, castOperands);
-    rewriter.replaceOp(op, newOp);
+    // Replace old Op with casts
+    SmallVector<Value, 3> castOps;
+    for (auto ret : retBuffers) {
+      Value newOp = rewriter.create<UnrealizedConversionCastOp>(loc, retTensorType, ret)->getResult(0);
+      castOps.push_back(newOp);
+    }
+    rewriter.replaceOp(op, castOps);
 
     return success();
   }
@@ -310,6 +323,8 @@ void QuiccirToCallLoweringPass::runOnOperation() {
   patterns.add<OpLowering<quiccir::SubOp>>(
       &getContext(), viewConverter);
   patterns.add<OpLowering<quiccir::TransposeOp>>(
+      &getContext(), viewConverter);
+  patterns.add<OpLowering<quiccir::CrossOp>>(
       &getContext(), viewConverter);
 
   // With the target and rewrite patterns defined, we can now attempt the
