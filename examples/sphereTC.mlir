@@ -159,18 +159,18 @@ func.func private @fwdVector(%R: tensor<?x?x?xf64>, %Theta: tensor<?x?x?xf64>, %
 
 func.func private @nlScalar(%UR: tensor<?x?x?xf64>, %UTheta: tensor<?x?x?xf64>, %UPhi: tensor<?x?x?xf64>,
     %TdR: tensor<?x?x?xf64>, %TdTheta: tensor<?x?x?xf64>, %TdPhi: tensor<?x?x?xf64>) -> tensor<?x?x?xf64> {
-    // // U dot grad T
-    // %DotT = quiccir.dot(%UR, %UTheta, %UPhi, %TdTR, %TdTTheta, %TdTPhi) :
-    //     (tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>) ->
-    //     (tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>)
-    //     attributes{implptr = 60}
+    // U dot grad T
+    %DotT = quiccir.dot(%UR, %UTheta, %UPhi), (%TdR, %TdTheta, %TdPhi) :
+        (tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>), (tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>) ->
+        tensor<?x?x?xf64>
+        attributes{implptr = 60, kind = "scaling"}
     // // U dot R
     // %DotR = quiccir.mul.const(%UR) : (tensor<?x?x?xf64>) -> tensor<?x?x?xf64>
     //     attributes{implptr = 61, kind = "R"}
     // %TPhysNl = quiccir.sub %Dot, %DotR : tensor<?x?x?xf64>, tensor<?x?x?xf64> -> tensor<?x?x?xf64> attributes{implptr = 62}
 
     // return %TPhysNl : tensor<?x?x?xf64>
-    return %TdR : tensor<?x?x?xf64>
+    return %DotT : tensor<?x?x?xf64>
 }
 
 func.func private @nlVector(%UR: tensor<?x?x?xf64>, %UTheta: tensor<?x?x?xf64>, %UPhi: tensor<?x?x?xf64>,
