@@ -122,14 +122,12 @@ struct OpLowering : public ConversionPattern {
 
     // Insert an allocation for each of the results of this operation.
     auto retTensorType = (*op->result_type_begin()).cast<TensorType>();
-    auto retViewType = getTypeConverter()->convertType(retTensorType);
 
     // Here we should allocate a new view.
     // However, if the consumer is quicc.materialize we simply write in that buffer
     auto genRetBuffer = [&](Operation *op) -> llvm::Expected<SmallVector<Value, 3>> {
       SmallVector<Value, 3> buffers;
       for (auto indexedResult : llvm::enumerate(op->getResults())) {
-        llvm::outs() << "indexedResult loop\n";
         Value result = indexedResult.value();
         if (result.hasOneUse()) {
           /// single use, check if the user is materializeOP
@@ -227,8 +225,10 @@ struct OpLowering : public ConversionPattern {
     auto implPtr = rewriter.create<LLVM::ExtractValueOp>(loc, implArray, index);
 
     // opaque ptr to implementation becomes first operand
-    // SmallVector <Type, 4> typeOperands = {implPtr.getType(), retViewType, operandBuffer.getType()};
-    SmallVector <Type, 4> typeOperands = {implPtr.getType(), retViewType};
+    SmallVector <Type, 4> typeOperands = {implPtr.getType()};
+    for (auto ret : retBuffers) {
+      typeOperands.push_back(ret.getType());
+    }
     for (auto val : operands) {
       typeOperands.push_back(val.getType());
     }
@@ -238,7 +238,6 @@ struct OpLowering : public ConversionPattern {
     if (failed(libraryCallSymbol))
       return failure();
 
-    // SmallVector<Value, 4> newOperands = {implPtr, retBuffer, operandBuffer};
     SmallVector<Value, 4> newOperands = {implPtr};
     for (auto ret : retBuffers) {
       newOperands.push_back(ret);
