@@ -129,14 +129,14 @@ struct OpLowering : public ConversionPattern {
       SmallVector<Value, 3> buffers;
       for (auto indexedResult : llvm::enumerate(op->getResults())) {
         Value result = indexedResult.value();
-        if (result.hasOneUse()) {
-          /// single use, check if the user is materializeOP
-          Operation *user = *result.user_begin();
-          if (auto op = dyn_cast<MaterializeOp>(user)) {
-            Value buffer = op.getView();
-            rewriter.eraseOp(op);
-            buffers.push_back(buffer);
-          }
+        Operation *user = *result.user_begin();
+        auto matOp = dyn_cast<MaterializeOp>(user);
+        if (result.hasOneUse() && matOp) {
+          // Single use with materializeOp
+          // no need to allocate buffer
+          Value buffer = matOp.getView();
+          rewriter.eraseOp(matOp);
+          buffers.push_back(buffer);
         }
         else
         {
@@ -189,6 +189,11 @@ struct OpLowering : public ConversionPattern {
         // auto *parentBlock = buffer.getDefiningOp()->getBlock();
         // buffer.getDefiningOp()->moveBefore(&parentBlock->front());
         }
+      }
+      // At this point there should be a buffer
+      if (buffers.size() < 1) {
+        return llvm::createStringError(llvm::errc::invalid_argument,
+              "the buffer was not set correctly");
       }
       return buffers;
     };
@@ -254,6 +259,7 @@ struct OpLowering : public ConversionPattern {
       Value newOp = rewriter.create<UnrealizedConversionCastOp>(loc, retTensorType, ret)->getResult(0);
       castOps.push_back(newOp);
     }
+    assert(op->getNumResults() == castOps.size());
     rewriter.replaceOp(op, castOps);
 
     return success();

@@ -97,8 +97,9 @@ struct QuiccirViewWrapper : public quiccir::impl::QuiccirViewWrapperBase<Quiccir
       viewArgsTy.push_back(ptrMemTy);
       // Add ptr array
       /// \todo count how many operators are needed
+      std::uint32_t numOps = 90;
       Type arrTy = LLVM::LLVMArrayType::get(ctx, LLVM::LLVMPointerType::get(ctx),
-      20);
+      numOps);
       Type ptrTy = LLVM::LLVMPointerType::get(arrTy);
       viewArgsTy.push_back(ptrTy);
       // Add return arguments
