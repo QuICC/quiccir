@@ -164,13 +164,10 @@ func.func private @nlScalar(%UR: tensor<?x?x?xf64>, %UTheta: tensor<?x?x?xf64>, 
         (tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>), (tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>) ->
         tensor<?x?x?xf64>
         attributes{implptr = 60, kind = "scaling"}
-    // // U dot R
-    // %DotR = quiccir.mul.const(%UR) : (tensor<?x?x?xf64>) -> tensor<?x?x?xf64>
-    //     attributes{implptr = 61, kind = "R"}
-    // %TPhysNl = quiccir.sub %Dot, %DotR : tensor<?x?x?xf64>, tensor<?x?x?xf64> -> tensor<?x?x?xf64> attributes{implptr = 62}
-
-    // return %TPhysNl : tensor<?x?x?xf64>
-    return %DotT : tensor<?x?x?xf64>
+    // U dot R
+    %DotR = quiccir.mul.const %UR : tensor<?x?x?xf64> -> tensor<?x?x?xf64> attributes{implptr = 61, kind = "R"}
+    %TPhysNl = quiccir.sub %DotT, %DotR : tensor<?x?x?xf64>, tensor<?x?x?xf64> -> tensor<?x?x?xf64> attributes{implptr = 62}
+    return %TPhysNl : tensor<?x?x?xf64>
 }
 
 func.func private @nlVector(%UR: tensor<?x?x?xf64>, %UTheta: tensor<?x?x?xf64>, %UPhi: tensor<?x?x?xf64>,
@@ -180,12 +177,10 @@ func.func private @nlVector(%UR: tensor<?x?x?xf64>, %UTheta: tensor<?x?x?xf64>, 
         (tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>), (tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>) ->
         (tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>)
         attributes{implptr = 61, kind = "inertia"}
-    // // Add buoyancy
-    // %Buoy = quiccir.mul.const(%T) : (tensor<?x?x?xf64>) -> tensor<?x?x?xf64>
-    //     attributes{implptr = 61, kind = "R"}
-    // %RNl = quiccir.sub(%Cross#0, %Buoy) : tensor<?x?x?xf64>, tensor<?x?x?xf64> -> tensor<?x?x?xf64> attributes{implptr = 63}
-    // return %Rnl, %Cross#1, %Cross#2 : tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>
-    return %Cross#0, %Cross#1, %Cross#2 : tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>
+    // Add buoyancy
+    %Buoy = quiccir.mul.const %T : tensor<?x?x?xf64> -> tensor<?x?x?xf64> attributes{implptr = 61, kind = "R"}
+    %RNl = quiccir.sub %Cross#0, %Buoy : tensor<?x?x?xf64>, tensor<?x?x?xf64> -> tensor<?x?x?xf64> attributes{implptr = 63}
+    return %RNl, %Cross#1, %Cross#2 : tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>
 }
 
 func.func @entry(%T: tensor<?x?x?xcomplex<f64>>, %Tor: tensor<?x?x?xcomplex<f64>>, %Pol: tensor<?x?x?xcomplex<f64>>) -> (tensor<?x?x?xcomplex<f64>>, tensor<?x?x?xcomplex<f64>>, tensor<?x?x?xcomplex<f64>>) {
