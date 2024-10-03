@@ -89,6 +89,14 @@ module {
 }
 
 module {
+    func.func @wrap(%u: tensor<?x?x?xf32>) -> tensor<?x?x?xf32> {
+        // CHECK:  %{{.*}} = quiccir.mul.const %{{.*}} : tensor<?x?x?xf32> -> tensor<?x?x?xf32>
+        %mul = quiccir.mul.const %u : tensor<?x?x?xf32> -> tensor<?x?x?xf32>
+        return %mul : tensor<?x?x?xf32>
+    }
+}
+
+module {
     func.func @wrap(%arg0: tensor<?x?x?xcomplex<f32>>) -> tensor<?x?x?xf32> {
         // CHECK: %{{.*}} = quiccir.fr.prj %{{.*}} : tensor<?x?x?xcomplex<f32>> -> tensor<?x?x?xf32>
         %0 = quiccir.fr.prj %arg0 : tensor<?x?x?xcomplex<f32>> -> tensor<?x?x?xf32>

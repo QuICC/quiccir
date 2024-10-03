@@ -353,7 +353,7 @@ def Quiccir_AddOp : Quiccir_Op<"add", [Pure, Commutative, Elementwise,
     // let hasCanonicalizeMethod = 1;
 
     // let skipDefaultBuilders = 1;
-    // Allow building a FrPOp from the input operand.
+    // Allow building a AddOp from the input operand.
     let builders = [
         OpBuilder<(ins "Value":$lhs, "Value":$rhs)>
     ];
@@ -391,11 +391,52 @@ def Quiccir_SubOp : Quiccir_Op<"sub", [Pure, Elementwise,
     // let hasCanonicalizeMethod = 1;
 
     // let skipDefaultBuilders = 1;
-    // Allow building a FrPOp from the input operand.
+    // Allow building a SubOp from the input operand.
     let builders = [
         OpBuilder<(ins "Value":$lhs, "Value":$rhs)>
     ];
 }
+
+
+//===----------------------------------------------------------------------===//
+// MulConstOp
+//===----------------------------------------------------------------------===//
+
+def Quiccir_MulConstOp : Quiccir_Op<"mul.const", [Pure, Elementwise,
+    SameOperandsAndResultShape, SameOperandsAndResultElementType,
+    DeclareOpInterfaceMethods<KindOpInterface>]> {
+    let summary = "MulConstOp";
+    let description = [{
+        The `quiccir.mul.const` operation implements a pointwise multiplication with a constant.
+        For the moment the constant is hidden in the library call, selected by the kind
+        attribute, it will need to be exposed for code generation.
+
+        Example:
+
+        ```mlir
+        %res = quiccir.mul.const %rhs: tensor<?x?x?x?> -> tensor<?x?x?x?>
+        ```
+    }];
+
+    let arguments = (ins AnyTensor:$rhs,
+        OptionalAttr<I64Attr>:$implptr,
+        OptionalAttr<StrAttr>:$kind);
+    let results = (outs AnyTensor:$res);
+
+    let assemblyFormat = [{
+        $rhs `:` type($rhs) `->` type($res) attr-dict-with-keyword
+    }];
+
+    // let hasVerifier = 1;
+    // let hasCanonicalizeMethod = 1;
+
+    // let skipDefaultBuilders = 1;
+    // Allow building a MulConstOp from the input operand.
+    let builders = [
+        OpBuilder<(ins "Value":$rhs)>
+    ];
+}
+
 
 //===----------------------------------------------------------------------===//
 // CrossOp

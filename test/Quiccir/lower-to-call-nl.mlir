@@ -3,6 +3,53 @@
 
 module {
     // create new buffer
+    func.func @entrySubAlloc(%metaArr: !llvm.ptr<array<6 x ptr<struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)>>>>, %thisArr: !llvm.ptr<array<1 x ptr>>, %a: !quiccir.view<16x2x3xf32, "layoutIn">, %b: !quiccir.view<16x2x3xf32, "layoutIn">) {
+    %at = builtin.unrealized_conversion_cast %a : !quiccir.view<16x2x3xf32, "layoutIn"> to tensor<16x2x3xf32, "layoutIn">
+    %bt = builtin.unrealized_conversion_cast %b : !quiccir.view<16x2x3xf32, "layoutIn"> to tensor<16x2x3xf32, "layoutIn">
+    // CHECK: %[[PTR:.*]] = quiccir.pointers %{{.*}} : !quiccir.view<16x2x3xf32, "layoutIn"> -> memref<?xi32>
+    // CHECK: %[[IDX:.*]] = quiccir.indices %{{.*}} : !quiccir.view<16x2x3xf32, "layoutIn"> -> memref<?xi32>
+    // CHECK: %[[LDS:.*]] = llvm.mlir.constant(2 : i64) : i64
+    // CHECK: %[[DATA:.*]] = quiccir.alloc_data(%[[PTR]], %[[IDX]]), %[[LDS]] : (memref<?xi32>, memref<?xi32>), i64 -> memref<?xf32> {layout = "layoutIn"}
+    // CHECK: %[[VIEW:.*]] = quiccir.assemble(%[[PTR]], %[[IDX]]), %[[DATA]] : (memref<?xi32>, memref<?xi32>), memref<?xf32> -> !quiccir.view<16x2x3xf32, "layoutIn">
+    // CHECK: %{{.*}} = llvm.load %{{.*}} : !llvm.ptr<array<1 x ptr>>
+    // CHECK: %[[THIS:.*]] = llvm.extractvalue %{{.*}}[0] : !llvm.array<1 x ptr>
+    // CHECK: call @_ciface_quiccir_sub_f32_layoutIn_f32_layoutIn_f32_layoutIn(%[[THIS]], %[[VIEW]], %{{.*}}, %{{.*}}) : (!llvm.ptr, !quiccir.view<16x2x3xf32, "layoutIn">, !quiccir.view<16x2x3xf32, "layoutIn">, !quiccir.view<16x2x3xf32, "layoutIn">) -> ()
+    %tra = quiccir.sub %at, %bt : tensor<16x2x3xf32, "layoutIn">, tensor<16x2x3xf32, "layoutIn"> -> tensor<16x2x3xf32, "layoutIn"> attributes{implptr = 0 :i64}
+    return
+    }
+
+    // create new buffer
+    func.func @entryAddAlloc(%metaArr: !llvm.ptr<array<6 x ptr<struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)>>>>, %thisArr: !llvm.ptr<array<1 x ptr>>, %a: !quiccir.view<16x2x3xf32, "layoutIn">, %b: !quiccir.view<16x2x3xf32, "layoutIn">) {
+    %at = builtin.unrealized_conversion_cast %a : !quiccir.view<16x2x3xf32, "layoutIn"> to tensor<16x2x3xf32, "layoutIn">
+    %bt = builtin.unrealized_conversion_cast %b : !quiccir.view<16x2x3xf32, "layoutIn"> to tensor<16x2x3xf32, "layoutIn">
+    // CHECK: %[[PTR:.*]] = quiccir.pointers %{{.*}} : !quiccir.view<16x2x3xf32, "layoutIn"> -> memref<?xi32>
+    // CHECK: %[[IDX:.*]] = quiccir.indices %{{.*}} : !quiccir.view<16x2x3xf32, "layoutIn"> -> memref<?xi32>
+    // CHECK: %[[LDS:.*]] = llvm.mlir.constant(2 : i64) : i64
+    // CHECK: %[[DATA:.*]] = quiccir.alloc_data(%[[PTR]], %[[IDX]]), %[[LDS]] : (memref<?xi32>, memref<?xi32>), i64 -> memref<?xf32> {layout = "layoutIn"}
+    // CHECK: %[[VIEW:.*]] = quiccir.assemble(%[[PTR]], %[[IDX]]), %[[DATA]] : (memref<?xi32>, memref<?xi32>), memref<?xf32> -> !quiccir.view<16x2x3xf32, "layoutIn">
+    // CHECK: %{{.*}} = llvm.load %{{.*}} : !llvm.ptr<array<1 x ptr>>
+    // CHECK: %[[THIS:.*]] = llvm.extractvalue %{{.*}}[0] : !llvm.array<1 x ptr>
+    // CHECK: call @_ciface_quiccir_add_f32_layoutIn_f32_layoutIn_f32_layoutIn(%[[THIS]], %[[VIEW]], %{{.*}}, %{{.*}}) : (!llvm.ptr, !quiccir.view<16x2x3xf32, "layoutIn">, !quiccir.view<16x2x3xf32, "layoutIn">, !quiccir.view<16x2x3xf32, "layoutIn">) -> ()
+    %tra = quiccir.add %at, %bt : tensor<16x2x3xf32, "layoutIn">, tensor<16x2x3xf32, "layoutIn"> -> tensor<16x2x3xf32, "layoutIn"> attributes{implptr = 0 :i64}
+    return
+    }
+
+    // create new buffer
+    func.func @entryMulConstAlloc(%metaArr: !llvm.ptr<array<6 x ptr<struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)>>>>, %thisArr: !llvm.ptr<array<1 x ptr>>, %a: !quiccir.view<16x2x3xf32, "layoutIn">) {
+    %at = builtin.unrealized_conversion_cast %a : !quiccir.view<16x2x3xf32, "layoutIn"> to tensor<16x2x3xf32, "layoutIn">
+    // CHECK: %[[PTR:.*]] = quiccir.pointers %{{.*}} : !quiccir.view<16x2x3xf32, "layoutIn"> -> memref<?xi32>
+    // CHECK: %[[IDX:.*]] = quiccir.indices %{{.*}} : !quiccir.view<16x2x3xf32, "layoutIn"> -> memref<?xi32>
+    // CHECK: %[[LDS:.*]] = llvm.mlir.constant(2 : i64) : i64
+    // CHECK: %[[DATA:.*]] = quiccir.alloc_data(%[[PTR]], %[[IDX]]), %[[LDS]] : (memref<?xi32>, memref<?xi32>), i64 -> memref<?xf32> {layout = "layoutIn"}
+    // CHECK: %[[VIEW:.*]] = quiccir.assemble(%[[PTR]], %[[IDX]]), %[[DATA]] : (memref<?xi32>, memref<?xi32>), memref<?xf32> -> !quiccir.view<16x2x3xf32, "layoutIn">
+    // CHECK: %{{.*}} = llvm.load %{{.*}} : !llvm.ptr<array<1 x ptr>>
+    // CHECK: %[[THIS:.*]] = llvm.extractvalue %{{.*}}[0] : !llvm.array<1 x ptr>
+    // CHECK: call @_ciface_quiccir_mul_const_f32_layoutIn_f32_layoutIn(%[[THIS]], %[[VIEW]], %{{.*}}) : (!llvm.ptr, !quiccir.view<16x2x3xf32, "layoutIn">, !quiccir.view<16x2x3xf32, "layoutIn">) -> ()
+    %tra = quiccir.mul.const %at : tensor<16x2x3xf32, "layoutIn"> -> tensor<16x2x3xf32, "layoutIn"> attributes{implptr = 0 :i64}
+    return
+    }
+
+    // create new buffer
     func.func @entryCrossAlloc(%metaArr: !llvm.ptr<array<6 x ptr<struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)>>>>, %thisArr: !llvm.ptr<array<1 x ptr>>,
     %u0: !quiccir.view<16x2x3xf32, "layoutIn">,
     %u1: !quiccir.view<16x2x3xf32, "layoutIn">,
@@ -30,9 +77,7 @@ module {
         (tensor<16x2x3xf32, "layoutIn">, tensor<16x2x3xf32, "layoutIn">, tensor<16x2x3xf32, "layoutIn"> ) -> (tensor<16x2x3xf32, "layoutIn">, tensor<16x2x3xf32, "layoutIn">, tensor<16x2x3xf32, "layoutIn"> ) attributes{implptr = 0 :i64}
     return
     }
-}
 
-module {
     // create new buffer
     func.func @entryDotAlloc(%metaArr: !llvm.ptr<array<6 x ptr<struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)>>>>, %thisArr: !llvm.ptr<array<1 x ptr>>,
     %u0: !quiccir.view<16x2x3xf32, "layoutIn">,

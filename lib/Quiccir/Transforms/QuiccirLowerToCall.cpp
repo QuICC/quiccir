@@ -326,11 +326,13 @@ void QuiccirToCallLoweringPass::runOnOperation() {
       &getContext(), viewConverter);
   patterns.add<OpLowering<quiccir::FrIOp>>(
       &getContext(), viewConverter);
+  patterns.add<OpLowering<quiccir::TransposeOp>>(
+      &getContext(), viewConverter);
   patterns.add<OpLowering<quiccir::AddOp>>(
       &getContext(), viewConverter);
   patterns.add<OpLowering<quiccir::SubOp>>(
       &getContext(), viewConverter);
-  patterns.add<OpLowering<quiccir::TransposeOp>>(
+  patterns.add<OpLowering<quiccir::MulConstOp>>(
       &getContext(), viewConverter);
   patterns.add<OpLowering<quiccir::CrossOp>>(
       &getContext(), viewConverter);
