@@ -91,13 +91,13 @@ def QuiccirViewWrapper : Pass<"quiccir-view-wrapper", "ModuleOp"> {
     "LLVM::LLVMDialect",
     "quiccir::QuiccirDialect"];
    let options = [
-    ListOption<"dimArgs", "dim-args", "int64_t",
+    ListOption<"dimArgs", "dim-args", "std::vector<int64_t>",
            "Set Dimensions for arguments">,
-    ListOption<"dimRets", "dim-rets", "int64_t",
+    ListOption<"dimRets", "dim-rets", "std::vector<int64_t>",
            "Set Dimensions for returns">,
-    Option<"layArgs", "lay-args", "std::string", /*default=*/"\"argLay\"",
+    ListOption<"layArgs", "lay-args", "std::string",
            "Set View Layout for arguments">,
-    Option<"layRets", "lay-rets", "std::string", /*default=*/"\"retLay\"",
+    ListOption<"layRets", "lay-rets", "std::string",
            "Set View Layout for returns">
   ];
 }
