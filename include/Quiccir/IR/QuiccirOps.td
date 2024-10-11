@@ -404,7 +404,8 @@ def Quiccir_SubOp : Quiccir_Op<"sub", [Pure, Elementwise,
 
 def Quiccir_MulConstOp : Quiccir_Op<"mul.const", [Pure, Elementwise,
     SameOperandsAndResultShape, SameOperandsAndResultElementType,
-    DeclareOpInterfaceMethods<KindOpInterface>]> {
+    DeclareOpInterfaceMethods<KindOpInterface>,
+    DeclareOpInterfaceMethods<FoldTensorCastIntoConsumerOpInterface>]> {
     let summary = "MulConstOp";
     let description = [{
         The `quiccir.mul.const` operation implements a pointwise multiplication with a constant.
@@ -447,7 +448,8 @@ def Quiccir_CrossOp : Quiccir_Op<"cross", [Pure,
     SameOperandsElementType,
     SameOperandsAndResultShape,
     SameOperandsAndResultElementType,
-    DeclareOpInterfaceMethods<KindOpInterface>]> {
+    DeclareOpInterfaceMethods<KindOpInterface>,
+    DeclareOpInterfaceMethods<FoldTensorCastIntoConsumerOpInterface>]> {
     let summary = "Cross product of 2 vectors";
     let description = [{
         The `quiccir.cross` operation implements a cross product of 2 vectors
@@ -503,7 +505,8 @@ def Quiccir_DotOp : Quiccir_Op<"dot", [Pure,
     SameOperandsElementType,
     SameOperandsAndResultShape,
     SameOperandsAndResultElementType,
-    DeclareOpInterfaceMethods<KindOpInterface>]> {
+    DeclareOpInterfaceMethods<KindOpInterface>,
+    DeclareOpInterfaceMethods<FoldTensorCastIntoConsumerOpInterface>]> {
     let summary = "Dot product of 2 vectors";
     let description = [{
         The `quiccir.dot` operation implements a dot product of 2 vectors

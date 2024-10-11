@@ -128,22 +128,23 @@ struct OpLowering : public ConversionPattern {
     auto genRetBuffer = [&](Operation *op) -> llvm::Expected<SmallVector<Value, 3>> {
       SmallVector<Value, 3> buffers;
       for (auto indexedResult : llvm::enumerate(op->getResults())) {
-        bool reUseBuffer = false;
+        bool useExistingBuffer = false;
         Value result = indexedResult.value();
-        if (result.hasOneUse()) {
-          Operation *user = *result.user_begin();
+        // Check users
+        for (Operation *user : result.getUsers()) {
           if (auto matOp = dyn_cast<MaterializeOp>(user)) {
-            // Single use with materializeOp
+            // One of the users is a materializeOp
             // no need to allocate buffer
             Value buffer = matOp.getView();
             rewriter.eraseOp(matOp);
             buffers.push_back(buffer);
-            reUseBuffer = true;
+            useExistingBuffer = true;
+            break;
           }
         }
-        if (!reUseBuffer)
+        if (!useExistingBuffer)
         {
-          // otherwise we need to allocate a new buffer
+          // Otherwise we need to allocate a new buffer
           auto ptrIdx = getIdxPtr(op, rewriter, operandBuffer);
           if (ptrIdx.size() < 2) {
             return llvm::createStringError(llvm::errc::invalid_argument,
