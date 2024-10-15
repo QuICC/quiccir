@@ -102,4 +102,13 @@ def QuiccirViewWrapper : Pass<"quiccir-view-wrapper", "ModuleOp"> {
   ];
 }
 
+def QuiccirSetImplptr : Pass<"quiccir-set-implptr", "ModuleOp"> {
+  let summary = "Set unique implementation pointer";
+  let constructor = "mlir::quiccir::createSetImplptrPass()";
+  let dependentDialects = [
+    "func::FuncDialect",
+    "LLVM::LLVMDialect",
+    "quiccir::QuiccirDialect"];
+}
+
 #endif // QUICCIR_QUICCIRPASSES
