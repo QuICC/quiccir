@@ -47,3 +47,25 @@ module {
   return
   }
 }
+
+// Check jw
+module {
+  func.func @entry(%jwmod: tensor<7x3x6xcomplex<f64>, "DCCSC3D">) {
+  // CHECK: %[[JWP:.*]] = quiccir.jw.prj %{{.*}} : tensor<7x3x6xcomplex<f64>, "DCCSC3D"> -> tensor<7x6x6xcomplex<f64>, "DCCSC3D"> attributes {implptr = 0 : i64, kind = "P"}
+  %jwphys = quiccir.jw.prj %jwmod : tensor<7x3x6xcomplex<f64>, "DCCSC3D"> -> tensor<7x6x6xcomplex<f64>, "DCCSC3D"> attributes {kind = "P"}
+  // CHECK: %{{.*}} = quiccir.jw.int %[[JWP]] : tensor<7x6x6xcomplex<f64>, "DCCSC3D"> -> tensor<7x3x6xcomplex<f64>, "DCCSC3D"> attributes {implptr = 7 : i64, kind = "P"}
+  %jwmod0 = quiccir.jw.int %jwphys : tensor<7x6x6xcomplex<f64>, "DCCSC3D"> -> tensor<7x3x6xcomplex<f64>, "DCCSC3D"> attributes {kind = "P"}
+  return
+  }
+}
+
+// Check al
+module {
+  func.func @entry(%almod: tensor<7x3x6xcomplex<f64>, "DCCSC3D">) {
+  // CHECK: %[[alP:.*]] = quiccir.al.prj %{{.*}} : tensor<7x3x6xcomplex<f64>, "DCCSC3D"> -> tensor<7x6x6xcomplex<f64>, "DCCSC3D"> attributes {implptr = 8 : i64, kind = "P"}
+  %alphys = quiccir.al.prj %almod : tensor<7x3x6xcomplex<f64>, "DCCSC3D"> -> tensor<7x6x6xcomplex<f64>, "DCCSC3D"> attributes {kind = "P"}
+  // CHECK: %{{.*}} = quiccir.al.int %[[alP]] : tensor<7x6x6xcomplex<f64>, "DCCSC3D"> -> tensor<7x3x6xcomplex<f64>, "DCCSC3D"> attributes {implptr = 9 : i64, kind = "P"}
+  %almod0 = quiccir.al.int %alphys : tensor<7x6x6xcomplex<f64>, "DCCSC3D"> -> tensor<7x3x6xcomplex<f64>, "DCCSC3D"> attributes {kind = "P"}
+  return
+  }
+}

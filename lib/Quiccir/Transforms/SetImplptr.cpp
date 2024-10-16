@@ -50,7 +50,9 @@ struct QuiccirSetImplptr : public quiccir::impl::QuiccirSetImplptrBase<QuiccirSe
         return;
       }
       OpBuilder builder(op);
-      auto hOp = hash_value(op->getName().getTypeID());
+      /// \todo find you why *.int and *.prj hash to same value
+      // auto hOp = hash_value(op->getName().getTypeID());
+      auto hOp = hash_value(op->getName().getIdentifier());
       llvm::hash_code ht;
       // operands type hash
       llvm::hash_code hOpers = 0;
@@ -83,6 +85,14 @@ struct QuiccirSetImplptr : public quiccir::impl::QuiccirSetImplptrBase<QuiccirSe
       else {
         ht = hash_combine(hOp, hOpers, hRets);
       }
+
+      // llvm::dbgs() << op->getName()
+      // << '\t' << op->hashProperties()
+      // << '\t' << op->getName().getStringRef()
+      // << '\t' << op->getName().getIdentifier()
+      // << '\t' << hash_value(op->getName().getIdentifier())
+      // << '\t' << hOp
+      // << '\n';
 
       // update map
       if(opMap.count(ht) == 0) {
