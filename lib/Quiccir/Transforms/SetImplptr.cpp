@@ -85,7 +85,7 @@ struct QuiccirSetImplptr : public quiccir::impl::QuiccirSetImplptrBase<QuiccirSe
       }
 
       // update map
-      if(opMap[ht] == 0) {
+      if(opMap.count(ht) == 0) {
         opMap[ht] = counter++;
       }
       Type I64Type = builder.getI64Type();
