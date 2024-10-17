@@ -40,12 +40,13 @@ struct TransposeContractionOverAdd : public OpRewritePattern<AddOp> {
     mlir::Value addRhs = op.getRhs();
 
     // if not the same return failure
-    // if (!transposeInputOp)
-    //   return failure();
+    if (!areSameTransform(addLhs.getDefiningOp(), addRhs.getDefiningOp())) {
+      return failure();
+    }
 
     // auto loc = op->getLoc();
 
-    llvm::dbgs() << "done!\n";
+    llvm::dbgs() << "contract!\n";
 
     // Otherwise we can move the add upstream
     // rewriter.replaceOp(op, {transposeInputOp.getOperand()});
