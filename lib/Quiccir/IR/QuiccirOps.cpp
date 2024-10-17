@@ -19,6 +19,7 @@
 
 /// Include the auto-generated definitions for the interfaces.
 #include "Quiccir/Interfaces/ShapeInferenceOpInterface.cpp.inc"
+#include "Quiccir/Interfaces/KindOpInterface.cpp.inc"
 #include "Quiccir/Interfaces/TransformOpInterface.cpp.inc"
 
 using namespace mlir;

@@ -11,6 +11,7 @@
 #include "Quiccir/IR/QuiccirTypes.h"
 #include "Quiccir/Interfaces/ShapeInferenceOpInterface.h"
 #include "Quiccir/Interfaces/FoldTensorCastIntoConsumerOpInterface.h"
+#include "Quiccir/Interfaces/KindOpInterface.h"
 #include "Quiccir/Interfaces/TransformOpInterface.h"
 
 #include "mlir/IR/BuiltinTypes.h"
