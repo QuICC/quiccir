@@ -58,20 +58,25 @@ struct QuiccirSetImplptr : public quiccir::impl::QuiccirSetImplptrBase<QuiccirSe
       llvm::hash_code hOpers = 0;
       for (Value op : op->getOperands()) {
         auto hTen = hash_value(op.getType().getTypeID());
+        llvm::dbgs() << hTen << '\t';
         llvm::hash_code hLay = 0;
+        llvm::hash_code hEleTy = 0;
         if (auto tensorTy = dyn_cast<RankedTensorType>(op.getType())) {
           hLay = hash_value(tensorTy.getEncoding());
+          hEleTy = hash_value(tensorTy.getElementType().getTypeID());
         }
-        hOpers = hash_combine(hOpers, hLay, hTen);
+        hOpers = hash_combine(hOpers, hLay, hTen, hEleTy);
       }
       llvm::hash_code hRets = 0;
       for (Value op : op->getResults()) {
         auto hTen = hash_value(op.getType().getTypeID());
         llvm::hash_code hLay = 0;
+        llvm::hash_code hEleTy = 0;
         if (auto tensorTy = dyn_cast<RankedTensorType>(op.getType())) {
           hLay = hash_value(tensorTy.getEncoding());
+          hEleTy = hash_value(tensorTy.getElementType().getTypeID());
         }
-        hRets = hash_combine(hRets, hLay, hTen);
+        hOpers = hash_combine(hOpers, hLay, hTen, hEleTy);
       }
 
       if (auto kind = op->getAttr("kind")) {
@@ -92,6 +97,7 @@ struct QuiccirSetImplptr : public quiccir::impl::QuiccirSetImplptrBase<QuiccirSe
       // << '\t' << op->getName().getIdentifier()
       // << '\t' << hash_value(op->getName().getIdentifier())
       // << '\t' << hOp
+      // << '\t' << hOpers
       // << '\n';
 
       // update map

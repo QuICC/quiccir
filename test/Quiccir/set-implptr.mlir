@@ -69,3 +69,19 @@ module {
   return
   }
 }
+
+// Check sub
+module {
+  func.func @entry(%ac: tensor<7x3x6xcomplex<f64>, "DCCSC3D">, %bc: tensor<7x3x6xcomplex<f64>, "DCCSC3D">) {
+  // CHECK: %{{.*}} = quiccir.sub %{{.*}}, %{{.*}} : tensor<7x3x6xcomplex<f64>, "DCCSC3D">, tensor<7x3x6xcomplex<f64>, "DCCSC3D"> -> tensor<7x3x6xcomplex<f64>, "DCCSC3D"> attributes {implptr = 10 : i64}
+  %cc = quiccir.sub %ac, %bc : tensor<7x3x6xcomplex<f64>, "DCCSC3D">, tensor<7x3x6xcomplex<f64>, "DCCSC3D"> -> tensor<7x3x6xcomplex<f64>, "DCCSC3D">
+  return
+  }
+}
+module {
+  func.func @entry(%ac: tensor<7x3x6xf64, "DCCSC3D">, %bc: tensor<7x3x6xf64, "DCCSC3D">) {
+  // CHECK: %{{.*}} = quiccir.sub %{{.*}}, %{{.*}} : tensor<7x3x6xf64, "DCCSC3D">, tensor<7x3x6xf64, "DCCSC3D"> -> tensor<7x3x6xf64, "DCCSC3D"> attributes {implptr = 11 : i64}
+  %cc = quiccir.sub %ac, %bc : tensor<7x3x6xf64, "DCCSC3D">, tensor<7x3x6xf64, "DCCSC3D"> -> tensor<7x3x6xf64, "DCCSC3D">
+  return
+  }
+}
