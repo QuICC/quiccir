@@ -355,7 +355,9 @@ def Quiccir_AddOp : Quiccir_Op<"add", [Pure, Commutative, Elementwise,
     // let skipDefaultBuilders = 1;
     // Allow building a AddOp from the input operand.
     let builders = [
-        OpBuilder<(ins "Value":$lhs, "Value":$rhs)>
+        OpBuilder<(ins "Value":$lhs, "Value":$rhs), [{
+                    return build($_builder, $_state, lhs.getType(), lhs, rhs, {});
+                }]>
     ];
 }
 

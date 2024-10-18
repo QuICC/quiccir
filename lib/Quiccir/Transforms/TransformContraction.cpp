@@ -19,11 +19,22 @@ using namespace mlir::quiccir;
 
 namespace {
 
-bool areSameTransform(Operation *lhsOp, Operation *rhsOp) {
-
+bool isSameTransform(Operation *lhsOp, Operation *rhsOp) {
+  /// \todo add transform/projection interface
+  auto isTransform = [](Operation *op) {
+    return isa<FrIOp>(op) || isa<FrPOp>(op)
+      || isa<AlIOp>(op) || isa<AlPOp>(op)
+      || isa<JWIOp>(op) || isa<JWPOp>(op);
+  };
+  auto isLhsTransform = isTransform(lhsOp);
+  auto isRhsTransform = isTransform(lhsOp);
+  if (isLhsTransform && isRhsTransform) {
+    bool isSame = (lhsOp->getName() == rhsOp->getName());
+    bool isSameKind = (lhsOp->getAttr("kind") == rhsOp->getAttr("kind"));
+    return isSame && isSameKind;
+  }
   return false;
 }
-
 
 //===----------------------------------------------------------------------===//
 // TransposeContration over AddOp or SubOp
@@ -36,22 +47,55 @@ struct TransposeContractionOverAdd : public OpRewritePattern<AddOp> {
   matchAndRewrite(AddOp op,
                   PatternRewriter &rewriter) const final {
     // Get operands and check kinds
-    mlir::Value addLhs = op.getLhs();
-    mlir::Value addRhs = op.getRhs();
+    Value addLhs = op.getLhs();
+    Value addRhs = op.getRhs();
 
-    // if not the same return failure
-    if (!areSameTransform(addLhs.getDefiningOp(), addRhs.getDefiningOp())) {
+    // llvm::dbgs() << "lhs\t" << addLhs << '\n';
+
+    auto prjOpLhs = addLhs.getDefiningOp();
+    auto prjOpRhs = addRhs.getDefiningOp();
+    // If there is no defining op, must be a func arg
+    if (prjOpLhs == nullptr || prjOpRhs == nullptr) {
       return failure();
     }
 
-    // auto loc = op->getLoc();
+    // If not the same transform return failure
+    if (!isSameTransform(prjOpLhs, prjOpRhs)) {
+      return failure();
+    }
 
-    llvm::dbgs() << "contract!\n";
+    // Otherwise we can move the add upstream the transpose
 
-    // Otherwise we can move the add upstream
-    // rewriter.replaceOp(op, {transposeInputOp.getOperand()});
+    // // Projection op ?
+    // Value prjLhs = addLhs.getDefiningOp().getInput();
+    // Value prjRhs = addRhs.getDefiningOp().getInput();
 
-    return success();
+    // Transpose (projection) inputs
+    Value prjLhs = prjOpLhs->getOperand(0);
+    Value prjRhs = prjOpRhs->getOperand(0);
+    // Transpose op ?
+    auto traOpLhs = dyn_cast<TransposeOp>(prjLhs.getDefiningOp());
+    auto traOpRhs = dyn_cast<TransposeOp>(prjRhs.getDefiningOp());
+
+    if (traOpLhs && traOpRhs) {
+      // get inputs
+      Value traInLhs = traOpLhs.getInput();
+      Value traInRhs = traOpRhs.getInput();
+
+      // llvm::dbgs() << "contract!\n";
+
+      auto loc = traOpLhs->getLoc();
+      auto addNew = rewriter.create<AddOp>(loc, traInLhs, traInRhs);
+      auto newTranspose = rewriter.clone(*static_cast<Operation*>(traOpLhs));
+      newTranspose->setOperand(0, addNew);
+      auto newProjector = rewriter.clone(*prjOpLhs);
+      newProjector->setOperand(0, newTranspose->getResult(0));
+      rewriter.replaceOp(op, newProjector);
+
+      return success();
+    }
+
+    return failure();
   }
 };
 
