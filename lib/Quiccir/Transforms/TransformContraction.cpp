@@ -50,11 +50,9 @@ struct TransposeContractionOverLinOp : public OpRewritePattern<LINOP> {
     // Get operands and check kinds
     Value addLhs = op.getLhs();
     Value addRhs = op.getRhs();
-
-    // llvm::dbgs() << "lhs\t" << addLhs << '\n';
-
     auto prjOpLhs = addLhs.getDefiningOp();
     auto prjOpRhs = addRhs.getDefiningOp();
+
     // If there is no defining op, must be a func arg
     if (prjOpLhs == nullptr || prjOpRhs == nullptr) {
       return failure();
@@ -78,9 +76,6 @@ struct TransposeContractionOverLinOp : public OpRewritePattern<LINOP> {
       // get inputs
       Value traInLhs = traOpLhs.getInput();
       Value traInRhs = traOpRhs.getInput();
-
-      // llvm::dbgs() << "contract!\n";
-
       auto loc = traOpLhs->getLoc();
       auto addNew = rewriter.create<LINOP>(loc, traInLhs, traInRhs);
       auto newTranspose = rewriter.clone(*static_cast<Operation*>(traOpLhs));
@@ -88,7 +83,6 @@ struct TransposeContractionOverLinOp : public OpRewritePattern<LINOP> {
       auto newProjector = rewriter.clone(*prjOpLhs);
       newProjector->setOperand(0, newTranspose->getResult(0));
       rewriter.replaceOp(op, newProjector);
-
       return success();
     }
 
