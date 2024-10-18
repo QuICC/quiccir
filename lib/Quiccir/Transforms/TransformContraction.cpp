@@ -37,14 +37,15 @@ bool isSameTransform(Operation *lhsOp, Operation *rhsOp) {
 }
 
 //===----------------------------------------------------------------------===//
-// TransposeContration over AddOp or SubOp
+// TransposeContration over linear operators: AddOp or SubOp
 //===----------------------------------------------------------------------===//
-struct TransposeContractionOverAdd : public OpRewritePattern<AddOp> {
-  TransposeContractionOverAdd(MLIRContext *ctx)
-      : OpRewritePattern<AddOp>(ctx, /*benefit=*/1) {};
+template <class LINOP>
+struct TransposeContractionOverLinOp : public OpRewritePattern<LINOP> {
+  TransposeContractionOverLinOp<LINOP>(MLIRContext *ctx)
+      : OpRewritePattern<LINOP>(ctx, /*benefit=*/1) {};
 
   LogicalResult
-  matchAndRewrite(AddOp op,
+  matchAndRewrite(LINOP op,
                   PatternRewriter &rewriter) const final {
     // Get operands and check kinds
     Value addLhs = op.getLhs();
@@ -66,10 +67,6 @@ struct TransposeContractionOverAdd : public OpRewritePattern<AddOp> {
 
     // Otherwise we can move the add upstream the transpose
 
-    // // Projection op ?
-    // Value prjLhs = addLhs.getDefiningOp().getInput();
-    // Value prjRhs = addRhs.getDefiningOp().getInput();
-
     // Transpose (projection) inputs
     Value prjLhs = prjOpLhs->getOperand(0);
     Value prjRhs = prjOpRhs->getOperand(0);
@@ -85,7 +82,7 @@ struct TransposeContractionOverAdd : public OpRewritePattern<AddOp> {
       // llvm::dbgs() << "contract!\n";
 
       auto loc = traOpLhs->getLoc();
-      auto addNew = rewriter.create<AddOp>(loc, traInLhs, traInRhs);
+      auto addNew = rewriter.create<LINOP>(loc, traInLhs, traInRhs);
       auto newTranspose = rewriter.clone(*static_cast<Operation*>(traOpLhs));
       newTranspose->setOperand(0, addNew);
       auto newProjector = rewriter.clone(*prjOpLhs);
@@ -116,7 +113,8 @@ struct QuiccirTransformContractionPass
 void QuiccirTransformContractionPass::runOnOperation() {
 
   RewritePatternSet patterns(&getContext());
-  patterns.add<TransposeContractionOverAdd>(&getContext());
+  patterns.add<TransposeContractionOverLinOp<AddOp>>(&getContext());
+  patterns.add<TransposeContractionOverLinOp<SubOp>>(&getContext());
 
   FrozenRewritePatternSet patternSet(std::move(patterns));
   if (failed(applyPatternsAndFoldGreedily(getOperation(), patternSet)))
