@@ -111,4 +111,16 @@ def QuiccirSetImplptr : Pass<"quiccir-set-implptr", "ModuleOp"> {
     "quiccir::QuiccirDialect"];
 }
 
+def QuiccirTransformContraction : Pass<"quiccir-transform-contraction", "func::FuncOp"> {
+  let summary = "Transforms operators distribute over addition and subtraction."
+    "This pass contract the distributed transform ops to reduce the number of"
+    "transpose ops."
+    ".i.e. P(T(a)) + P(T(b)) => P(T(a+b)) where P is a transform and T is a "
+    "transpose.";
+  let constructor = "mlir::quiccir::createTransformContractionPass()";
+  let dependentDialects = [
+    "func::FuncDialect",
+    "quiccir::QuiccirDialect"];
+}
+
 #endif // QUICCIR_QUICCIRPASSES
