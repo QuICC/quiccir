@@ -282,14 +282,13 @@ struct OpLowering : public ConversionPattern {
       rewriter.create<func::CallOp>(
           loc, libraryCallSymbol->getValue(), TypeRange(), newOperands);
 
+
+      // Cast back to view with dim
+      Value retDim = rewriter.create<UnrealizedConversionCastOp>(loc, retBuffers[0].getType(), castNewOperOps[0])->getResult(0);
+      // Cast back to tensor
+      Value castOp = rewriter.create<UnrealizedConversionCastOp>(loc, retTensorType, retDim)->getResult(0);
       // Replace old Op with casts
-      SmallVector<Value, 3> castOps;
-      for (auto ret : retBuffers) {
-        Value newOp = rewriter.create<UnrealizedConversionCastOp>(loc, retTensorType, ret)->getResult(0);
-        castOps.push_back(newOp);
-      }
-      assert(op->getNumResults() == castOps.size());
-      rewriter.replaceOp(op, castOps);
+      rewriter.replaceOp(op, castOp);
     }
     else {
       // opaque ptr to implementation becomes first operand
