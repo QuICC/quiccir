@@ -236,8 +236,8 @@ struct OpLowering : public ConversionPattern {
     // sub/add ops need extra cast to unknow dimensions
     // the same function might be called from different spaces
     // i.e. with different dimensions
+    /// \todo remove duplicated code
     bool isAddSub = isa<SubOp>(op) || isa<AddOp>(op);
-
     if (isAddSub) {
       // cast operands and return vals to ?x?x?
       SmallVector<Value, 3> castNewOperOps;
