@@ -233,39 +233,101 @@ struct OpLowering : public ConversionPattern {
     SmallVector<int64_t, 1> index = {static_cast<int64_t>(cast<Top>(*op).getImplptr().value())};
     auto implPtr = rewriter.create<LLVM::ExtractValueOp>(loc, implArray, index);
 
-    // opaque ptr to implementation becomes first operand
-    SmallVector <Type, 4> typeOperands = {implPtr.getType()};
-    for (auto ret : retBuffers) {
-      typeOperands.push_back(ret.getType());
-    }
-    for (auto val : operands) {
-      typeOperands.push_back(val.getType());
-    }
+    // sub/add ops need extra cast to unknow dimensions
+    // the same function might be called from different spaces
+    // i.e. with different dimensions
+    bool isAddSub = isa<SubOp>(op) || isa<AddOp>(op);
 
-    // return val becomes second operand
-    auto libraryCallSymbol = getLibraryCallSymbolRef<Top>(op, rewriter, typeOperands);
-    if (failed(libraryCallSymbol))
-      return failure();
+    if (isAddSub) {
+      // cast operands and return vals to ?x?x?
+      SmallVector<Value, 3> castNewOperOps;
 
-    SmallVector<Value, 4> newOperands = {implPtr};
-    for (auto ret : retBuffers) {
-      newOperands.push_back(ret);
-    }
-    for (auto val : operands) {
-      newOperands.push_back(val);
-    }
-    rewriter.create<func::CallOp>(
-        loc, libraryCallSymbol->getValue(), TypeRange(), newOperands);
+      auto addCastOpers = [&](llvm::ArrayRef<Value> operands) {
+        for (Value opers : operands) {
+          auto oldTy = opers.getType().cast<ViewType>();
+          SmallVector<int64_t, 3> shape(oldTy.getShape().size(), ShapedType::kDynamic);
+          Type newViewTy = ViewType::get(shape, oldTy.getElementType(), oldTy.getEncoding());
 
-    // Replace old Op with casts
-    SmallVector<Value, 3> castOps;
-    for (auto ret : retBuffers) {
-      Value newOp = rewriter.create<UnrealizedConversionCastOp>(loc, retTensorType, ret)->getResult(0);
-      castOps.push_back(newOp);
-    }
-    assert(op->getNumResults() == castOps.size());
-    rewriter.replaceOp(op, castOps);
+          Value newOp = rewriter.create<UnrealizedConversionCastOp>(loc, newViewTy, opers)->getResult(0);
+          castNewOperOps.push_back(newOp);
+        }
+      };
 
+      addCastOpers(retBuffers);
+      addCastOpers(operands);
+
+
+      // lib call
+
+      // opaque ptr to implementation becomes first operand
+      SmallVector <Type, 4> typeOperands = {implPtr.getType()};
+
+      auto addFunOpers = [&](llvm::ArrayRef<Value> operands) {
+        for (auto val : operands) {
+          typeOperands.push_back(val.getType());
+        }
+      };
+
+      addFunOpers(castNewOperOps);
+
+      // return val becomes second operand
+      auto libraryCallSymbol = getLibraryCallSymbolRef<Top>(op, rewriter, typeOperands);
+      if (failed(libraryCallSymbol))
+        return failure();
+
+      SmallVector<Value, 4> newOperands = {implPtr};
+      for (auto ret : castNewOperOps) {
+        newOperands.push_back(ret);
+      }
+      rewriter.create<func::CallOp>(
+          loc, libraryCallSymbol->getValue(), TypeRange(), newOperands);
+
+      // Replace old Op with casts
+      SmallVector<Value, 3> castOps;
+      for (auto ret : retBuffers) {
+        Value newOp = rewriter.create<UnrealizedConversionCastOp>(loc, retTensorType, ret)->getResult(0);
+        castOps.push_back(newOp);
+      }
+      assert(op->getNumResults() == castOps.size());
+      rewriter.replaceOp(op, castOps);
+    }
+    else {
+      // opaque ptr to implementation becomes first operand
+      SmallVector <Type, 4> typeOperands = {implPtr.getType()};
+
+      auto addFunOpers = [&](llvm::ArrayRef<Value> operands) {
+        for (auto val : operands) {
+          typeOperands.push_back(val.getType());
+        }
+      };
+
+      addFunOpers(retBuffers);
+      addFunOpers(operands);
+
+      // return val becomes second operand
+      auto libraryCallSymbol = getLibraryCallSymbolRef<Top>(op, rewriter, typeOperands);
+      if (failed(libraryCallSymbol))
+        return failure();
+
+      SmallVector<Value, 4> newOperands = {implPtr};
+      for (auto ret : retBuffers) {
+        newOperands.push_back(ret);
+      }
+      for (auto val : operands) {
+        newOperands.push_back(val);
+      }
+      rewriter.create<func::CallOp>(
+          loc, libraryCallSymbol->getValue(), TypeRange(), newOperands);
+
+      // Replace old Op with casts
+      SmallVector<Value, 3> castOps;
+      for (auto ret : retBuffers) {
+        Value newOp = rewriter.create<UnrealizedConversionCastOp>(loc, retTensorType, ret)->getResult(0);
+        castOps.push_back(newOp);
+      }
+      assert(op->getNumResults() == castOps.size());
+      rewriter.replaceOp(op, castOps);
+    }
     return success();
   }
 };
