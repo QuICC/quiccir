@@ -27,13 +27,14 @@ struct QuiccirFinalizeViewToLLVMPass : public QuiccirFinalizeViewToLLVMBase<Quic
     RewritePatternSet patterns(ctx);
     ConversionTarget target(*ctx);
 
-    quiccir::ViewTypeToPtrOfStructConverter typeConverter;
+    quiccir::QuiccirToPtrOfStructConverter typeConverter;
 
     // Populate with rules and apply rewriting rules.
     populateFunctionOpInterfaceTypeConversionPattern<func::FuncOp>(patterns,
         typeConverter);
     populateCallOpTypeConversionPattern(patterns, typeConverter);
     populateReturnOpTypeConversionPattern(patterns, typeConverter);
+    populateAnyFunctionOpInterfaceTypeConversionPattern(patterns, typeConverter);
 
     // All dynamic rules below accept new function, call, return
     // provided that all quiccir view types have been fully rewritten.

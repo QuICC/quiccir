@@ -16,54 +16,6 @@ include "mlir/Interfaces/InferTypeOpInterface.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 
 //===----------------------------------------------------------------------===//
-// AllocOp
-//===----------------------------------------------------------------------===//
-
-def Quiccir_AllocOp : Quiccir_Op<"alloc", []> {
-    let summary = "Allocate view";
-    let description = [{
-        The `quiccir.alloc` operation allocate a new view buffer.
-
-        In order to allocate the right amount of space for the data
-        and the meta data (and populate the metadata?) we need to
-        know the producer kind and the input view.
-
-        Example:
-
-        ```mlir
-        %0 = quiccir.alloc(%arg) : !quiccir.view<?x?x?xf64, "layout"> ->
-            !quiccir.view<?x?x?xf64, "layout">  {producer="quiccir.op"}
-        ```
-
-        For codegen we should lower this to something like
-        ```mlir
-        %uphys_pos = memref.alloc() : memref<?xi32>
-        %uphys_coo = memref.alloc() : memref<?xi32>
-        %uphys_val = memref.alloc() : memref<?xf64>
-        %uphys = quiccir.assemble(%uphys_pos, %uphys_coo, %uphys_val) : !quiccir.view<?x?x?xf64, "layout">
-        ```
-        or use directly the sparse tensor facilities
-
-    }];
-
-    let arguments = (ins AnyView:$producerView, StrAttr:$producer);
-    let results = (outs AnyView:$view);
-
-    let assemblyFormat = [{
-        `(` $producerView `)` `:` qualified(type($producerView)) `->` qualified(type($view)) attr-dict
-    }];
-
-    // let skipDefaultBuilders = 1;
-    let builders = [
-        OpBuilder<(ins "ViewType":$viewType, "Value":$producerViewType, "StringAttr":$producerName), [{
-            return build($_builder, $_state, viewType, producerViewType, producerName);
-        }]>
-    ];
-
-    // let hasVerifier = 1;
-}
-
-//===----------------------------------------------------------------------===//
 // DeallocOp
 //===----------------------------------------------------------------------===//
 
@@ -126,6 +78,160 @@ def Quiccir_MaterializeOp : Quiccir_Op<"materialize", []> {
     }];
 
     let hasVerifier = 1;
+}
+
+//===----------------------------------------------------------------------===//
+// AllocDataOp
+//===----------------------------------------------------------------------===//
+
+def Quiccir_AllocDataOp : Quiccir_Op<"alloc_data", []> {
+    let summary = "Allocate memref data for a view";
+    let description = [{
+        The `quiccir.alloc_data` operation allocate a 1D memref that is
+        the buffer for the compressed data of a view.
+
+        In order to allocate the right amount of space for the data
+        we need to know view layout, column height (possibly padded for FFT)
+        and the pointers/indexes metadata.
+
+        Example:
+
+        ```mlir
+        %0 = quiccir.alloc_data(%ptr, %idx), %lds : (memref<xi32>, memref<xi32>), i64 ->
+            memref<?xf64>  {layout="layout"}
+        ```
+
+        For codegen we should lower this to a memref alloc of appropriate size
+
+    }];
+
+    let arguments = (ins AnyMemRef:$ptr, AnyMemRef:$idx, I64:$lds, StrAttr:$layout);
+    let results = (outs AnyMemRef:$data);
+
+    let assemblyFormat = [{
+        `(` $ptr `,` $idx `)` `,` $lds `:` `(`type($ptr) `,` type($idx) `)` `,` type($lds) `->` type($data) attr-dict
+    }];
+
+    // let skipDefaultBuilders = 1;
+    // let builders = [
+    //     OpBuilder<(ins "MemRef":$ptr, "MemRef":$idx, "StringAttr":$layout), [{
+    //         return build($_builder, $_state, ptr, idx, layout);
+    //     }]>
+    // ];
+
+    // let hasVerifier = 1;
+}
+
+// //===----------------------------------------------------------------------===//
+// // DeallocDataOp
+// //===----------------------------------------------------------------------===//
+
+// def Quiccir_DeallocDataOp : Quiccir_Op<"dealloc_data", []> {
+//     let summary = "Deallocate view data buffer";
+//     let description = [{
+//         The `quiccir.dealloc_data` operation deallocate a view buffer.
+
+//         Example:
+
+//         ```mlir
+//         quiccir.dealloc_data(%arg) : !quiccir.view<?x?x?xf64, "layout">
+//         ```
+//     }];
+
+//     let arguments = (ins AnyView:$view);
+
+//     let assemblyFormat = [{
+//         `(` $view `)` `:` qualified(type($view)) attr-dict
+//     }];
+
+//     // let skipDefaultBuilders = 1;
+//     // let builders = [
+//     //     OpBuilder<(ins "Value":$view), [{
+//     //         return build($_builder, $_state, view);
+//     //     }]>
+//     // ];
+
+//     let hasVerifier = 1;
+// }
+
+//===----------------------------------------------------------------------===//
+// AssembleOp
+//===----------------------------------------------------------------------===//
+
+def Quiccir_AssembleOp : Quiccir_Op<"assemble", []> {
+    let summary = "Assemble view from meta and data MemRefs";
+    let description = [{
+        The `quiccir.assemble` create a view from its data and meta data.
+
+        Example:
+
+        ```mlir
+        %0 = quiccir.assemble(%ptr, %idx), %data : (memref<xi32>, memref<xi32>), memref<?xf64> ->
+            !quiccir.view<?x?x?xf64, "layout">
+        ```
+
+    }];
+
+    let arguments = (ins AnyMemRef:$ptr, AnyMemRef:$idx, AnyMemRef:$data);
+    let results = (outs AnyView:$view);
+
+    let assemblyFormat = [{
+        `(` $ptr `,` $idx `)` `,` $data `:` `(`type($ptr) `,` type($idx) `)` `,` type($data) `->` qualified(type($view)) attr-dict
+    }];
+
+    // let hasVerifier = 1;
+}
+
+//===----------------------------------------------------------------------===//
+// PointersOp
+//===----------------------------------------------------------------------===//
+
+def Quiccir_PointersOp : Quiccir_Op<"pointers", []> {
+    let summary = "Pointers view from meta and data MemRefs";
+    let description = [{
+        The `quiccir.pointers` extract pointers meta data from a view.
+
+        Example:
+
+        ```mlir
+        %ptr = quiccir.pointers %view : !quiccir.view<?x?x?xf64, "layout"> -> memref<?xi32>
+        ```
+    }];
+
+    let arguments = (ins AnyView:$view);
+    let results = (outs AnyMemRef:$ptr);
+
+    let assemblyFormat = [{
+        $view `:` qualified(type($view)) `->` type($ptr) attr-dict
+    }];
+
+    // let hasVerifier = 1;
+}
+
+//===----------------------------------------------------------------------===//
+// IndicesOp
+//===----------------------------------------------------------------------===//
+
+def Quiccir_IndicesOp : Quiccir_Op<"indices", []> {
+    let summary = "Indices view from meta and data MemRefs";
+    let description = [{
+        The `quiccir.indices` extract indices meta data from a view.
+
+        Example:
+
+        ```mlir
+        %idx = quiccir.indices %view : !quiccir.view<?x?x?xf64, "layout"> -> memref<?xi32>
+        ```
+    }];
+
+    let arguments = (ins AnyView:$view);
+    let results = (outs AnyMemRef:$idx);
+
+    let assemblyFormat = [{
+        $view `:` qualified(type($view)) `->` type($idx) attr-dict
+    }];
+
+    // let hasVerifier = 1;
 }
 
 

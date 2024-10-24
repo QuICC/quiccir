@@ -6,6 +6,7 @@ add_mlir_dialect_library(MLIRQuiccirPasses
     TypeConverter.cpp
     QuiccirLowerAlloc.cpp
     QuiccirViewDeallocation.cpp
+    ConvertToLLVM.cpp
     SetViewLayout.cpp
     SetDimensions.cpp
     Utils.cpp

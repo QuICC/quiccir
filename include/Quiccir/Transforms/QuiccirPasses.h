@@ -26,6 +26,9 @@ std::unique_ptr<mlir::Pass> createLowerToCallPass();
 /// Create a pass for lowering alloc op
 std::unique_ptr<mlir::Pass> createLowerAllocPass();
 
+/// Create a pass for lowering data ops
+std::unique_ptr<mlir::Pass> createConvertToLLVMPass();
+
 /// Create a pass for lowering view in func/call/return/op
 std::unique_ptr<mlir::Pass> createFinalizeViewToLLVMPass();
 

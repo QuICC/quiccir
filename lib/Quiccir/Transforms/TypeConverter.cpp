@@ -10,14 +10,38 @@
 
 using namespace mlir::quiccir;
 
-ViewTypeToStructConverter::ViewTypeToStructConverter() {
+QuiccirToStructConverter::QuiccirToStructConverter() {
   addConversion([](Type type) { return type; });
   addConversion([&](ViewType view) -> Type {
     return convertView(view);
   });
+  addConversion([&](MemRefType memRef) -> Type {
+    return convertMemRef(memRef);
+  });
+
+  // Add generic source and target materializations to handle cases where
+  // non-LLVM types persist after an LLVM conversion.
+  addSourceMaterialization([&](OpBuilder &builder, Type resultType,
+                               ValueRange inputs,
+                               Location loc) -> std::optional<Value> {
+    if (inputs.size() != 1)
+      return std::nullopt;
+
+    return builder.create<UnrealizedConversionCastOp>(loc, resultType, inputs)
+        .getResult(0);
+  });
+  addTargetMaterialization([&](OpBuilder &builder, Type resultType,
+                               ValueRange inputs,
+                               Location loc) -> std::optional<Value> {
+    if (inputs.size() != 1)
+      return std::nullopt;
+
+    return builder.create<UnrealizedConversionCastOp>(loc, resultType, inputs)
+        .getResult(0);
+  });
 }
 
-mlir::Type ViewTypeToStructConverter::convertView(ViewType view) {
+mlir::Type QuiccirToStructConverter::convertView(ViewType view) {
     /// Types contained by the struct dims[?],
     /// pos prt, pos size, coo ptr, coo size, data ptr, data size
     /// type of meta data could be an optional attribute
@@ -50,19 +74,56 @@ mlir::Type ViewTypeToStructConverter::convertView(ViewType view) {
     return mlir::LLVM::LLVMStructType::getLiteral(ctx, structElementTypes);
 }
 
-ViewTypeToPtrOfStructConverter::ViewTypeToPtrOfStructConverter() {
+mlir::Type QuiccirToStructConverter::convertMemRef(MemRefType memRef) {
+  LLVMTypeConverter llvmConv(memRef.getContext());
+  return llvmConv.convertType(memRef);
+}
+
+QuiccirToPtrOfStructConverter::QuiccirToPtrOfStructConverter() {
   addConversion([](Type type) { return type; });
   addConversion([&](ViewType view) -> Type {
     return convertView(view);
   });
+  addConversion([&](MemRefType memRef) -> Type {
+    return convertMemRef(memRef);
+  });
+
+  // Add generic source and target materializations to handle cases where
+  // non-LLVM types persist after an LLVM conversion.
+  addSourceMaterialization([&](OpBuilder &builder, Type resultType,
+                               ValueRange inputs,
+                               Location loc) -> std::optional<Value> {
+    if (inputs.size() != 1)
+      return std::nullopt;
+
+    return builder.create<UnrealizedConversionCastOp>(loc, resultType, inputs)
+        .getResult(0);
+  });
+  addTargetMaterialization([&](OpBuilder &builder, Type resultType,
+                               ValueRange inputs,
+                               Location loc) -> std::optional<Value> {
+    if (inputs.size() != 1)
+      return std::nullopt;
+
+    return builder.create<UnrealizedConversionCastOp>(loc, resultType, inputs)
+        .getResult(0);
+  });
 }
 
-mlir::Type ViewTypeToPtrOfStructConverter::convertView(ViewType view) {
-    /// Using ptr to struct instead of struct to avoid having to worry
-    /// abut ABI compatibility.
-    ViewTypeToStructConverter structConv;
-    auto strct = cast<mlir::LLVM::LLVMStructType>(structConv.convertView(view));
-    return mlir::LLVM::LLVMPointerType::get(strct);
+mlir::Type QuiccirToPtrOfStructConverter::convertView(ViewType view) {
+  /// Using ptr to struct instead of struct to avoid having to worry
+  /// abut ABI compatibility.
+  QuiccirToStructConverter structConv;
+  auto strct = cast<mlir::LLVM::LLVMStructType>(structConv.convertView(view));
+  return mlir::LLVM::LLVMPointerType::get(strct);
+}
+
+mlir::Type QuiccirToPtrOfStructConverter::convertMemRef(MemRefType memRef) {
+  /// Using ptr to struct instead of struct to avoid having to worry
+  /// abut ABI compatibility.
+  LLVMTypeConverter llvmConv(memRef.getContext());
+  auto strct = cast<mlir::LLVM::LLVMStructType>(llvmConv.convertType(memRef));
+  return mlir::LLVM::LLVMPointerType::get(strct);
 }
 
 TensorToViewConverter::TensorToViewConverter() {
@@ -73,6 +134,6 @@ TensorToViewConverter::TensorToViewConverter() {
 }
 
 mlir::Type TensorToViewConverter::convertTensor(mlir::RankedTensorType tensor) {
-  return ViewType::get(tensor.getContext(), tensor.getShape(),
+  return ViewType::get(tensor.getShape(),
     tensor.getElementType(), tensor.getEncoding());
 }

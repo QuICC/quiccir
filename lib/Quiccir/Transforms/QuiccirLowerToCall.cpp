@@ -23,6 +23,8 @@
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
 #include "llvm/ADT/Sequence.h"
+#include "llvm/Support/Error.h"
+#include "llvm/Support/Errc.h"
 
 using namespace mlir;
 using namespace mlir::quiccir;
@@ -30,9 +32,78 @@ using namespace mlir::quiccir;
 namespace {
 
 //===----------------------------------------------------------------------===//
-// QuiccirToStd RewritePatterns: Jones Worland operations
+// QuiccirToStd RewritePatterns: Transform operations
 //===----------------------------------------------------------------------===//
 
+SmallVector<Value, 2> getIdxPtr(Operation* op, ConversionPatternRewriter &rewriter, Value operandBuffer)
+{
+  auto loc = op->getLoc();
+  if (isa<TransposeOp>(op)) {
+    // If the producer is a transpose Op, load meta from input
+
+    // get function arguments
+    auto func = op->getParentOp();
+    // FuncOp has not operands, get them from block
+    Block &funcBlock = func->getRegions()[0].getBlocks().front();
+    std::uint32_t metaArrLoc = 0;
+    Value ptrMetaArray = funcBlock.getArguments()[metaArrLoc];
+    if (!ptrMetaArray.getType().isa<LLVM::LLVMPointerType>()) {
+      func->emitError() << "expecting pointer as first func arg";
+      return {};
+    }
+
+    // Load implementation array
+    Value metaArray = rewriter.create<LLVM::LoadOp>(loc, ptrMetaArray);
+    if (!metaArray.getType().isa<LLVM::LLVMArrayType>()) {
+      func->emitError() << "expecting pointer to array";
+      return {};
+    }
+
+    // Look at consumer to identify stage
+    auto users = op->getUsers();
+    if (users.empty()) {
+      func->emitError() << "there is no user, cannot identify transform stage";
+      return {};
+    }
+    Operation *user = *users.begin();
+    SmallVector<int64_t, 1> indexPtr;
+    SmallVector<int64_t, 1> indexIdx;
+    if (isa<FrIOp>(user) || isa<FrPOp>(user)) {
+      indexPtr.push_back(0);
+      indexIdx.push_back(1);
+    }
+    if (isa<AlIOp>(user) || isa<AlPOp>(user)) {
+      indexPtr.push_back(2);
+      indexIdx.push_back(3);
+    }
+    else if (isa<JWIOp>(user) || isa<JWPOp>(user)) {
+      indexPtr.push_back(4);
+      indexIdx.push_back(5);
+    }
+    if (indexPtr.size() == 0 || indexIdx.size() == 0) {
+      func->emitError() << "unable to recognize tranpose stage";
+      return {};
+    }
+    Value ptrStruct = rewriter.create<LLVM::ExtractValueOp>(loc, metaArray, indexPtr);
+    Type I32Type = rewriter.getI32Type();
+    Type memTy = MemRefType::get({ShapedType::kDynamic}, I32Type);
+    SmallVector<Value, 1> ptrOperands = {ptrStruct};
+    Value ptr = rewriter.create<UnrealizedConversionCastOp>(loc, memTy, ptrOperands)->getResult(0);
+    Value idxStruct = rewriter.create<LLVM::ExtractValueOp>(loc, metaArray, indexIdx);
+    SmallVector<Value, 1> idxOperands = {idxStruct};
+    Value idx = rewriter.create<UnrealizedConversionCastOp>(loc, memTy, idxOperands)->getResult(0);
+    return {ptr, idx};
+  }
+  else {
+    // Otherwise we get ptr and idx from producer view
+    Type i32Type = IntegerType::get(op->getContext(), 32);
+    Type metaTy =
+    MemRefType::get({ShapedType::kDynamic}, i32Type);
+    Value ptr = rewriter.create<PointersOp>(loc, metaTy, operandBuffer);
+    Value idx = rewriter.create<IndicesOp>(loc, metaTy, operandBuffer);
+    return {ptr, idx};
+  }
+}
 /// \todo this would cleanup a bit by ineriting from OpConverionsPattern
 template <class Top>
 struct OpLowering : public ConversionPattern {
@@ -55,7 +126,7 @@ struct OpLowering : public ConversionPattern {
 
     // Here we should allocate a new view.
     // However, if the consumer is quicc.materialize we simply write in that buffer
-    auto genRetBuffer = [&](Operation *op) -> Value {
+    auto genRetBuffer = [&](Operation *op) -> llvm::Expected<Value> {
       for (auto indexedResult : llvm::enumerate(op->getResults())) {
         Value result = indexedResult.value();
         if (result.hasOneUse()) {
@@ -68,23 +139,70 @@ struct OpLowering : public ConversionPattern {
           }
         }
       }
-      // otherwise we need to insert a quicc.alloc
-      std::string prodStr = op->getName().getStringRef().str()+perm2str(op);
-      Value buffer = rewriter.create<AllocOp>(loc, retViewType, operandBuffer, prodStr);
+      // otherwise we need to allocate a new buffer
+      auto ptrIdx = getIdxPtr(op, rewriter, operandBuffer);
+      if (ptrIdx.size() < 2) {
+        return llvm::createStringError(llvm::errc::invalid_argument,
+          "could not retrieve meta data");
+      }
+      ViewType viewTy = retViewType.cast<ViewType>();
+      // Set lds for ops needing padding for FFT buffer
+      if (isa<FrIOp>(op)) {
+        auto operandTy = (operandBuffer.getType()).cast<ViewType>();
+        int64_t lds = operandTy.getShape()[1]/2+1;
+        if (lds > viewTy.getShape()[1]) {
+          viewTy.setLds(lds);
+        }
+      }
+      if (isa<TransposeOp>(op)) {
+        // Check consumer, if FrPOp then the buffer might need padding
+        auto users = op->getUsers();
+        if (!users.empty()) {
+          Operation *user = *users.begin();
+          if (auto proj = dyn_cast<FrPOp>(user)) {
+            auto physTy = proj.getPhys().getType().cast<RankedTensorType>();
+            int64_t lds = physTy.getShape()[1]/2+1;
+            if (lds > viewTy.getShape()[1]) {
+              viewTy.setLds(lds);
+            }
+          }
+        }
+      }
+      Type I64Type = rewriter.getI64Type();
+      int64_t lds = viewTy.getShape()[1];
+      // If lds is set, retrieve it
+      if (viewTy.getLds() != ShapedType::kDynamic) {
+        lds = viewTy.getLds();
+      }
+      Value ldsVal = rewriter.create<LLVM::ConstantOp>(loc, I64Type,
+      rewriter.getI64IntegerAttr(lds));
+
+      Type dataTy = MemRefType::get({ShapedType::kDynamic},
+        viewTy.getElementType());
+      Value data = rewriter.create<AllocDataOp>(loc, dataTy, ptrIdx[0], ptrIdx[1], ldsVal,
+        viewTy.getEncoding().cast<StringAttr>().str());
+      Value buffer = rewriter.create<AssembleOp>(loc, retViewType, ptrIdx[0], ptrIdx[1], data);
+
       // Make sure to allocate at the beginning of the block.
       // auto *parentBlock = buffer.getDefiningOp()->getBlock();
       // buffer.getDefiningOp()->moveBefore(&parentBlock->front());
       return buffer;
     };
-    Value retBuffer = genRetBuffer(op);
+    llvm::Expected<Value> ValueOrError = genRetBuffer(op);
+    if (!ValueOrError) {
+      op->emitError(toString(ValueOrError.takeError()));
+      return failure();
+    }
+    Value retBuffer = ValueOrError.get();
 
     // get function arguments
     auto func = op->getParentOp();
     // FuncOp has not operands, get them from block
     Block &funcBlock = func->getRegions()[0].getBlocks().front();
-    Value ptrImplArray = funcBlock.getArguments()[0];
+    std::uint32_t thisArrLoc = 1;
+    Value ptrImplArray = funcBlock.getArguments()[thisArrLoc];
     if (!ptrImplArray.getType().isa<LLVM::LLVMPointerType>()) {
-      func->emitError() << "expecting pointer as first func arg.";
+      func->emitError() << "expecting pointer as second func arg";
       return failure();
     }
 
@@ -164,7 +282,13 @@ void QuiccirToCallLoweringPass::runOnOperation() {
   // if any of these operations are *not* converted.
   target.addIllegalDialect<quiccir::QuiccirDialect>();
   // Also we need alloc / materialize to be legal
-  target.addLegalOp<quiccir::AllocOp, quiccir::MaterializeOp>();
+  target.addLegalOp<
+    quiccir::MaterializeOp,
+    quiccir::PointersOp,
+    quiccir::IndicesOp,
+    quiccir::AllocDataOp,
+    quiccir::AssembleOp
+    >();
 
   // Now that the conversion target has been defined, we just need to provide
   // the set of patterns that will lower the Quiccir operations.
