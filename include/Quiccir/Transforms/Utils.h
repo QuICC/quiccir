@@ -22,8 +22,11 @@ namespace quiccir {
 // Quiccir Lower to call Utils
 //===----------------------------------------------------------------------===//
 
-/// return permutation as a string
+/// return permutation as a string if it exists
 std::string perm2str(Operation* op);
+
+/// return kind as a string if it exists
+std::string kind2str(Operation* op);
 
 /// @brief Get a SymbolRefAttr containing the library function name for the op.
 /// If the library function does not exist, insert a declaration.
@@ -38,6 +41,9 @@ getLibraryCallSymbolRef(Operation *op, PatternRewriter &rewriter, ArrayRef<Type>
   // lib call name mangling
   auto implOp = cast<OpT>(op);
   std::string fnName = implOp.getOperationName().str();
+
+  // Attribute to know op specialization
+  fnName += kind2str(op);
   // Attribute for transpose op
   fnName += perm2str(op);
 

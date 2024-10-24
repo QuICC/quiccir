@@ -1,2 +1,3 @@
 add_mlir_interface(ShapeInferenceOpInterface)
 add_mlir_interface(FoldTensorCastIntoConsumerOpInterface)
+add_mlir_interface(TransformOpInterface)

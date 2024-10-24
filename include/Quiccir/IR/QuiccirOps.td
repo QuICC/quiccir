@@ -12,6 +12,7 @@ include "Quiccir/IR/QuiccirDialect.td"
 include "Quiccir/IR/QuiccirTypes.td"
 include "Quiccir/Interfaces/ShapeInferenceOpInterface.td"
 include "Quiccir/Interfaces/FoldTensorCastIntoConsumerOpInterface.td"
+include "Quiccir/Interfaces/TransformOpInterface.td"
 include "mlir/Interfaces/InferTypeOpInterface.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 
@@ -400,8 +401,7 @@ def Quiccir_SubOp : Quiccir_Op<"sub", [Pure, Elementwise,
 //===----------------------------------------------------------------------===//
 
 def Quiccir_FrPOp : Quiccir_Op<"fr.prj", [Pure,
-    DeclareOpInterfaceMethods<FoldTensorCastIntoConsumerOpInterface>,
-    DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
+    DeclareOpInterfaceMethods<TransformOpInterface>]> {
     let summary = "Fourier Transform modal to physical space";
     let description = [{
         The `quiccir.fr.prj` operation implements a generic Fourier projector.
@@ -423,7 +423,8 @@ def Quiccir_FrPOp : Quiccir_Op<"fr.prj", [Pure,
 
     let arguments = (ins AnyTensor:$mods
         , OptionalAttr<I64Attr>:$implptr
-        , OptionalAttr<I64Attr>:$dim);
+        , OptionalAttr<I64Attr>:$dim
+        , OptionalAttr<StrAttr>:$kind);
     let results = (outs AnyTensor:$phys);
 
     let assemblyFormat = [{
@@ -448,8 +449,7 @@ def Quiccir_FrPOp : Quiccir_Op<"fr.prj", [Pure,
 
 
 def Quiccir_FrIOp : Quiccir_Op<"fr.int", [Pure,
-    DeclareOpInterfaceMethods<FoldTensorCastIntoConsumerOpInterface>,
-    DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
+    DeclareOpInterfaceMethods<TransformOpInterface>]> {
     let summary = "Fourier Transform from physical to modal space";
     let description = [{
         The `quiccir.fr.int` operation implements a generic Fourier integrator.
@@ -473,7 +473,8 @@ def Quiccir_FrIOp : Quiccir_Op<"fr.int", [Pure,
 
     let arguments = (ins AnyTensor:$phys
         , OptionalAttr<I64Attr>:$implptr
-        , OptionalAttr<I64Attr>:$dim);
+        , OptionalAttr<I64Attr>:$dim
+        , OptionalAttr<StrAttr>:$kind);
     let results = (outs AnyTensor:$mods);
 
     let assemblyFormat = [{
@@ -496,8 +497,7 @@ def Quiccir_FrIOp : Quiccir_Op<"fr.int", [Pure,
 //===----------------------------------------------------------------------===//
 
 def Quiccir_AlPOp : Quiccir_Op<"al.prj", [Pure,
-    DeclareOpInterfaceMethods<FoldTensorCastIntoConsumerOpInterface>,
-    DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
+    DeclareOpInterfaceMethods<TransformOpInterface>]> {
     let summary = "AssociateLegendre Transform modal to physical space";
     let description = [{
         The `quiccir.al.prj` operation implements a generic AssociateLegendre projector.
@@ -519,7 +519,8 @@ def Quiccir_AlPOp : Quiccir_Op<"al.prj", [Pure,
 
     let arguments = (ins AnyTensor:$mods
         , OptionalAttr<I64Attr>:$implptr
-        , OptionalAttr<I64Attr>:$dim);
+        , OptionalAttr<I64Attr>:$dim
+        , OptionalAttr<StrAttr>:$kind);
     let results = (outs AnyTensor:$phys);
 
     let assemblyFormat = [{
@@ -542,8 +543,7 @@ def Quiccir_AlPOp : Quiccir_Op<"al.prj", [Pure,
 //===----------------------------------------------------------------------===//
 
 def Quiccir_AlIOp : Quiccir_Op<"al.int", [Pure,
-    DeclareOpInterfaceMethods<FoldTensorCastIntoConsumerOpInterface>,
-    DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
+    DeclareOpInterfaceMethods<TransformOpInterface>]> {
     let summary = "AssociateLegendre Transform from physical to modal space";
     let description = [{
         The `quiccir.al.int` operation implements a generic AssociateLegendre integrator.
@@ -567,7 +567,8 @@ def Quiccir_AlIOp : Quiccir_Op<"al.int", [Pure,
 
     let arguments = (ins AnyTensor:$phys
         , OptionalAttr<I64Attr>:$implptr
-        , OptionalAttr<I64Attr>:$dim);
+        , OptionalAttr<I64Attr>:$dim
+        , OptionalAttr<StrAttr>:$kind);
     let results = (outs AnyTensor:$mods);
 
     let assemblyFormat = [{
@@ -590,8 +591,7 @@ def Quiccir_AlIOp : Quiccir_Op<"al.int", [Pure,
 //===----------------------------------------------------------------------===//
 
 def Quiccir_JWPOp : Quiccir_Op<"jw.prj", [Pure,
-    DeclareOpInterfaceMethods<FoldTensorCastIntoConsumerOpInterface>,
-    DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
+    DeclareOpInterfaceMethods<TransformOpInterface>]> {
     let summary = "Jone-Worland Transform modal to physical space";
     let description = [{
         The `quiccir.jw.prj` operation implements a generic Jones Worland projector.
@@ -617,7 +617,8 @@ def Quiccir_JWPOp : Quiccir_Op<"jw.prj", [Pure,
 
     let arguments = (ins AnyTensor:$mods
         , OptionalAttr<I64Attr>:$implptr
-        , OptionalAttr<I64Attr>:$dim);
+        , OptionalAttr<I64Attr>:$dim
+        , OptionalAttr<StrAttr>:$kind);
     let results = (outs AnyTensor:$phys);
 
     let assemblyFormat = [{
@@ -640,8 +641,7 @@ def Quiccir_JWPOp : Quiccir_Op<"jw.prj", [Pure,
 //===----------------------------------------------------------------------===//
 
 def Quiccir_JWIOp : Quiccir_Op<"jw.int", [Pure,
-    DeclareOpInterfaceMethods<FoldTensorCastIntoConsumerOpInterface>,
-    DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
+    DeclareOpInterfaceMethods<TransformOpInterface>]> {
     let summary = "Jone-Worland Transform from physical to modal space";
     let description = [{
         The `quiccir.jw.int` operation implements a generic Jones Worland integrator.
@@ -667,7 +667,8 @@ def Quiccir_JWIOp : Quiccir_Op<"jw.int", [Pure,
 
     let arguments = (ins AnyTensor:$phys
         , OptionalAttr<I64Attr>:$implptr
-        , OptionalAttr<I64Attr>:$dim);
+        , OptionalAttr<I64Attr>:$dim
+        , OptionalAttr<StrAttr>:$kind);
     let results = (outs AnyTensor:$mods);
 
     let assemblyFormat = [{
