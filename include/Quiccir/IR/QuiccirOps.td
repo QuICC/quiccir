@@ -12,6 +12,7 @@ include "Quiccir/IR/QuiccirDialect.td"
 include "Quiccir/IR/QuiccirTypes.td"
 include "Quiccir/Interfaces/ShapeInferenceOpInterface.td"
 include "Quiccir/Interfaces/FoldTensorCastIntoConsumerOpInterface.td"
+include "Quiccir/Interfaces/KindOpInterface.td"
 include "Quiccir/Interfaces/TransformOpInterface.td"
 include "mlir/Interfaces/InferTypeOpInterface.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
@@ -351,7 +352,7 @@ def Quiccir_AddOp : Quiccir_Op<"add", [Pure, Commutative, Elementwise,
     // let hasCanonicalizeMethod = 1;
 
     // let skipDefaultBuilders = 1;
-    // Allow building a FrPOp from the input operand.
+    // Allow building a AddOp from the input operand.
     let builders = [
         OpBuilder<(ins "Value":$lhs, "Value":$rhs)>
     ];
@@ -389,9 +390,165 @@ def Quiccir_SubOp : Quiccir_Op<"sub", [Pure, Elementwise,
     // let hasCanonicalizeMethod = 1;
 
     // let skipDefaultBuilders = 1;
-    // Allow building a FrPOp from the input operand.
+    // Allow building a SubOp from the input operand.
     let builders = [
         OpBuilder<(ins "Value":$lhs, "Value":$rhs)>
+    ];
+}
+
+
+//===----------------------------------------------------------------------===//
+// MulConstOp
+//===----------------------------------------------------------------------===//
+
+def Quiccir_MulConstOp : Quiccir_Op<"mul.const", [Pure, Elementwise,
+    SameOperandsAndResultShape, SameOperandsAndResultElementType,
+    DeclareOpInterfaceMethods<KindOpInterface>,
+    DeclareOpInterfaceMethods<FoldTensorCastIntoConsumerOpInterface>]> {
+    let summary = "MulConstOp";
+    let description = [{
+        The `quiccir.mul.const` operation implements a pointwise multiplication with a constant.
+        For the moment the constant is hidden in the library call, selected by the kind
+        attribute, it will need to be exposed for code generation.
+
+        Example:
+
+        ```mlir
+        %res = quiccir.mul.const %rhs: tensor<?x?x?x?> -> tensor<?x?x?x?>
+        ```
+    }];
+
+    let arguments = (ins AnyTensor:$rhs,
+        OptionalAttr<I64Attr>:$implptr,
+        OptionalAttr<StrAttr>:$kind);
+    let results = (outs AnyTensor:$res);
+
+    let assemblyFormat = [{
+        $rhs `:` type($rhs) `->` type($res) attr-dict-with-keyword
+    }];
+
+    // let hasVerifier = 1;
+    // let hasCanonicalizeMethod = 1;
+
+    // let skipDefaultBuilders = 1;
+    // Allow building a MulConstOp from the input operand.
+    let builders = [
+        OpBuilder<(ins "Value":$rhs)>
+    ];
+}
+
+
+//===----------------------------------------------------------------------===//
+// CrossOp
+//===----------------------------------------------------------------------===//
+
+def Quiccir_CrossOp : Quiccir_Op<"cross", [Pure,
+    SameOperandsShape,
+    SameOperandsElementType,
+    SameOperandsAndResultShape,
+    SameOperandsAndResultElementType,
+    DeclareOpInterfaceMethods<KindOpInterface>,
+    DeclareOpInterfaceMethods<FoldTensorCastIntoConsumerOpInterface>]> {
+    let summary = "Cross product of 2 vectors";
+    let description = [{
+        The `quiccir.cross` operation implements a cross product of 2 vectors
+        in component wise form, each component is a tensor.
+
+        This operation takes 6 tensors representing the vectors,
+        it returns 3 tensors the cross product.
+
+        Attributes:
+        - implptr, index to retrieve backend class implementation
+        - kind, described the constant scaling factor
+
+        (The scaling factor should be exposed in Mlir for code generation)
+
+        Example:
+
+        ```mlir
+        %C0, %C1, %C2 = quiccir.cross (%V0, %V1, %V2), (%U0, %U1, %U2) :
+        (tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>), (tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>) ->
+        (tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>)
+        attributes{implptr = 0, kind = "inertia"}
+        ```
+    }];
+
+    let arguments = (ins AnyTensor:$V0, AnyTensor:$V1, AnyTensor:$V2
+        , AnyTensor:$U0, AnyTensor:$U1, AnyTensor:$U2
+        , OptionalAttr<I64Attr>:$implptr
+        , OptionalAttr<StrAttr>:$kind);
+    let results = (outs AnyTensor:$C0, AnyTensor:$C1, AnyTensor:$C2);
+
+    let assemblyFormat = [{
+        `(` $V0 `,` $V1 `,` $V2 `)` `,` `(` $U0 `,` $U1 `,` $U2 `)` `:` `(` type($V0) `,` type($V1) `,` type($V2) `)`
+        `,` `(` type($U0) `,` type($U1) `,` type($U2) `)`  `->` `(` type($C0) `,` type($C1) `,` type($C2) `)`
+        attr-dict-with-keyword
+    }];
+
+    // let hasVerifier = 1;
+    // let hasCanonicalizeMethod = 1;
+
+    // let skipDefaultBuilders = 1;
+    // Allow building a CrossOp from the input operands.
+    let builders = [
+        OpBuilder<(ins "Value":$V0, "Value":$V1, "Value":$V2, "Value":$U0, "Value":$U1, "Value":$U2)>
+    ];
+}
+
+//===----------------------------------------------------------------------===//
+// DotOp
+//===----------------------------------------------------------------------===//
+
+def Quiccir_DotOp : Quiccir_Op<"dot", [Pure,
+    SameOperandsShape,
+    SameOperandsElementType,
+    SameOperandsAndResultShape,
+    SameOperandsAndResultElementType,
+    DeclareOpInterfaceMethods<KindOpInterface>,
+    DeclareOpInterfaceMethods<FoldTensorCastIntoConsumerOpInterface>]> {
+    let summary = "Dot product of 2 vectors";
+    let description = [{
+        The `quiccir.dot` operation implements a dot product of 2 vectors
+        in component wise form, each component is a tensor.
+
+        This operation takes 6 tensors representing the vectors,
+        it returns 1 tensors the dot product.
+
+        Attributes:
+        - implptr, index to retrieve backend class implementation
+        - kind, described the constant scaling factor
+
+        (The scaling factor should be exposed in Mlir for code generation)
+
+        Example:
+
+        ```mlir
+        %dot = quiccir.dot (%V0, %V1, %V2), (%U0, %U1, %U2) :
+        (tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>), (tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>) ->
+        tensor<?x?x?xf64>
+        attributes{implptr = 0, kind = "inertia"}
+        ```
+    }];
+
+    let arguments = (ins AnyTensor:$V0, AnyTensor:$V1, AnyTensor:$V2
+        , AnyTensor:$U0, AnyTensor:$U1, AnyTensor:$U2
+        , OptionalAttr<I64Attr>:$implptr
+        , OptionalAttr<StrAttr>:$kind);
+    let results = (outs AnyTensor:$dot);
+
+    let assemblyFormat = [{
+        `(` $V0 `,` $V1 `,` $V2 `)` `,` `(` $U0 `,` $U1 `,` $U2 `)` `:` `(` type($V0) `,` type($V1) `,` type($V2) `)`
+        `,` `(` type($U0) `,` type($U1) `,` type($U2) `)`  `->` type($dot)
+        attr-dict-with-keyword
+    }];
+
+    // let hasVerifier = 1;
+    // let hasCanonicalizeMethod = 1;
+
+    // let skipDefaultBuilders = 1;
+    // Allow building a DotOp from the input operands.
+    let builders = [
+        OpBuilder<(ins "Value":$V0, "Value":$V1, "Value":$V2, "Value":$U0, "Value":$U1, "Value":$U2)>
     ];
 }
 

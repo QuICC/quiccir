@@ -47,6 +47,8 @@ std::unique_ptr<mlir::Pass> createViewWrapperPass();
 /// Create a pass for adding a view wrapper for entry point with options
 std::unique_ptr<mlir::Pass> createViewWrapperPass(const QuiccirViewWrapperOptions &options);
 
+/// Create a pass for setting the unique implementation pointer
+std::unique_ptr<mlir::Pass> createSetImplptrPass();
 
 //===----------------------------------------------------------------------===//
 // Registration
