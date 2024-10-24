@@ -20,6 +20,10 @@ module {
     // CHECK: %[[THIS:.*]] = llvm.extractvalue %[[ARR]][0] : !llvm.array<1 x ptr>
     // CHECK: call @_ciface_quiccir_jw_prj_D1_complexf32_layoutUval_complexf32_layoutUmod(%[[THIS]], %{{.*}}, %{{.*}}) : (!llvm.ptr, !quiccir.view<16x3x3xcomplex<f32>, "layoutUval">, !quiccir.view<16x2x3xcomplex<f32>, "layoutUmod">) -> ()
     %ret = quiccir.jw.prj %umod : tensor<16x2x3xcomplex<f32>, "layoutUmod"> -> tensor<16x3x3xcomplex<f32>, "layoutUval"> attributes{implptr = 0 :i64, kind = "D1"}
+    // CHECK: %{{.*}} = builtin.unrealized_conversion_cast %{{.*}} : !quiccir.view<16x3x3xcomplex<f32>, "layoutUval"> to tensor<16x3x3xcomplex<f32>, "layoutUval">
+    quiccir.materialize %ret in %vuval : (tensor<16x3x3xcomplex<f32>, "layoutUval">, !quiccir.view<16x3x3xcomplex<f32>, "layoutUval">)
+    return
+    }
 
     // create new buffer reusing stage meta data
     func.func @entryJwPrjAlloc(%metaArr: !llvm.ptr<array<6 x ptr<struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)>>>>, %thisArr: !llvm.ptr<array<2 x ptr>>, %vumod: !quiccir.view<16x2x3xcomplex<f32>, "layoutUmod">) {
