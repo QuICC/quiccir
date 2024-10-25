@@ -58,6 +58,7 @@ struct QuiccirSetImplptr : public quiccir::impl::QuiccirSetImplptrBase<QuiccirSe
       llvm::hash_code hOpers = 0;
       for (Value op : op->getOperands()) {
         auto hTen = hash_value(op.getType().getTypeID());
+        // LLVM_DEBUG(llvm::dbgs() << hTen << '\t');
         llvm::hash_code hLay = 0;
         llvm::hash_code hEleTy = 0;
         if (auto tensorTy = dyn_cast<RankedTensorType>(op.getType())) {

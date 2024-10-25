@@ -61,7 +61,7 @@ LogicalResult deallocateBuffers(Operation *op) {
     return success();
   }
 
-  // If we allocation is not from quiccir, do nothing
+  // If the allocation is not from quiccir, do nothing
   if (!isa<quiccir::AllocDataOp>(dataProdOp)) {
     return success();
   }
@@ -72,6 +72,17 @@ LogicalResult deallocateBuffers(Operation *op) {
     return success();
   }
   Operation *lastUser = getEndOperation(view, op);
+
+  // Check if last user is a cast
+  if (isa<UnrealizedConversionCastOp>(lastUser)) {
+    Value castView = lastUser->getResults()[0];
+    if (castView.getUsers().empty()) {
+      op->emitWarning() << "trying to deallocate unused view";
+      return success();
+    }
+    lastUser = getEndOperation(castView, lastUser);
+  }
+
   builder.setInsertionPointAfter(lastUser);
   builder.create<quiccir::DeallocOp>(loc, view);
   return success();
