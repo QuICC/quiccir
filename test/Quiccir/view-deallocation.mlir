@@ -32,7 +32,7 @@ module {
         %viewnodim = builtin.unrealized_conversion_cast %view : !quiccir.view<1xf32, "layout"> to !quiccir.view<?xf32, "layout">
         call @user(%viewnodim) : (!quiccir.view<?xf32, "layout">) -> ()
         // CHECK: %[[V:.*]] = quiccir.assemble(%{{.*}}, %{{.*}}), %{{.*}} : (memref<?xi32>, memref<?xi32>), memref<?xf32> -> !quiccir.view<1xf32, "layout">
-        // CHECK: %[[VND:.*]] = builtin.unrealized_conversion_cast %view : !quiccir.view<1xf32, "layout"> to !quiccir.view<?xf32, "layout">
+        // CHECK: %[[VND:.*]] = builtin.unrealized_conversion_cast %[[V]] : !quiccir.view<1xf32, "layout"> to !quiccir.view<?xf32, "layout">
         // CHECK: call @user(%[[VND:.*]]) : (!quiccir.view<?xf32, "layout">) -> ()
         // CHECK: quiccir.dealloc(%[[V]]) : !quiccir.view<1xf32, "layout">
         return
