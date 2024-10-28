@@ -113,6 +113,7 @@ struct QuiccirViewWrapper : public quiccir::impl::QuiccirViewWrapperBase<Quiccir
       Type ptrTy = LLVM::LLVMPointerType::get(arrTy);
       viewArgsTy.push_back(ptrTy);
       // Add return arguments
+<<<<<<< HEAD
       for (auto ir = 0u; ir < retsTy.size(); ++ir) {
         auto id = ir;
         if (dimRets.size() == 1) {
@@ -123,12 +124,17 @@ struct QuiccirViewWrapper : public quiccir::impl::QuiccirViewWrapperBase<Quiccir
           il = 0;
         }
         llvm::Expected<Type> TypeOrError = setDimensionsEncoding(ctx, retsTy[ir], dimRets[id], layRets[il]);
+=======
+      for (auto ty : retsTy) {
+        llvm::Expected<Type> TypeOrError = setDimensionsEncoding(ctx, ty, dimRets, layRets);
+>>>>>>> dev
         if (!TypeOrError) {
           module->emitError(toString(TypeOrError.takeError()));
         }
         viewArgsTy.push_back(cnv.convertType(dyn_cast<RankedTensorType>(TypeOrError.get())));
       }
       // Add input arguments
+<<<<<<< HEAD
       for (auto ir = 0u; ir < argsTy.size(); ++ir) {
         auto id = ir;
         if (dimArgs.size() == 1) {
@@ -139,6 +145,10 @@ struct QuiccirViewWrapper : public quiccir::impl::QuiccirViewWrapperBase<Quiccir
           il = 0;
         }
         llvm::Expected<Type> TypeOrError = setDimensionsEncoding(ctx, argsTy[ir], dimArgs[id], layArgs[il]);
+=======
+      for (auto ty : argsTy) {
+        llvm::Expected<Type> TypeOrError = setDimensionsEncoding(ctx, ty, dimArgs, layArgs);
+>>>>>>> dev
         if (!TypeOrError) {
           module->emitError(toString(TypeOrError.takeError()));
         }
