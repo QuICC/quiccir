@@ -125,12 +125,8 @@ struct OpLowering : public ConversionPattern {
 
     // Here we should allocate a new view.
     // However, if the consumer is quicc.materialize we simply write in that buffer
-<<<<<<< HEAD
     auto genRetBuffer = [&](Operation *op) -> llvm::Expected<SmallVector<Value, 3>> {
       SmallVector<Value, 3> buffers;
-=======
-    auto genRetBuffer = [&](Operation *op) -> llvm::Expected<Value> {
->>>>>>> dev
       for (auto indexedResult : llvm::enumerate(op->getResults())) {
         bool useExistingBuffer = false;
         Value result = indexedResult.value();
@@ -203,71 +199,14 @@ struct OpLowering : public ConversionPattern {
         return llvm::createStringError(llvm::errc::invalid_argument,
               "the buffer was not set correctly");
       }
-<<<<<<< HEAD
       return buffers;
     };
     llvm::Expected<SmallVector<Value, 3>> ValueOrError = genRetBuffer(op);
-=======
-      // otherwise we need to allocate a new buffer
-      auto ptrIdx = getIdxPtr(op, rewriter, operandBuffer);
-      if (ptrIdx.size() < 2) {
-        return llvm::createStringError(llvm::errc::invalid_argument,
-          "could not retrieve meta data");
-      }
-      ViewType viewTy = retViewType.cast<ViewType>();
-      // Set lds for ops needing padding for FFT buffer
-      if (isa<FrIOp>(op)) {
-        auto operandTy = (operandBuffer.getType()).cast<ViewType>();
-        int64_t lds = operandTy.getShape()[1]/2+1;
-        if (lds > viewTy.getShape()[1]) {
-          viewTy.setLds(lds);
-        }
-      }
-      if (isa<TransposeOp>(op)) {
-        // Check consumer, if FrPOp then the buffer might need padding
-        auto users = op->getUsers();
-        if (!users.empty()) {
-          Operation *user = *users.begin();
-          if (auto proj = dyn_cast<FrPOp>(user)) {
-            auto physTy = proj.getPhys().getType().cast<RankedTensorType>();
-            int64_t lds = physTy.getShape()[1]/2+1;
-            if (lds > viewTy.getShape()[1]) {
-              viewTy.setLds(lds);
-            }
-          }
-        }
-      }
-      Type I64Type = rewriter.getI64Type();
-      int64_t lds = viewTy.getShape()[1];
-      // If lds is set, retrieve it
-      if (viewTy.getLds() != ShapedType::kDynamic) {
-        lds = viewTy.getLds();
-      }
-      Value ldsVal = rewriter.create<LLVM::ConstantOp>(loc, I64Type,
-      rewriter.getI64IntegerAttr(lds));
-
-      Type dataTy = MemRefType::get({ShapedType::kDynamic},
-        viewTy.getElementType());
-      Value data = rewriter.create<AllocDataOp>(loc, dataTy, ptrIdx[0], ptrIdx[1], ldsVal,
-        viewTy.getEncoding().cast<StringAttr>().str());
-      Value buffer = rewriter.create<AssembleOp>(loc, retViewType, ptrIdx[0], ptrIdx[1], data);
-
-      // Make sure to allocate at the beginning of the block.
-      // auto *parentBlock = buffer.getDefiningOp()->getBlock();
-      // buffer.getDefiningOp()->moveBefore(&parentBlock->front());
-      return buffer;
-    };
-    llvm::Expected<Value> ValueOrError = genRetBuffer(op);
->>>>>>> dev
     if (!ValueOrError) {
       op->emitError(toString(ValueOrError.takeError()));
       return failure();
     }
-<<<<<<< HEAD
     SmallVector<Value, 3> retBuffers = ValueOrError.get();
-=======
-    Value retBuffer = ValueOrError.get();
->>>>>>> dev
 
     // get function arguments
     auto func = op->getParentOp();
