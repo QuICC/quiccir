@@ -25,5 +25,13 @@ module {
         return %ret : tensor<1x1x1xf64, "lay">
     }
 
+    func.func @wrapMulConst(%arg0: tensor<1x1x1xf64, "lay">) -> tensor<1x1x1xf64, "lay"> {
+        %arg0t = tensor.cast %arg0 : tensor<1x1x1xf64, "lay"> to tensor<?x?x?xf64>
+        // CHECK: %{{.*}} = quiccir.mul.const %{{.*}} : tensor<1x1x1xf64, "lay"> -> tensor<1x1x1xf64, "lay">
+        %0 = quiccir.mul.const %arg0t : tensor<?x?x?xf64> -> tensor<?x?x?xf64>
+        %ret = tensor.cast %0 : tensor<?x?x?xf64> to tensor<1x1x1xf64, "lay">
+        return %ret : tensor<1x1x1xf64, "lay">
+    }
+
 }
 

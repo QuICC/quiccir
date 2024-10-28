@@ -19,7 +19,7 @@ std::string perm2str(Operation* op) {
 }
 
 std::string kind2str(Operation* op) {
-  if (auto trOp = dyn_cast<TransformOpInterface>(op)) {
+  if (auto trOp = dyn_cast<KindOpInterface>(op)) {
     return trOp.getKind();
   }
   return std::string{};

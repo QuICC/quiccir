@@ -11,6 +11,7 @@ add_mlir_dialect_library(MLIRQuiccirPasses
     SetDimensions.cpp
     Utils.cpp
     ViewWrapper.cpp
+    SetImplptr.cpp
 
     ADDITIONAL_HEADER_DIRS
     ${PROJECT_SOURCE_DIR}/include/Quiccir

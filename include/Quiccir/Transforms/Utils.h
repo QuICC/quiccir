@@ -41,7 +41,6 @@ getLibraryCallSymbolRef(Operation *op, PatternRewriter &rewriter, ArrayRef<Type>
   // lib call name mangling
   auto implOp = cast<OpT>(op);
   std::string fnName = implOp.getOperationName().str();
-
   // Attribute to know op specialization
   fnName += kind2str(op);
   // Attribute for transpose op
