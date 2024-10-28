@@ -91,15 +91,6 @@ struct QuiccirSetImplptr : public quiccir::impl::QuiccirSetImplptrBase<QuiccirSe
         ht = hash_combine(hOp, hOpers, hRets);
       }
 
-      // llvm::dbgs() << op->getName()
-      // << '\t' << op->hashProperties()
-      // << '\t' << op->getName().getStringRef()
-      // << '\t' << op->getName().getIdentifier()
-      // << '\t' << hash_value(op->getName().getIdentifier())
-      // << '\t' << hOp
-      // << '\t' << hOpers
-      // << '\n';
-
       // update map
       if(opMap.count(ht) == 0) {
         opMap[ht] = counter++;
