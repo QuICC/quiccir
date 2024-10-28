@@ -1,8 +1,6 @@
 add_mlir_dialect_library(MLIRQuiccirPasses
     QuiccirLowerToCall.cpp
     QuiccirFinalizeViewToLLVM.cpp
-    # QuiccirLowerToAffine.cpp
-    # QuiccirLowerToLinalg.cpp
     TypeConverter.cpp
     QuiccirLowerAlloc.cpp
     QuiccirViewDeallocation.cpp
