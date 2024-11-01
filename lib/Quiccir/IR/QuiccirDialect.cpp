@@ -10,10 +10,10 @@
 
 // #include "mlir/IR/Builders.h"
 // #include "mlir/IR/OpImplementation.h"
-#include "mlir/Transforms/InliningUtils.h"
+#include "mlir/Dialect/Complex/IR/Complex.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
-#include "mlir/Dialect/Complex/IR/Complex.h"
+#include "mlir/Transforms/InliningUtils.h"
 
 using namespace mlir;
 using namespace mlir::quiccir;
@@ -69,11 +69,10 @@ struct QuiccirInlinerInterface : public DialectInlinerInterface {
 // DeallocOp
 //===----------------------------------------------------------------------===//
 
-namespace details
-{
-  /// \todo reduce duplication
-  /// assumes no control flow
-  Operation *getEndOperation(Value value, Operation *startOperation) {
+namespace details {
+/// \todo reduce duplication
+/// assumes no control flow
+Operation *getEndOperation(Value value, Operation *startOperation) {
 
   Block *block = startOperation->getBlock();
   // Resolve the last operation (must exist by definition).
@@ -91,21 +90,18 @@ namespace details
 
 } // namespace details
 
-
-
 mlir::LogicalResult DeallocOp::verify() {
   Value view = getOperand();
   Operation *opDef = view.getDefiningOp();
   if (!opDef) {
-    return this->emitError()
-      << "dealloc operand is a function argument";
+    return this->emitError() << "dealloc operand is a function argument";
   }
 
   // Check that this is the last use of the operand
   Operation *lastUser = details::getEndOperation(view, opDef);
   if (lastUser != *this) {
     return lastUser->emitError()
-      << "found uses of dealloc operand: " << lastUser;
+           << "found uses of dealloc operand: " << lastUser;
   }
   return mlir::success();
 }
@@ -122,11 +118,8 @@ mlir::LogicalResult MaterializeOp::verify() {
 
   // Check rank
   if (tensorType.getRank() != viewType.getRank()) {
-    return emitOpError()
-      << "rank mismatch, tensor="
-      << tensorType.getRank()
-      << " while view="
-      << viewType.getRank();
+    return emitOpError() << "rank mismatch, tensor=" << tensorType.getRank()
+                         << " while view=" << viewType.getRank();
   }
 
   // Check shape
@@ -137,21 +130,17 @@ mlir::LogicalResult MaterializeOp::verify() {
     if (tensorShape[i] == ShapedType::kDynamic) {
       continue;
     }
-    if (tensorShape[i] != viewShape[i]){
-      return emitError()
-        << "shape mismatch, tensor= " << tensorShape
-        << " while view= " << viewShape;
+    if (tensorShape[i] != viewShape[i]) {
+      return emitError() << "shape mismatch, tensor= " << tensorShape
+                         << " while view= " << viewShape;
     }
   }
 
-
   // Check element type
   if (tensorType.getElementType() != viewType.getElementType()) {
-    return emitOpError()
-      << "type mismatch, tensor="
-      << tensorType.getElementType()
-      << " while view="
-      << viewType.getElementType();
+    return emitOpError() << "type mismatch, tensor="
+                         << tensorType.getElementType()
+                         << " while view=" << viewType.getElementType();
   }
 
   return mlir::success();
@@ -167,11 +156,8 @@ mlir::LogicalResult TransposeOp::verify() {
 
   // Check rank
   if (opTensorType.getRank() != transposeType.getRank()) {
-    return emitOpError()
-      << "rank mismatch, tensor="
-      << opTensorType.getRank()
-      << " while tranpose="
-      << transposeType.getRank();
+    return emitOpError() << "rank mismatch, tensor=" << opTensorType.getRank()
+                         << " while tranpose=" << transposeType.getRank();
   }
 
   // Check shape
@@ -182,21 +168,17 @@ mlir::LogicalResult TransposeOp::verify() {
   auto perm = getPermutation();
 
   for (std::size_t i = 0; i < opTensorShape.size(); ++i) {
-    if (opTensorShape[i] != transposeShape[perm[i]]){
-      return emitError()
-        << "shape mismatch, tensor= " << opTensorShape
-        << " while transpose= " << transposeShape;
+    if (opTensorShape[i] != transposeShape[perm[i]]) {
+      return emitError() << "shape mismatch, tensor= " << opTensorShape
+                         << " while transpose= " << transposeShape;
     }
   }
 
-
   // Check element type
   if (opTensorType.getElementType() != transposeType.getElementType()) {
-    return emitOpError()
-      << "type mismatch, tensor="
-      << opTensorType.getElementType()
-      << " while transpose="
-      << transposeType.getElementType();
+    return emitOpError() << "type mismatch, tensor="
+                         << opTensorType.getElementType() << " while transpose="
+                         << transposeType.getElementType();
   }
 
   return mlir::success();
@@ -219,19 +201,16 @@ mlir::LogicalResult QuadratureOp::verify() {
 
   // Check ranks
   if (opTensorType.getRank() != 3) {
-    return emitOpError()
-           << "operand #1 expected rank=3 instead rank="
-           << opTensorType.getRank();
+    return emitOpError() << "operand #1 expected rank=3 instead rank="
+                         << opTensorType.getRank();
   }
   if (umodType.getRank() != 3) {
-    return emitOpError()
-           << "operand #2 expected rank=3 instead rank="
-           << umodType.getRank();
+    return emitOpError() << "operand #2 expected rank=3 instead rank="
+                         << umodType.getRank();
   }
   if (resultType.getRank() != 3) {
-    return emitOpError()
-           << "return value expected rank=3 instead rank="
-           << resultType.getRank();
+    return emitOpError() << "return value expected rank=3 instead rank="
+                         << resultType.getRank();
   }
 
   // Check consistency of the number of modes
@@ -239,8 +218,8 @@ mlir::LogicalResult QuadratureOp::verify() {
   auto opTensorShape = opTensorType.getShape();
   auto umodShape = umodType.getShape();
   if (opTensorShape[2] != umodShape[1]) {
-    return emitError()
-           << "expected opTensor third dimension to match umod second dimension";
+    return emitError() << "expected opTensor third dimension to match umod "
+                          "second dimension";
   }
   if (opTensorShape[0] != umodShape[0]) {
     return emitError()
@@ -289,14 +268,12 @@ mlir::LogicalResult FrPOp::verify() {
 
   // Check ranks
   if (modType.getRank() != 3) {
-    return emitOpError()
-           << "operand #1 expected rank=3 instead rank="
-           << modType.getRank();
+    return emitOpError() << "operand #1 expected rank=3 instead rank="
+                         << modType.getRank();
   }
   if (resultType.getRank() != 3) {
-    return emitOpError()
-           << "return value expected rank=3 instead rank="
-           << resultType.getRank();
+    return emitOpError() << "return value expected rank=3 instead rank="
+                         << resultType.getRank();
   }
 
   // Check consistency of the number of modes
@@ -307,16 +284,14 @@ mlir::LogicalResult FrPOp::verify() {
   if ((valShape[0] != ShapedType::kDynamic &&
        modShape[0] != ShapedType::kDynamic) &&
       modShape[0] != valShape[0]) {
-    return emitError()
-      << "expected result first dimension " << valShape[0]
-      << " to match mod first dimension " << modShape[0];
+    return emitError() << "expected result first dimension " << valShape[0]
+                       << " to match mod first dimension " << modShape[0];
   }
   if ((valShape[2] != ShapedType::kDynamic &&
        modShape[2] != ShapedType::kDynamic) &&
       modShape[2] != valShape[2]) {
-    return emitError()
-      << "expected result third dimension " << valShape[2]
-      << " to match mod third dimension " << modShape[2];
+    return emitError() << "expected result third dimension " << valShape[2]
+                       << " to match mod third dimension " << modShape[2];
   }
 
   // Todo: check dim attribute consistency if available
@@ -340,9 +315,8 @@ mlir::LogicalResult FrIOp::verify() {
            << physType.getElementType();
   }
   if (!llvm::isa<ComplexType>(resultType.getElementType())) {
-    return emitOpError()
-           << "result expected to be of type complex, instead "
-           << resultType.getElementType();
+    return emitOpError() << "result expected to be of type complex, instead "
+                         << resultType.getElementType();
   }
 
   // If unranked, there is nothing to check
@@ -351,14 +325,12 @@ mlir::LogicalResult FrIOp::verify() {
 
   // Check ranks
   if (physType.getRank() != 3) {
-    return emitOpError()
-           << "operand #1 expected rank=3 instead rank="
-           << physType.getRank();
+    return emitOpError() << "operand #1 expected rank=3 instead rank="
+                         << physType.getRank();
   }
   if (resultType.getRank() != 3) {
-    return emitOpError()
-           << "return value expected rank=3 instead rank="
-           << resultType.getRank();
+    return emitOpError() << "return value expected rank=3 instead rank="
+                         << resultType.getRank();
   }
 
   // Check consistency of the number of integration points
@@ -369,16 +341,14 @@ mlir::LogicalResult FrIOp::verify() {
   if ((valShape[0] != ShapedType::kDynamic &&
        physShape[0] != ShapedType::kDynamic) &&
       physShape[0] != valShape[0]) {
-    return emitError()
-      << "expected result first dimension " << valShape[0]
-      << " to match phys first dimension " << physShape[0];
+    return emitError() << "expected result first dimension " << valShape[0]
+                       << " to match phys first dimension " << physShape[0];
   }
   if ((valShape[2] != ShapedType::kDynamic &&
        physShape[2] != ShapedType::kDynamic) &&
       physShape[2] != valShape[2]) {
-    return emitError()
-      << "expected result third dimension " << valShape[2]
-      << " to match phys third dimension " << physShape[2];
+    return emitError() << "expected result third dimension " << valShape[2]
+                       << " to match phys third dimension " << physShape[2];
   }
 
   // Todo: check dim attribute consistency if available
@@ -402,9 +372,8 @@ mlir::LogicalResult AlPOp::verify() {
            << modType.getElementType();
   }
   if (!llvm::isa<ComplexType>(resultType.getElementType())) {
-    return emitOpError()
-           << "result expected to be of type complex, instead "
-           << resultType.getElementType();
+    return emitOpError() << "result expected to be of type complex, instead "
+                         << resultType.getElementType();
   }
 
   // If unranked, there is nothing to check
@@ -413,14 +382,12 @@ mlir::LogicalResult AlPOp::verify() {
 
   // Check ranks
   if (modType.getRank() != 3) {
-    return emitOpError()
-           << "operand #1 expected rank=3 instead rank="
-           << modType.getRank();
+    return emitOpError() << "operand #1 expected rank=3 instead rank="
+                         << modType.getRank();
   }
   if (resultType.getRank() != 3) {
-    return emitOpError()
-           << "return value expected rank=3 instead rank="
-           << resultType.getRank();
+    return emitOpError() << "return value expected rank=3 instead rank="
+                         << resultType.getRank();
   }
 
   // Check consistency of the number of modes
@@ -431,16 +398,14 @@ mlir::LogicalResult AlPOp::verify() {
   if ((valShape[0] != ShapedType::kDynamic &&
        modShape[0] != ShapedType::kDynamic) &&
       modShape[0] != valShape[0]) {
-    return emitError()
-      << "expected result first dimension " << valShape[0]
-      << " to match mod first dimension " << modShape[0];
+    return emitError() << "expected result first dimension " << valShape[0]
+                       << " to match mod first dimension " << modShape[0];
   }
   if ((valShape[2] != ShapedType::kDynamic &&
        modShape[2] != ShapedType::kDynamic) &&
       modShape[2] != valShape[2]) {
-    return emitError()
-      << "expected result third dimension " << valShape[2]
-      << " to match mod third dimension " << modShape[2];
+    return emitError() << "expected result third dimension " << valShape[2]
+                       << " to match mod third dimension " << modShape[2];
   }
 
   // Todo: check dim attribute consistency if available
@@ -464,9 +429,8 @@ mlir::LogicalResult AlIOp::verify() {
            << physType.getElementType();
   }
   if (!llvm::isa<ComplexType>(resultType.getElementType())) {
-    return emitOpError()
-           << "result expected to be of type complex, instead "
-           << resultType.getElementType();
+    return emitOpError() << "result expected to be of type complex, instead "
+                         << resultType.getElementType();
   }
 
   // If unranked, there is nothing to check
@@ -475,14 +439,12 @@ mlir::LogicalResult AlIOp::verify() {
 
   // Check ranks
   if (physType.getRank() != 3) {
-    return emitOpError()
-           << "operand #1 expected rank=3 instead rank="
-           << physType.getRank();
+    return emitOpError() << "operand #1 expected rank=3 instead rank="
+                         << physType.getRank();
   }
   if (resultType.getRank() != 3) {
-    return emitOpError()
-           << "return value expected rank=3 instead rank="
-           << resultType.getRank();
+    return emitOpError() << "return value expected rank=3 instead rank="
+                         << resultType.getRank();
   }
 
   // Check consistency of the number of integration points
@@ -493,16 +455,14 @@ mlir::LogicalResult AlIOp::verify() {
   if ((valShape[0] != ShapedType::kDynamic &&
        physShape[0] != ShapedType::kDynamic) &&
       physShape[0] != valShape[0]) {
-    return emitError()
-      << "expected result first dimension " << valShape[0]
-      << " to match phys first dimension " << physShape[0];
+    return emitError() << "expected result first dimension " << valShape[0]
+                       << " to match phys first dimension " << physShape[0];
   }
   if ((valShape[2] != ShapedType::kDynamic &&
        physShape[2] != ShapedType::kDynamic) &&
       physShape[2] != valShape[2]) {
-    return emitError()
-      << "expected result third dimension " << valShape[2]
-      << " to match phys third dimension " << physShape[2];
+    return emitError() << "expected result third dimension " << valShape[2]
+                       << " to match phys third dimension " << physShape[2];
   }
 
   // Todo: check dim attribute consistency if available
@@ -526,9 +486,8 @@ mlir::LogicalResult JWPOp::verify() {
            << modType.getElementType();
   }
   if (!llvm::isa<ComplexType>(resultType.getElementType())) {
-    return emitOpError()
-           << "result expected to be of type complex, instead "
-           << resultType.getElementType();
+    return emitOpError() << "result expected to be of type complex, instead "
+                         << resultType.getElementType();
   }
 
   // If unranked, there is nothing to check
@@ -537,14 +496,12 @@ mlir::LogicalResult JWPOp::verify() {
 
   // Check ranks
   if (modType.getRank() != 3) {
-    return emitOpError()
-           << "operand #1 expected rank=3 instead rank="
-           << modType.getRank();
+    return emitOpError() << "operand #1 expected rank=3 instead rank="
+                         << modType.getRank();
   }
   if (resultType.getRank() != 3) {
-    return emitOpError()
-           << "return value expected rank=3 instead rank="
-           << resultType.getRank();
+    return emitOpError() << "return value expected rank=3 instead rank="
+                         << resultType.getRank();
   }
 
   // Check consistency of the number of modes
@@ -555,16 +512,14 @@ mlir::LogicalResult JWPOp::verify() {
   if ((valShape[0] != ShapedType::kDynamic &&
        modShape[0] != ShapedType::kDynamic) &&
       modShape[0] != valShape[0]) {
-    return emitError()
-      << "expected result first dimension " << valShape[0]
-      << " to match mod first dimension " << modShape[0];
+    return emitError() << "expected result first dimension " << valShape[0]
+                       << " to match mod first dimension " << modShape[0];
   }
   if ((valShape[2] != ShapedType::kDynamic &&
        modShape[2] != ShapedType::kDynamic) &&
       modShape[2] != valShape[2]) {
-    return emitError()
-      << "expected result third dimension " << valShape[2]
-      << " to match mod third dimension " << modShape[2];
+    return emitError() << "expected result third dimension " << valShape[2]
+                       << " to match mod third dimension " << modShape[2];
   }
   // Todo: check dim attribute consistency if available
 
@@ -587,9 +542,8 @@ mlir::LogicalResult JWIOp::verify() {
            << physType.getElementType();
   }
   if (!llvm::isa<ComplexType>(resultType.getElementType())) {
-    return emitOpError()
-           << "result expected to be of type complex, instead "
-           << resultType.getElementType();
+    return emitOpError() << "result expected to be of type complex, instead "
+                         << resultType.getElementType();
   }
 
   // If unranked, there is nothing to check
@@ -598,14 +552,12 @@ mlir::LogicalResult JWIOp::verify() {
 
   // Check ranks
   if (physType.getRank() != 3) {
-    return emitOpError()
-           << "operand #1 expected rank=3 instead rank="
-           << physType.getRank();
+    return emitOpError() << "operand #1 expected rank=3 instead rank="
+                         << physType.getRank();
   }
   if (resultType.getRank() != 3) {
-    return emitOpError()
-           << "return value expected rank=3 instead rank="
-           << resultType.getRank();
+    return emitOpError() << "return value expected rank=3 instead rank="
+                         << resultType.getRank();
   }
 
   // Check consistency of the number of integration points
@@ -616,16 +568,14 @@ mlir::LogicalResult JWIOp::verify() {
   if ((valShape[0] != ShapedType::kDynamic &&
        physShape[0] != ShapedType::kDynamic) &&
       physShape[0] != valShape[0]) {
-    return emitError()
-      << "expected result first dimension " << valShape[0]
-      << " to match phys first dimension " << physShape[0];
+    return emitError() << "expected result first dimension " << valShape[0]
+                       << " to match phys first dimension " << physShape[0];
   }
   if ((valShape[2] != ShapedType::kDynamic &&
        physShape[2] != ShapedType::kDynamic) &&
       physShape[2] != valShape[2]) {
-    return emitError()
-      << "expected result third dimension " << valShape[2]
-      << " to match phys third dimension " << physShape[2];
+    return emitError() << "expected result third dimension " << valShape[2]
+                       << " to match phys third dimension " << physShape[2];
   }
 
   // Todo: check dim attribute consistency if available

@@ -14,9 +14,9 @@
 #include "Quiccir/Transforms/QuiccirPasses.h"
 
 #include "mlir/Analysis/Liveness.h"
-#include "mlir/IR/BuiltinDialect.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
+#include "mlir/IR/BuiltinDialect.h"
 #include "mlir/Pass/Pass.h"
 #include "llvm/ADT/Sequence.h"
 
@@ -43,7 +43,6 @@ Operation *getEndOperation(Value value, Operation *startOperation) {
   }
   return endOperation;
 }
-
 
 LogicalResult deallocateBuffers(Operation *op) {
   OpBuilder builder(op);
@@ -85,21 +84,21 @@ LogicalResult deallocateBuffers(Operation *op) {
 
 /// This is a partial lowering to affine loops of the quiccir operations
 namespace {
-struct  QuiccirViewDeallocationPass
+struct QuiccirViewDeallocationPass
     : public QuiccirViewDeallocationBase<QuiccirViewDeallocationPass> {
   void runOnOperation() override;
 };
 } // namespace
 
-void  QuiccirViewDeallocationPass::runOnOperation() {
+void QuiccirViewDeallocationPass::runOnOperation() {
 
   // Walk from root func
   WalkResult result = getOperation()->walk([&](quiccir::AssembleOp op) {
-      // llvm::errs() << op.getOperationName() << '\n';
-      if (failed(deallocateBuffers(op)))
-        return WalkResult::interrupt();
-      return WalkResult::advance();
-    });
+    // llvm::errs() << op.getOperationName() << '\n';
+    if (failed(deallocateBuffers(op)))
+      return WalkResult::interrupt();
+    return WalkResult::advance();
+  });
 
   if (result.wasInterrupted())
     signalPassFailure();

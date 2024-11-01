@@ -38,14 +38,15 @@ std::unique_ptr<mlir::Pass> createSetViewLayoutPass(
     const std::array<std::array<std::string, 2>, 3> &layout = defaultLayout);
 
 /// Create a pass for adding missing dimensions
-std::unique_ptr<mlir::Pass> createSetDimensionsPass(
-    llvm::ArrayRef<int64_t> phys = {},
-    llvm::ArrayRef<int64_t> mods = {});
+std::unique_ptr<mlir::Pass>
+createSetDimensionsPass(llvm::ArrayRef<int64_t> phys = {},
+                        llvm::ArrayRef<int64_t> mods = {});
 
 /// Create a pass for adding a view wrapper for entry point
 std::unique_ptr<mlir::Pass> createViewWrapperPass();
 /// Create a pass for adding a view wrapper for entry point with options
-std::unique_ptr<mlir::Pass> createViewWrapperPass(const QuiccirViewWrapperOptions &options);
+std::unique_ptr<mlir::Pass>
+createViewWrapperPass(const QuiccirViewWrapperOptions &options);
 
 /// Create a pass for setting the unique implementation pointer
 std::unique_ptr<mlir::Pass> createSetImplptrPass();

@@ -23,10 +23,10 @@ namespace quiccir {
 //===----------------------------------------------------------------------===//
 
 /// return permutation as a string if it exists
-std::string perm2str(Operation* op);
+std::string perm2str(Operation *op);
 
 /// return kind as a string if it exists
-std::string kind2str(Operation* op);
+std::string kind2str(Operation *op);
 
 /// @brief Get a SymbolRefAttr containing the library function name for the op.
 /// If the library function does not exist, insert a declaration.
@@ -37,7 +37,8 @@ std::string kind2str(Operation* op);
 /// @return
 template <class OpT>
 static FailureOr<FlatSymbolRefAttr>
-getLibraryCallSymbolRef(Operation *op, PatternRewriter &rewriter, ArrayRef<Type> types) {
+getLibraryCallSymbolRef(Operation *op, PatternRewriter &rewriter,
+                        ArrayRef<Type> types) {
   // lib call name mangling
   auto implOp = cast<OpT>(op);
   std::string fnName = implOp.getOperationName().str();
@@ -48,21 +49,21 @@ getLibraryCallSymbolRef(Operation *op, PatternRewriter &rewriter, ArrayRef<Type>
 
   auto addMangledTypeEncoding = [&](auto val) -> bool {
     auto eleTy = val.getElementType();
-      std::string tyStr;
-      llvm::raw_string_ostream tyOS(tyStr);
-      eleTy.print(tyOS);
-      if (isa<ComplexType>(eleTy)) {
-        tyStr.erase(std::find(tyStr.begin(), tyStr.end(), '<'));
-        tyStr.erase(std::find(tyStr.begin(), tyStr.end(), '>'));
-      }
-      fnName += "_"+tyStr;
-      if (!val.getEncoding()) {
-        return false;
-      }
-      Attribute att = val.getEncoding();
-      auto as = att.cast<StringAttr>();
-      fnName += "_"+as.str();
-      return true;
+    std::string tyStr;
+    llvm::raw_string_ostream tyOS(tyStr);
+    eleTy.print(tyOS);
+    if (isa<ComplexType>(eleTy)) {
+      tyStr.erase(std::find(tyStr.begin(), tyStr.end(), '<'));
+      tyStr.erase(std::find(tyStr.begin(), tyStr.end(), '>'));
+    }
+    fnName += "_" + tyStr;
+    if (!val.getEncoding()) {
+      return false;
+    }
+    Attribute att = val.getEncoding();
+    auto as = att.cast<StringAttr>();
+    fnName += "_" + as.str();
+    return true;
   };
 
   // Return types
@@ -85,7 +86,7 @@ getLibraryCallSymbolRef(Operation *op, PatternRewriter &rewriter, ArrayRef<Type>
         tyStr.erase(std::find(tyStr.begin(), tyStr.end(), '<'));
         tyStr.erase(std::find(tyStr.begin(), tyStr.end(), '>'));
       }
-      fnName += "_"+tyStr;
+      fnName += "_" + tyStr;
     }
   }
   // Argument types
@@ -107,19 +108,19 @@ getLibraryCallSymbolRef(Operation *op, PatternRewriter &rewriter, ArrayRef<Type>
         tyStr.erase(std::find(tyStr.begin(), tyStr.end(), '<'));
         tyStr.erase(std::find(tyStr.begin(), tyStr.end(), '>'));
       }
-      fnName += "_"+tyStr;
+      fnName += "_" + tyStr;
     }
   }
   std::replace(fnName.begin(), fnName.end(), '.', '_');
 
   // Layout attr
   if (auto allocDataOp = dyn_cast<AllocDataOp>(op)) {
-    fnName += "_"+allocDataOp.getLayout().str();
+    fnName += "_" + allocDataOp.getLayout().str();
   }
 
   if (fnName.empty())
     return rewriter.notifyMatchFailure(op, "No library call defined for: ");
-  fnName = "_ciface_"+fnName;
+  fnName = "_ciface_" + fnName;
 
   // fnName is a dynamic std::string, unique it via a SymbolRefAttr.
   FlatSymbolRefAttr fnNameAttr =
@@ -141,13 +142,12 @@ getLibraryCallSymbolRef(Operation *op, PatternRewriter &rewriter, ArrayRef<Type>
   /// \todo set noalias attribute
   // SmallVector<Attribute, 4> argAttrs;
   // for ([[maybe_unused]] auto t : types) {
-  //   Attribute at = StringAttr::get(rewriter.getContext(), LLVM::LLVMDialect::getNoAliasAttrName());
-  //   argAttrs.push_back(at);
+  //   Attribute at = StringAttr::get(rewriter.getContext(),
+  //   LLVM::LLVMDialect::getNoAliasAttrName()); argAttrs.push_back(at);
   // }
   // funcOp.setAllArgAttrs(argAttrs);
   return fnNameAttr;
 }
-
 
 } // namespace quiccir
 } // namespace mlir

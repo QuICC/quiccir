@@ -21,11 +21,8 @@ using namespace mlir::quiccir;
 // Common Canonicalizers and Folders.
 //===----------------------------------------------------------------------===//
 
-
-namespace mlir
-{
-namespace quiccir
-{
+namespace mlir {
+namespace quiccir {
 
 /// Fold QuiccirOps with `tensor.cast` consumer if the `tensor.cast` has
 /// result that is more static than the quiccir op.
@@ -126,8 +123,8 @@ struct FoldTensorCastConsumerPattern : public OpRewritePattern<tensor::CastOp> {
     SmallVector<Type> resultTypes(quiccirOp->result_type_begin(),
                                   quiccirOp->result_type_end());
     resultTypes[resultNumber] = resultType;
-    Operation *newOp = clone(rewriter, quiccirOp, resultTypes,
-        quiccirOp->getOperands());
+    Operation *newOp =
+        clone(rewriter, quiccirOp, resultTypes, quiccirOp->getOperands());
 
     // Create a tensor.cast operation back to the original type.
     Value castBack = rewriter.create<tensor::CastOp>(
@@ -153,7 +150,8 @@ struct InferShapePattern
                                 PatternRewriter &rewriter) const override {
 
     // Ask the operation to infer its output/input shapes.
-    LLVM_DEBUG(llvm::dbgs() << "Inferring shape for: " << op->getName() << '\n');
+    LLVM_DEBUG(llvm::dbgs()
+               << "Inferring shape for: " << op->getName() << '\n');
     op.inferShapes();
     return success();
   }
@@ -161,9 +159,10 @@ struct InferShapePattern
 
 void QuiccirDialect::getCanonicalizationPatterns(
     RewritePatternSet &results) const {
-  results.add<quiccir::FoldTensorCastProducerPattern,
-              quiccir::FoldTensorCastConsumerPattern,
-              quiccir::InferShapePattern>(getContext());
+  results
+      .add<quiccir::FoldTensorCastProducerPattern,
+           quiccir::FoldTensorCastConsumerPattern, quiccir::InferShapePattern>(
+          getContext());
 }
 
 } // namespace quiccir

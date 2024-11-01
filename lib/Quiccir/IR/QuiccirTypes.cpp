@@ -29,13 +29,12 @@ void QuiccirDialect::registerTypes() {
 //===----------------------------------------------------------------------===//
 
 ViewType ViewType::cloneWith(std::optional<ArrayRef<int64_t>> shape,
-                         Type elementType) const {
-  return ViewType::get(getContext(), getShape(), elementType, getEncoding(), getLds());
+                             Type elementType) const {
+  return ViewType::get(getContext(), getShape(), elementType, getEncoding(),
+                       getLds());
 }
 
-void ViewType::setLds(const int64_t lds) {
-  getImpl()->lds = lds;
-}
+void ViewType::setLds(const int64_t lds) { getImpl()->lds = lds; }
 
 mlir::Type ViewType::parse(AsmParser &parser) {
   // Parse '<'.
@@ -82,8 +81,7 @@ void ViewType::print(AsmPrinter &printer) const {
   for (int64_t dim : getShape()) {
     if (dim == ShapedType::kDynamic) {
       printer << '?';
-    }
-    else {
+    } else {
       printer << dim;
     }
     printer << 'x';
@@ -111,14 +109,17 @@ void ViewType::print(AsmPrinter &printer) const {
 //   if (odsParser.parseLess()) return {};
 
 //   // Parse variable 'shape'
-//   _result_shape = ::mlir::FieldParser<::llvm::SmallVector<int64_t>>::parse(odsParser);
-//   if (::mlir::failed(_result_shape)) {
-//     odsParser.emitError(odsParser.getCurrentLocation(), "failed to parse Quiccir_ViewType parameter 'shape' which is to be a `::llvm::ArrayRef<int64_t>`");
-//     return {};
+//   _result_shape =
+//   ::mlir::FieldParser<::llvm::SmallVector<int64_t>>::parse(odsParser); if
+//   (::mlir::failed(_result_shape)) {
+//     odsParser.emitError(odsParser.getCurrentLocation(), "failed to parse
+//     Quiccir_ViewType parameter 'shape' which is to be a
+//     `::llvm::ArrayRef<int64_t>`"); return {};
 //   }
 
 //   // Parse variable 'elementType'
 //   _result_elementType = ::mlir::FieldParser<mlir::Type>::parse(odsParser);
 //   if (::mlir::failed(_result_elementType)) {
-//     odsParser.emitError(odsParser.getCurrentLocation(), "failed to parse Quiccir_ViewType parameter 'elementType' which is to be a `mlir::Type`");
+//     odsParser.emitError(odsParser.getCurrentLocation(), "failed to parse
+//     Quiccir_ViewType parameter 'elementType' which is to be a `mlir::Type`");
 //     return {};

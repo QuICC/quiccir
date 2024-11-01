@@ -14,34 +14,33 @@
 
 #include "mlir/Dialect/Func/Transforms/FuncConversions.h"
 #include "mlir/Dialect/LLVMIR/LLVMTypes.h"
-#include "llvm/Support/Error.h"
 #include "llvm/Support/Errc.h"
+#include "llvm/Support/Error.h"
 
 using namespace mlir;
 using namespace mlir::quiccir;
 
-namespace mlir::quiccir
-{
-  #define GEN_PASS_DEF_QUICCIRVIEWWRAPPER
-  #include "Quiccir/Transforms/QuiccirPasses.h.inc"
+namespace mlir::quiccir {
+#define GEN_PASS_DEF_QUICCIRVIEWWRAPPER
+#include "Quiccir/Transforms/QuiccirPasses.h.inc"
 } // namespace mlir::quiccir
-
 
 namespace {
 
-llvm::Expected<Type> setDimensionsEncoding(MLIRContext* ctx, Type valTy,
-  llvm::ArrayRef<std::int64_t> dims, std::string encoding) {
+llvm::Expected<Type> setDimensionsEncoding(MLIRContext *ctx, Type valTy,
+                                           llvm::ArrayRef<std::int64_t> dims,
+                                           std::string encoding) {
   if (auto tensor = valTy.dyn_cast<RankedTensorType>()) {
     auto eleTy = tensor.getElementType();
     Attribute attEnc = get<StringAttr>(ctx, encoding);
-    auto plusDymsTy = get<RankedTensorType>(ctx, dims, eleTy,attEnc);
+    auto plusDymsTy = get<RankedTensorType>(ctx, dims, eleTy, attEnc);
     return plusDymsTy;
   }
   return llvm::createStringError(llvm::errc::invalid_argument, "Not a tensor");
 }
 
-
-struct QuiccirViewWrapper : public quiccir::impl::QuiccirViewWrapperBase<QuiccirViewWrapper> {
+struct QuiccirViewWrapper
+    : public quiccir::impl::QuiccirViewWrapperBase<QuiccirViewWrapper> {
   using QuiccirViewWrapperBase<QuiccirViewWrapper>::QuiccirViewWrapperBase;
   void runOnOperation() final {
     auto module = getOperation();
@@ -70,9 +69,7 @@ struct QuiccirViewWrapper : public quiccir::impl::QuiccirViewWrapperBase<Quiccir
 
     // Count func ops, there should be only one at this point
     std::size_t nFunc = 0;
-    module.walk([&](func::FuncOp funcOp) {
-      ++nFunc;
-    });
+    module.walk([&](func::FuncOp funcOp) { ++nFunc; });
 
     if (nFunc > 1) {
       module->emitError("there should be only one function for this pass.");
@@ -101,15 +98,14 @@ struct QuiccirViewWrapper : public quiccir::impl::QuiccirViewWrapperBase<Quiccir
       Type memTy = MemRefType::get({ShapedType::kDynamic}, I32Type);
       QuiccirToPtrOfStructConverter structConverter;
       Type memStructTy = structConverter.convertType(memTy);
-      Type arrMemTy = LLVM::LLVMArrayType::get(ctx, memStructTy,
-      6);
+      Type arrMemTy = LLVM::LLVMArrayType::get(ctx, memStructTy, 6);
       Type ptrMemTy = LLVM::LLVMPointerType::get(arrMemTy);
       viewArgsTy.push_back(ptrMemTy);
       // Add ptr array
       /// \todo count how many operators are needed
       std::uint32_t numOps = 90;
-      Type arrTy = LLVM::LLVMArrayType::get(ctx, LLVM::LLVMPointerType::get(ctx),
-      numOps);
+      Type arrTy = LLVM::LLVMArrayType::get(
+          ctx, LLVM::LLVMPointerType::get(ctx), numOps);
       Type ptrTy = LLVM::LLVMPointerType::get(arrTy);
       viewArgsTy.push_back(ptrTy);
       // Add return arguments
@@ -122,11 +118,13 @@ struct QuiccirViewWrapper : public quiccir::impl::QuiccirViewWrapperBase<Quiccir
         if (layRets.size() == 1) {
           il = 0;
         }
-        llvm::Expected<Type> TypeOrError = setDimensionsEncoding(ctx, retsTy[ir], dimRets[id], layRets[il]);
+        llvm::Expected<Type> TypeOrError =
+            setDimensionsEncoding(ctx, retsTy[ir], dimRets[id], layRets[il]);
         if (!TypeOrError) {
           module->emitError(toString(TypeOrError.takeError()));
         }
-        viewArgsTy.push_back(cnv.convertType(dyn_cast<RankedTensorType>(TypeOrError.get())));
+        viewArgsTy.push_back(
+            cnv.convertType(dyn_cast<RankedTensorType>(TypeOrError.get())));
       }
       // Add input arguments
       for (auto ir = 0u; ir < argsTy.size(); ++ir) {
@@ -138,31 +136,35 @@ struct QuiccirViewWrapper : public quiccir::impl::QuiccirViewWrapperBase<Quiccir
         if (layArgs.size() == 1) {
           il = 0;
         }
-        llvm::Expected<Type> TypeOrError = setDimensionsEncoding(ctx, argsTy[ir], dimArgs[id], layArgs[il]);
+        llvm::Expected<Type> TypeOrError =
+            setDimensionsEncoding(ctx, argsTy[ir], dimArgs[id], layArgs[il]);
         if (!TypeOrError) {
           module->emitError(toString(TypeOrError.takeError()));
         }
-        viewArgsTy.push_back(cnv.convertType(dyn_cast<RankedTensorType>(TypeOrError.get())));
+        viewArgsTy.push_back(
+            cnv.convertType(dyn_cast<RankedTensorType>(TypeOrError.get())));
       }
 
       // Insert func
-      FunctionType viewFuncTy = FunctionType::get(
-      builder.getContext(), viewArgsTy, {});
+      FunctionType viewFuncTy =
+          FunctionType::get(builder.getContext(), viewArgsTy, {});
       builder.setInsertionPoint(funcOp);
-      auto viewFuncOp = builder.create<func::FuncOp>(funcOp->getLoc(), wrapperName, viewFuncTy);
+      auto viewFuncOp = builder.create<func::FuncOp>(funcOp->getLoc(),
+                                                     wrapperName, viewFuncTy);
       auto loc = viewFuncOp->getLoc();
       // Within new func
       Block *viewFuncBody = viewFuncOp.addEntryBlock();
       builder.setInsertionPointToEnd(viewFuncBody);
       // Add casts view args -> tensors
       std::uint32_t nExtrArgs = 2; // meta and this arrays
-      auto nArgs = viewFuncOp.getFunctionType().getNumInputs()-nExtrArgs;
+      auto nArgs = viewFuncOp.getFunctionType().getNumInputs() - nExtrArgs;
       SmallVector<Value, 4> callValues;
       auto nOut = nArgs - nIn;
       for (std::uint32_t i = 0; i < nIn; ++i) {
         // FuncOp has not operands, get them from block
-        Value arg = viewFuncBody->getArguments()[nOut+i+nExtrArgs];
-        auto argCall = builder.create<UnrealizedConversionCastOp>(loc, argsTy[i], arg);
+        Value arg = viewFuncBody->getArguments()[nOut + i + nExtrArgs];
+        auto argCall =
+            builder.create<UnrealizedConversionCastOp>(loc, argsTy[i], arg);
         callValues.push_back(argCall->getResult(0));
       }
       // Call to original tensor func
@@ -171,7 +173,7 @@ struct QuiccirViewWrapper : public quiccir::impl::QuiccirViewWrapperBase<Quiccir
       // Materialize returns to views
       for (std::uint32_t i = 0; i < nOut; ++i) {
         // FuncOp has not operands, get them from block
-        Value view = viewFuncBody->getArguments()[i+nExtrArgs];
+        Value view = viewFuncBody->getArguments()[i + nExtrArgs];
         Value tensor = call->getResult(i);
         builder.create<quiccir::MaterializeOp>(loc, tensor, view);
       }
@@ -180,7 +182,6 @@ struct QuiccirViewWrapper : public quiccir::impl::QuiccirViewWrapperBase<Quiccir
       // Set original as private
       funcOp.setPrivate();
     });
-
   }
 };
 } // namespace
@@ -189,7 +190,7 @@ std::unique_ptr<Pass> mlir::quiccir::createViewWrapperPass() {
   return std::make_unique<QuiccirViewWrapper>();
 }
 
-std::unique_ptr<Pass> mlir::quiccir::createViewWrapperPass(
-  const QuiccirViewWrapperOptions &options) {
+std::unique_ptr<Pass>
+mlir::quiccir::createViewWrapperPass(const QuiccirViewWrapperOptions &options) {
   return std::make_unique<QuiccirViewWrapper>(options);
 }

@@ -19,8 +19,8 @@
 #include "mlir/Dialect/Bufferization/Transforms/Bufferize.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
-#include "mlir/Pass/Pass.h"
 #include "mlir/IR/BuiltinDialect.h"
+#include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
 #include "llvm/ADT/Sequence.h"
 
@@ -35,7 +35,8 @@ namespace {
 
 struct AllocDataOpLowering : public ConversionPattern {
   AllocDataOpLowering(MLIRContext *ctx)
-      : ConversionPattern(quiccir::AllocDataOp::getOperationName(), /*benefit=*/1 , ctx) {}
+      : ConversionPattern(quiccir::AllocDataOp::getOperationName(),
+                          /*benefit=*/1, ctx) {}
 
   LogicalResult
   matchAndRewrite(Operation *op, ArrayRef<Value> operands,
@@ -57,13 +58,15 @@ struct AllocDataOpLowering : public ConversionPattern {
     // Type ptrStructTy = llvmConverter.convertType(ptrMemRef.getType());
     // Type ptr2ptrStructTy = mlir::LLVM::LLVMPointerType::get(ptrStructTy);
     // SmallVector<Value, 1> ptrCastOperand = {ptrMemRef};
-    // Value ptrStruct = rewriter.create<UnrealizedConversionCastOp>(loc, ptr2ptrStructTy, ptrCastOperand)->getResult(0);
+    // Value ptrStruct = rewriter.create<UnrealizedConversionCastOp>(loc,
+    // ptr2ptrStructTy, ptrCastOperand)->getResult(0);
 
     // // Cast idx
     // Type idxStructTy = llvmConverter.convertType(idxMemRef.getType());
     // Type ptr2idxStructTy = mlir::LLVM::LLVMPointerType::get(idxStructTy);
     // SmallVector<Value, 1> idxCastOperand = {idxMemRef};
-    // Value idxStruct = rewriter.create<UnrealizedConversionCastOp>(loc, ptr2idxStructTy, idxCastOperand)->getResult(0);
+    // Value idxStruct = rewriter.create<UnrealizedConversionCastOp>(loc,
+    // ptr2idxStructTy, idxCastOperand)->getResult(0);
 
     /// Alloc data struct
     Type retMemTy = *op->result_type_begin();
@@ -71,36 +74,40 @@ struct AllocDataOpLowering : public ConversionPattern {
     Type ptr2retStructTy = mlir::LLVM::LLVMPointerType::get(retStructTy);
     Type I64Type = rewriter.getI64Type();
     Value one = rewriter.create<LLVM::ConstantOp>(loc, I64Type,
-      rewriter.getIndexAttr(1));
-    Value ptr2retStruct = rewriter.create<LLVM::AllocaOp>(loc, ptr2retStructTy, one);
+                                                  rewriter.getIndexAttr(1));
+    Value ptr2retStruct =
+        rewriter.create<LLVM::AllocaOp>(loc, ptr2retStructTy, one);
 
     // Replace op with cast
     // Value retStruct = rewriter.create<LLVM::LoadOp>(loc, ptr2retStruct);
     // SmallVector<Value, 1> castOperands = {retStruct};
     SmallVector<Value, 1> castOperands = {ptr2retStruct};
-    Value retMem = rewriter.create<UnrealizedConversionCastOp>(loc, retMemTy, castOperands)->getResult(0);
+    Value retMem =
+        rewriter
+            .create<UnrealizedConversionCastOp>(loc, retMemTy, castOperands)
+            ->getResult(0);
     rewriter.replaceOp(op, retMem);
 
     /// \todo call op
     // Insert library call for alloc data
 
     // Operands
-    SmallVector <Type, 4> typeOperands = {retMemTy, ptrMemRef.getType(), idxMemRef.getType(), lds.getType()};
+    SmallVector<Type, 4> typeOperands = {retMemTy, ptrMemRef.getType(),
+                                         idxMemRef.getType(), lds.getType()};
 
     // return val becomes first operand
-    auto libraryCallSymbol = getLibraryCallSymbolRef<AllocDataOp>(op, rewriter, typeOperands);
+    auto libraryCallSymbol =
+        getLibraryCallSymbolRef<AllocDataOp>(op, rewriter, typeOperands);
     if (failed(libraryCallSymbol))
       return failure();
 
     SmallVector<Value, 4> newOperands = {retMem, ptrMemRef, idxMemRef, lds};
-    rewriter.create<func::CallOp>(
-        loc, libraryCallSymbol->getValue(), TypeRange(), newOperands);
-
+    rewriter.create<func::CallOp>(loc, libraryCallSymbol->getValue(),
+                                  TypeRange(), newOperands);
 
     return success();
   }
 };
-
 
 //===----------------------------------------------------------------------===//
 // QuiccirToStd RewritePatterns: Dealloc
@@ -109,7 +116,8 @@ struct AllocDataOpLowering : public ConversionPattern {
 /// \todo this would cleanup a bit by ineriting from OpConverionsPattern
 struct DeallocOpLowering : public ConversionPattern {
   DeallocOpLowering(MLIRContext *ctx)
-      : ConversionPattern(quiccir::DeallocOp::getOperationName(), /*benefit=*/1 , ctx) {}
+      : ConversionPattern(quiccir::DeallocOp::getOperationName(), /*benefit=*/1,
+                          ctx) {}
 
   LogicalResult
   matchAndRewrite(Operation *op, ArrayRef<Value> operands,
@@ -128,15 +136,20 @@ struct DeallocOpLowering : public ConversionPattern {
     // to have the library call generic
 
     ViewType viewTy = view.getType().dyn_cast<ViewType>();
-    SmallVector<int64_t, 3>  shape = {ShapedType::kDynamic, ShapedType::kDynamic, ShapedType::kDynamic};
+    SmallVector<int64_t, 3> shape = {ShapedType::kDynamic, ShapedType::kDynamic,
+                                     ShapedType::kDynamic};
 
-    Type castViewTy = get<quiccir::ViewType>(view.getContext(), shape, viewTy.getElementType(), viewTy.getEncoding());
-    auto castOp = rewriter.create<UnrealizedConversionCastOp>(loc, castViewTy, view);
+    Type castViewTy =
+        get<quiccir::ViewType>(view.getContext(), shape,
+                               viewTy.getElementType(), viewTy.getEncoding());
+    auto castOp =
+        rewriter.create<UnrealizedConversionCastOp>(loc, castViewTy, view);
 
-    SmallVector <Type, 1> typeOperands = {castViewTy};
+    SmallVector<Type, 1> typeOperands = {castViewTy};
 
     // return val becomes first operand
-    auto libraryCallSymbol = getLibraryCallSymbolRef<DeallocOp>(op, rewriter, typeOperands);
+    auto libraryCallSymbol =
+        getLibraryCallSymbolRef<DeallocOp>(op, rewriter, typeOperands);
     if (failed(libraryCallSymbol))
       return failure();
 
@@ -174,14 +187,13 @@ void QuiccirAllocLoweringPass::runOnOperation() {
 
   // We define the specific operations, or dialects, that are legal targets for
   // this lowering.
-  target
-      .addLegalDialect<BuiltinDialect, arith::ArithDialect,
-                       func::FuncDialect, memref::MemRefDialect,
-                       bufferization::BufferizationDialect,
-                       LLVM::LLVMDialect>();
+  target.addLegalDialect<BuiltinDialect, arith::ArithDialect, func::FuncDialect,
+                         memref::MemRefDialect,
+                         bufferization::BufferizationDialect,
+                         LLVM::LLVMDialect>();
 
-  // We also define the Quiccir dialect as Illegal so that the conversion will fail
-  // if any of these operations are *not* converted.
+  // We also define the Quiccir dialect as Illegal so that the conversion will
+  // fail if any of these operations are *not* converted.
   target.addIllegalDialect<quiccir::QuiccirDialect>();
   // Also we need assemble / materialize to be legal
   target.addLegalOp<quiccir::AssembleOp, quiccir::MaterializeOp>();
@@ -189,10 +201,8 @@ void QuiccirAllocLoweringPass::runOnOperation() {
   // Now that the conversion target has been defined, we just need to provide
   // the set of patterns that will lower the Quiccir operations.
   RewritePatternSet patterns(&getContext());
-  patterns.add<AllocDataOpLowering>(
-      &getContext());
-  patterns.add<DeallocOpLowering>(
-      &getContext());
+  patterns.add<AllocDataOpLowering>(&getContext());
+  patterns.add<DeallocOpLowering>(&getContext());
 
   // void populateViewConversionPatterns(TypeConverter &typeConverter,
   // RewritePatternSet &patterns)
