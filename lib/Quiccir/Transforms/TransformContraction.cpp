@@ -53,7 +53,7 @@ struct TransposeContractionOverLinOp : public OpRewritePattern<LINOP> {
     auto prjOpLhs = addLhs.getDefiningOp();
     auto prjOpRhs = addRhs.getDefiningOp();
 
-    // If there is no defining op, must be a func arg
+    // If there is no defining ops, must be a func arg
     if (prjOpLhs == nullptr || prjOpRhs == nullptr) {
       return failure();
     }
@@ -65,12 +65,15 @@ struct TransposeContractionOverLinOp : public OpRewritePattern<LINOP> {
 
     // Otherwise we can move the add upstream the transpose
 
-    // Transpose (projection) inputs
-    Value prjLhs = prjOpLhs->getOperand(0);
-    Value prjRhs = prjOpRhs->getOperand(0);
+    // Transpose (projection) inputs defining ops
+    Operation* opLhs = prjOpLhs->getOperand(0).getDefiningOp();
+    Operation* opRhs = prjOpRhs->getOperand(0).getDefiningOp();
+    if (opLhs == nullptr || opRhs == nullptr) {
+      return failure();
+    }
     // Transpose op ?
-    auto traOpLhs = dyn_cast<TransposeOp>(prjLhs.getDefiningOp());
-    auto traOpRhs = dyn_cast<TransposeOp>(prjRhs.getDefiningOp());
+    auto traOpLhs = dyn_cast<TransposeOp>(opLhs);
+    auto traOpRhs = dyn_cast<TransposeOp>(opRhs);
 
     if (traOpLhs && traOpRhs) {
       // get inputs
