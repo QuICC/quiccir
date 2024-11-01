@@ -62,4 +62,4 @@ jobs:
 
       - name: check format
         run: |
-          find . -iname "*.cpp" -o -iname "*.h" | xargs clang-format --dry-run -Werror
+          find . -iname "*.cpp" -o -iname "*.h" | xargs clang-format-17 --dry-run -Werror

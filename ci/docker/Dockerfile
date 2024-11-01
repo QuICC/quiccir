@@ -13,7 +13,7 @@ RUN wget https://apt.llvm.org/llvm.sh \
  && chmod +x llvm.sh \
  && ./llvm.sh 17
 
-RUN apt-get -yqq install libmlir-17-dev mlir-17-tools
+RUN apt-get -yqq install libmlir-17-dev mlir-17-tools clang-format-17
 
 RUN pip3 install lit
 
