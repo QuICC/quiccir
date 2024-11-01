@@ -50,3 +50,16 @@ jobs:
           -DMLIR_DIR=/lib/llvm-17/lib/cmake/mlir \
           -DLLVM_EXTERNAL_LIT=/usr/local/bin/lit
           ninja check-quiccir
+
+  clang-format:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    container: docker.io/quicc/ubuntu-llvm:22.04-17
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+
+      - name: check format
+        run: |
+          find . -iname "*.cpp" -o -iname "*.h" | xargs clang-format --dry-run -Werror
