@@ -14,22 +14,21 @@
 
 #include "mlir/Dialect/Func/Transforms/FuncConversions.h"
 #include "mlir/Dialect/LLVMIR/LLVMTypes.h"
-#include "llvm/Support/Error.h"
 #include "llvm/Support/Errc.h"
+#include "llvm/Support/Error.h"
 
 using namespace mlir;
 using namespace mlir::quiccir;
 
-namespace mlir::quiccir
-{
-  #define GEN_PASS_DEF_QUICCIRSETIMPLPTR
-  #include "Quiccir/Transforms/QuiccirPasses.h.inc"
+namespace mlir::quiccir {
+#define GEN_PASS_DEF_QUICCIRSETIMPLPTR
+#include "Quiccir/Transforms/QuiccirPasses.h.inc"
 } // namespace mlir::quiccir
-
 
 namespace {
 
-struct QuiccirSetImplptr : public quiccir::impl::QuiccirSetImplptrBase<QuiccirSetImplptr> {
+struct QuiccirSetImplptr
+    : public quiccir::impl::QuiccirSetImplptrBase<QuiccirSetImplptr> {
   using QuiccirSetImplptrBase<QuiccirSetImplptr>::QuiccirSetImplptrBase;
   void runOnOperation() final {
     auto module = getOperation();
@@ -82,24 +81,21 @@ struct QuiccirSetImplptr : public quiccir::impl::QuiccirSetImplptrBase<QuiccirSe
       if (auto kind = op->getAttr("kind")) {
         auto hKind = hash_value(kind);
         ht = hash_combine(hOp, hOpers, hRets, hKind);
-      }
-      else if (auto perm = op->getAttr("permutation")) {
+      } else if (auto perm = op->getAttr("permutation")) {
         auto hPerm = hash_value(perm);
         ht = hash_combine(hOp, hOpers, hRets, hPerm);
-      }
-      else {
+      } else {
         ht = hash_combine(hOp, hOpers, hRets);
       }
 
       // update map
-      if(opMap.count(ht) == 0) {
+      if (opMap.count(ht) == 0) {
         opMap[ht] = counter++;
       }
       Type I64Type = builder.getI64Type();
       mlir::IntegerAttr implptr = get<IntegerAttr>(ctx, I64Type, opMap[ht]);
       op->setAttr("implptr", implptr);
     });
-
   }
 };
 } // namespace

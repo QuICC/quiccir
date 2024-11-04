@@ -5,10 +5,10 @@
 //
 //===---------------------------------------------------------------------===//
 
-#include "Quiccir/IR/QuiccirDialect.h"
-#include "Quiccir/Transforms/QuiccirPasses.h"
-#include "Quiccir/Pipelines/Passes.h"
 #include "Quiccir-c/Utils.h"
+#include "Quiccir/IR/QuiccirDialect.h"
+#include "Quiccir/Pipelines/Passes.h"
+#include "Quiccir/Transforms/QuiccirPasses.h"
 #include "jwOp.hpp"
 
 #include "mlir/Dialect/Func/Extensions/AllExtensions.h"
@@ -40,7 +40,6 @@
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/raw_ostream.h"
 
-
 namespace cl = llvm::cl;
 
 static cl::opt<std::string> inputFilename(cl::Positional,
@@ -51,24 +50,19 @@ static cl::opt<std::string> inputFilename(cl::Positional,
 namespace {
 enum InputType { MLIR };
 }
-static cl::opt<enum InputType> inputType(
-    "x", cl::desc("Decided the kind of output desired"),
-    cl::values(clEnumValN(MLIR, "mlir",
-                          "load the input file as an MLIR file")));
+static cl::opt<enum InputType>
+    inputType("x", cl::desc("Decided the kind of output desired"),
+              cl::values(clEnumValN(MLIR, "mlir",
+                                    "load the input file as an MLIR file")));
 
 namespace {
-enum Action {
-  None,
-  DumpMLIR,
-  TestPipeLine,
-  DumpLLVMIR,
-  RunJIT
-};
+enum Action { None, DumpMLIR, TestPipeLine, DumpLLVMIR, RunJIT };
 }
 static cl::opt<enum Action> emitAction(
     "emit", cl::desc("Select the kind of output desired"),
     cl::values(clEnumValN(DumpMLIR, "mlir", "output the MLIR dump")),
-    cl::values(clEnumValN(TestPipeLine, "test", "output the MLIR dump after calling the pipeline")),
+    cl::values(clEnumValN(TestPipeLine, "test",
+                          "output the MLIR dump after calling the pipeline")),
     cl::values(clEnumValN(DumpLLVMIR, "llvm", "output the LLVM IR dump")),
     cl::values(
         clEnumValN(RunJIT, "jit",
@@ -76,19 +70,21 @@ static cl::opt<enum Action> emitAction(
 
 // Optimization options
 static cl::opt<bool> enableOpt("opt", cl::desc("Enable optimizations"));
-static cl::opt<bool> enableUnroll("unroll", cl::desc("Enable optimizations - only unroll"));
-static cl::opt<bool> enableVectorize("vectorize", cl::desc("Enable optimizations - only vectorize"));
+static cl::opt<bool>
+    enableUnroll("unroll", cl::desc("Enable optimizations - only unroll"));
+static cl::opt<bool>
+    enableVectorize("vectorize",
+                    cl::desc("Enable optimizations - only vectorize"));
 
 // Shared libs
 llvm::cl::OptionCategory clOptionsCategory{"linking options"};
 static llvm::cl::list<std::string> sharedLibs{
-      "shared-libs", llvm::cl::desc("Libraries to link dynamically"),
-      llvm::cl::ZeroOrMore, llvm::cl::MiscFlags::CommaSeparated,
-      llvm::cl::cat(clOptionsCategory)};
-
+    "shared-libs", llvm::cl::desc("Libraries to link dynamically"),
+    llvm::cl::ZeroOrMore, llvm::cl::MiscFlags::CommaSeparated,
+    llvm::cl::cat(clOptionsCategory)};
 
 int loadMLIR(mlir::MLIRContext &context,
-             mlir::OwningOpRef<mlir::ModuleOp>  &module) {
+             mlir::OwningOpRef<mlir::ModuleOp> &module) {
   // Otherwise, the input is '.mlir'.
   llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> fileOrErr =
       llvm::MemoryBuffer::getFileOrSTDIN(inputFilename);
@@ -109,13 +105,13 @@ int loadMLIR(mlir::MLIRContext &context,
 }
 
 int processMLIR(mlir::MLIRContext &context,
-                       mlir::OwningOpRef<mlir::ModuleOp>  &module) {
+                mlir::OwningOpRef<mlir::ModuleOp> &module) {
 
   // Top level (module) pass manager
   mlir::PassManager pm(&context);
   // Apply any generic pass manager command line options and run the pipeline.
   if (mlir::failed(mlir::applyPassManagerCLOptions(pm)))
-      return 4;
+    return 4;
 
   // Lower to view rapresentation
   mlir::quiccir::quiccLibCallPipelineBuilder(pm);
@@ -173,11 +169,9 @@ int dumpLLVMIR(mlir::ModuleOp module) {
 
 // rand float
 template <class T>
-inline T randf()
-{
-    return 2.0*static_cast<T>(std::rand()) / static_cast<T>(RAND_MAX) - 1.0;
+inline T randf() {
+  return 2.0 * static_cast<T>(std::rand()) / static_cast<T>(RAND_MAX) - 1.0;
 }
-
 
 int runJit(mlir::ModuleOp module) {
   // Initialize LLVM targets.
@@ -226,45 +220,57 @@ int runJit(mlir::ModuleOp module) {
   constexpr std::size_t nMod1 = 3;
   constexpr std::size_t nQuad0 = 3;
 
-  std::array<double, nLayer*nQuad0*nMod0> proj;
-  std::array<double, nLayer*nMod0*nQuad0> intg;
-  std::array<double, nLayer*nMod0*nMod1> umod;
-  std::array<double, nLayer*nMod0*nMod1> out;
-  std::array<double, nLayer*nMod0*nMod1> ref;
-  std::array<double, nLayer*nQuad0*nMod1> uval;
+  std::array<double, nLayer * nQuad0 * nMod0> proj;
+  std::array<double, nLayer * nMod0 * nQuad0> intg;
+  std::array<double, nLayer * nMod0 * nMod1> umod;
+  std::array<double, nLayer * nMod0 * nMod1> out;
+  std::array<double, nLayer * nMod0 * nMod1> ref;
+  std::array<double, nLayer * nQuad0 * nMod1> uval;
   // std::array<double, nLayer*nQuad0*nMod1> ref;
 
   // Call kernel
-  view3_t viewRef_proj{{nQuad0, nMod0, nLayer}, nullptr, 0, nullptr, 0, proj.data(), proj.size()};
-  view3_t viewRef_intg{{nMod0, nQuad0, nLayer}, nullptr, 0, nullptr, 0, intg.data(), intg.size()};
-  view3_t viewRef_umod{{nMod0, nMod1, nLayer}, nullptr, 0, nullptr, 0, umod.data(), umod.size()};
-  view3_t viewRef_out{{nMod0, nMod1, nLayer}, nullptr, 0, nullptr, 0, out.data(), out.size()};
-  // view3_t viewRef_uval{{nQuad0, nMod1, nLayer}, nullptr, 0, nullptr, 0, uval.data(), uval.size()};
+  view3_t viewRef_proj{{nQuad0, nMod0, nLayer},
+                       nullptr,
+                       0,
+                       nullptr,
+                       0,
+                       proj.data(),
+                       proj.size()};
+  view3_t viewRef_intg{{nMod0, nQuad0, nLayer},
+                       nullptr,
+                       0,
+                       nullptr,
+                       0,
+                       intg.data(),
+                       intg.size()};
+  view3_t viewRef_umod{
+      {nMod0, nMod1, nLayer}, nullptr, 0, nullptr, 0, umod.data(), umod.size()};
+  view3_t viewRef_out{
+      {nMod0, nMod1, nLayer}, nullptr, 0, nullptr, 0, out.data(), out.size()};
+  // view3_t viewRef_uval{{nQuad0, nMod1, nLayer}, nullptr, 0, nullptr, 0,
+  // uval.data(), uval.size()};
 
   // instantiate mock projector
   JWOp jwp;
   jwp.getOp() = viewRef_proj;
-  for(size_t i = 0; i < nLayer*nQuad0*nMod0; ++i)
-  {
+  for (size_t i = 0; i < nLayer * nQuad0 * nMod0; ++i) {
     proj[i] = randf<double>();
   }
 
   JWOp jwi;
   jwi.getOp() = viewRef_intg;
-  for(size_t i = 0; i < nLayer*nMod0*nQuad0; ++i)
-  {
+  for (size_t i = 0; i < nLayer * nMod0 * nQuad0; ++i) {
     intg[i] = randf<double>();
   }
 
   // init input data
-  for(size_t i = 0; i < nLayer*nMod0*nMod1; ++i)
-  {
+  for (size_t i = 0; i < nLayer * nMod0 * nMod1; ++i) {
     umod[i] = randf<double>();
   }
 
-  auto fun = (void (*)(void*, view3_t*, view3_t*))funSym.get();
+  auto fun = (void (*)(void *, view3_t *, view3_t *))funSym.get();
 
-  std::array<void*, 2> thisArr;
+  std::array<void *, 2> thisArr;
   thisArr[0] = &jwp;
   thisArr[1] = &jwi;
 
@@ -276,26 +282,21 @@ int runJit(mlir::ModuleOp module) {
   cpu_op(ref.data(), intg.data(), uval.data(), nLayer, nMod0, nQuad0, nMod1);
 
   auto checkSuccess{true};
-  for(size_t k = 0; k < nLayer; ++k)
-  {
-    for(size_t j = 0; j < nMod0; ++j)
-    {
-      for(size_t i = 0; i < nMod1; ++i)
-      {
-        auto ijk = i + j*nMod0 + k*nMod0*nMod1;
-        auto diff = ref[ijk]-out[ijk];
-        if (diff != 0.0)
-        {
-          llvm::outs() << ijk<< '\t' << ref[ijk] << '\t' << uval[ijk] << '\t'
-            << diff << '\n';
+  for (size_t k = 0; k < nLayer; ++k) {
+    for (size_t j = 0; j < nMod0; ++j) {
+      for (size_t i = 0; i < nMod1; ++i) {
+        auto ijk = i + j * nMod0 + k * nMod0 * nMod1;
+        auto diff = ref[ijk] - out[ijk];
+        if (diff != 0.0) {
+          llvm::outs() << ijk << '\t' << ref[ijk] << '\t' << uval[ijk] << '\t'
+                       << diff << '\n';
           checkSuccess = false;
         }
       }
     }
   }
 
-  if(checkSuccess)
-  {
+  if (checkSuccess) {
     llvm::outs() << "test passed!\n";
   }
 
@@ -323,7 +324,7 @@ int main(int argc, char **argv) {
   context.loadDialect<mlir::quiccir::QuiccirDialect>();
 
   // Load
-  mlir::OwningOpRef<mlir::ModuleOp>  module;
+  mlir::OwningOpRef<mlir::ModuleOp> module;
   if (int error = loadMLIR(context, module))
     return error;
 

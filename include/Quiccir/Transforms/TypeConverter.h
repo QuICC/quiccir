@@ -7,8 +7,8 @@
 #ifndef QUICCIR_TRANSFORMS_TYPECONVERTER_H
 #define QUICCIR_TRANSFORMS_TYPECONVERTER_H
 
-#include "mlir/Transforms/DialectConversion.h"
 #include "Quiccir/IR/QuiccirTypes.h"
+#include "mlir/Transforms/DialectConversion.h"
 
 namespace mlir {
 namespace quiccir {

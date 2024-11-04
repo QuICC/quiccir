@@ -1,4 +1,5 @@
-//===- ShapeInferenceOpInterface.h - Interface definitions for ShapeInference -=//
+//===- ShapeInferenceOpInterface.h - Interface definitions for ShapeInference
+//-=//
 //
 //   Copyright (c) 2024,
 //   Earth and Planetary Magnetism group, ETH Zurich
