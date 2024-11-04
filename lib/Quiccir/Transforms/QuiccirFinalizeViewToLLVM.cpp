@@ -18,8 +18,10 @@ using namespace mlir;
 using namespace mlir::quiccir;
 
 namespace {
-struct QuiccirFinalizeViewToLLVMPass : public QuiccirFinalizeViewToLLVMBase<QuiccirFinalizeViewToLLVMPass> {
-  using QuiccirFinalizeViewToLLVMBase<QuiccirFinalizeViewToLLVMPass>::QuiccirFinalizeViewToLLVMBase;
+struct QuiccirFinalizeViewToLLVMPass
+    : public QuiccirFinalizeViewToLLVMBase<QuiccirFinalizeViewToLLVMPass> {
+  using QuiccirFinalizeViewToLLVMBase<
+      QuiccirFinalizeViewToLLVMPass>::QuiccirFinalizeViewToLLVMBase;
   void runOnOperation() final {
     auto module = getOperation();
     auto *ctx = &getContext();
@@ -30,20 +32,20 @@ struct QuiccirFinalizeViewToLLVMPass : public QuiccirFinalizeViewToLLVMBase<Quic
     quiccir::QuiccirToPtrOfStructConverter typeConverter;
 
     // Populate with rules and apply rewriting rules.
-    populateFunctionOpInterfaceTypeConversionPattern<func::FuncOp>(patterns,
-        typeConverter);
+    populateFunctionOpInterfaceTypeConversionPattern<func::FuncOp>(
+        patterns, typeConverter);
     populateCallOpTypeConversionPattern(patterns, typeConverter);
     populateReturnOpTypeConversionPattern(patterns, typeConverter);
-    populateAnyFunctionOpInterfaceTypeConversionPattern(patterns, typeConverter);
+    populateAnyFunctionOpInterfaceTypeConversionPattern(patterns,
+                                                        typeConverter);
 
     // All dynamic rules below accept new function, call, return
     // provided that all quiccir view types have been fully rewritten.
     target.addDynamicallyLegalOp<func::FuncOp>([&](func::FuncOp op) {
       return typeConverter.isSignatureLegal(op.getFunctionType());
     });
-    target.addDynamicallyLegalOp<func::CallOp>([&](func::CallOp op) {
-      return typeConverter.isLegal(op);
-    });
+    target.addDynamicallyLegalOp<func::CallOp>(
+        [&](func::CallOp op) { return typeConverter.isLegal(op); });
     target.addDynamicallyLegalOp<func::ReturnOp>([&](func::ReturnOp op) {
       return typeConverter.isLegal(op.getOperandTypes());
     });
@@ -53,7 +55,7 @@ struct QuiccirFinalizeViewToLLVMPass : public QuiccirFinalizeViewToLLVMBase<Quic
     target.addLegalDialect<LLVM::LLVMDialect>();
 
     if (failed(applyFullConversion(module, target, std::move(patterns))))
-        signalPassFailure();
+      signalPassFailure();
   }
 };
 } // namespace

@@ -8,9 +8,9 @@
 #include "Quiccir/Pipelines/Passes.h"
 #include "Quiccir/Transforms/QuiccirPasses.h"
 
+#include "mlir/Conversion/Passes.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Transforms/Passes.h"
-#include "mlir/Conversion/Passes.h"
 
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 
@@ -21,7 +21,7 @@ using namespace mlir::quiccir;
 // Pipeline implementation.
 //===----------------------------------------------------------------------===//
 
-void mlir::quiccir::quiccLibCallPipelineBuilder(OpPassManager &pm){
+void mlir::quiccir::quiccLibCallPipelineBuilder(OpPassManager &pm) {
   // Lower to view rapresentation
   pm.addPass(mlir::quiccir::createLowerToCallPass());
   pm.addPass(mlir::createCanonicalizerPass());

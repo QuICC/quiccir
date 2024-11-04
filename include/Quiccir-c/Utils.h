@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <string>
 
-template<typename T, std::size_t N>
+template <typename T, std::size_t N>
 struct MemRefDescriptor {
   T *allocated;
   T *aligned;
@@ -17,7 +17,7 @@ struct MemRefDescriptor {
 
 using mem3_t = MemRefDescriptor<double, 3>;
 
-template<typename Tdata, typename Tmeta, std::size_t N>
+template <typename Tdata, typename Tmeta, std::size_t N>
 struct ViewDescriptor {
   Tmeta dims[N];
   Tmeta *pos;

@@ -21,8 +21,8 @@
 #include "llvm/Support/ToolOutputFile.h"
 
 #include "Quiccir/IR/QuiccirDialect.h"
-#include "Quiccir/Transforms/QuiccirPasses.h"
 #include "Quiccir/Pipelines/Passes.h"
+#include "Quiccir/Transforms/QuiccirPasses.h"
 
 int main(int argc, char **argv) {
   // MLIR passes
