@@ -169,11 +169,10 @@ mlir::LogicalResult TransposeOp::verify() {
 
   for (std::size_t i = 0; i < opTensorShape.size(); ++i) {
     if ((opTensorShape[i] != ShapedType::kDynamic &&
-       transposeShape[i] != ShapedType::kDynamic) &&
-      opTensorShape[i] != transposeShape[perm[i]]){
-      return emitError()
-        << "shape mismatch, tensor= " << opTensorShape
-        << " while transpose= " << transposeShape;
+         transposeShape[i] != ShapedType::kDynamic) &&
+        opTensorShape[i] != transposeShape[perm[i]]) {
+      return emitError() << "shape mismatch, tensor= " << opTensorShape
+                         << " while transpose= " << transposeShape;
     }
   }
 

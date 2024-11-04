@@ -22,9 +22,8 @@ namespace {
 bool isSameTransform(Operation *lhsOp, Operation *rhsOp) {
   /// \todo add transform/projection interface
   auto isTransform = [](Operation *op) {
-    return isa<FrIOp>(op) || isa<FrPOp>(op)
-      || isa<AlIOp>(op) || isa<AlPOp>(op)
-      || isa<JWIOp>(op) || isa<JWPOp>(op);
+    return isa<FrIOp>(op) || isa<FrPOp>(op) || isa<AlIOp>(op) ||
+           isa<AlPOp>(op) || isa<JWIOp>(op) || isa<JWPOp>(op);
   };
   auto isLhsTransform = isTransform(lhsOp);
   auto isRhsTransform = isTransform(lhsOp);
@@ -42,11 +41,10 @@ bool isSameTransform(Operation *lhsOp, Operation *rhsOp) {
 template <class LINOP>
 struct TransposeContractionOverLinOp : public OpRewritePattern<LINOP> {
   TransposeContractionOverLinOp<LINOP>(MLIRContext *ctx)
-      : OpRewritePattern<LINOP>(ctx, /*benefit=*/1) {};
+      : OpRewritePattern<LINOP>(ctx, /*benefit=*/1){};
 
-  LogicalResult
-  matchAndRewrite(LINOP op,
-                  PatternRewriter &rewriter) const final {
+  LogicalResult matchAndRewrite(LINOP op,
+                                PatternRewriter &rewriter) const final {
     // Get operands and check kinds
     Value addLhs = op.getLhs();
     Value addRhs = op.getRhs();
@@ -66,8 +64,8 @@ struct TransposeContractionOverLinOp : public OpRewritePattern<LINOP> {
     // Otherwise we can move the add upstream the transpose
 
     // Transpose (projection) inputs defining ops
-    Operation* opLhs = prjOpLhs->getOperand(0).getDefiningOp();
-    Operation* opRhs = prjOpRhs->getOperand(0).getDefiningOp();
+    Operation *opLhs = prjOpLhs->getOperand(0).getDefiningOp();
+    Operation *opRhs = prjOpRhs->getOperand(0).getDefiningOp();
     if (opLhs == nullptr || opRhs == nullptr) {
       return failure();
     }
@@ -81,7 +79,7 @@ struct TransposeContractionOverLinOp : public OpRewritePattern<LINOP> {
       Value traInRhs = traOpRhs.getInput();
       auto loc = traOpLhs->getLoc();
       auto addNew = rewriter.create<LINOP>(loc, traInLhs, traInRhs);
-      auto newTranspose = rewriter.clone(*static_cast<Operation*>(traOpLhs));
+      auto newTranspose = rewriter.clone(*static_cast<Operation *>(traOpLhs));
       newTranspose->setOperand(0, addNew);
       auto newProjector = rewriter.clone(*prjOpLhs);
       newProjector->setOperand(0, newTranspose->getResult(0));
@@ -103,7 +101,7 @@ struct TransposeContractionOverLinOp : public OpRewritePattern<LINOP> {
 namespace {
 struct QuiccirTransformContractionPass
     : public QuiccirTransformContractionBase<QuiccirTransformContractionPass> {
-    void runOnOperation() final;
+  void runOnOperation() final;
 };
 } // namespace
 
