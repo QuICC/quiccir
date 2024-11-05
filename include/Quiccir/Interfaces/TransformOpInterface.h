@@ -13,6 +13,9 @@
 #ifndef QUICCIR_INTERFACES_TRANSFORMOPINTERFACE_H
 #define QUICCIR_INTERFACES_TRANSFORMOPINTERFACE_H
 
+#include "Quiccir/Interfaces/FoldTensorCastIntoConsumerOpInterface.h"
+#include "Quiccir/Interfaces/KindOpInterface.h"
+#include "Quiccir/Interfaces/ShapeInferenceOpInterface.h"
 #include "mlir/IR/OpDefinition.h"
 
 /// Include the auto-generated declarations.

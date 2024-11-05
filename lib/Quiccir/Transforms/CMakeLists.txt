@@ -1,8 +1,6 @@
 add_mlir_dialect_library(MLIRQuiccirPasses
     QuiccirLowerToCall.cpp
     QuiccirFinalizeViewToLLVM.cpp
-    # QuiccirLowerToAffine.cpp
-    # QuiccirLowerToLinalg.cpp
     TypeConverter.cpp
     QuiccirLowerAlloc.cpp
     QuiccirViewDeallocation.cpp
@@ -12,6 +10,7 @@ add_mlir_dialect_library(MLIRQuiccirPasses
     Utils.cpp
     ViewWrapper.cpp
     SetImplptr.cpp
+    TransformContraction.cpp
 
     ADDITIONAL_HEADER_DIRS
     ${PROJECT_SOURCE_DIR}/include/Quiccir
