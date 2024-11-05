@@ -38,6 +38,6 @@ jobs:
         uses: SwiftDocOrg/github-wiki-publish-action@v1
         with:
           path: "build/docs/Quiccir"
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-        # env:
-        #   GH_PERSONAL_ACCESS_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
+          # github_token: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GH_PERSONAL_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
