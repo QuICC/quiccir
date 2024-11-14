@@ -47,6 +47,7 @@ jobs:
           mkdir build && cd build
           cmake -G Ninja .. \
           -DCMAKE_CXX_COMPILER=clang++-17 \
+          -DCMAKE_C_COMPILER=clang-17 \
           -DCMAKE_BUILD_TYPE=Release \
           -DMLIR_DIR=/lib/llvm-17/lib/cmake/mlir \
           -DLLVM_EXTERNAL_LIT=/usr/local/bin/lit
@@ -86,6 +87,7 @@ jobs:
           mkdir build && cd build
           cmake -G Ninja .. \
           -DCMAKE_CXX_COMPILER=clang++-17 \
+          -DCMAKE_C_COMPILER=clang-17 \
           -DCMAKE_BUILD_TYPE=Debug \
           -DMLIR_DIR=/lib/llvm-17/lib/cmake/mlir \
           -DLLVM_EXTERNAL_LIT=/usr/local/bin/lit
