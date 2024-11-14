@@ -158,7 +158,7 @@ struct OpLowering : public ConversionPattern {
           }
           auto retTensorTy = result.getType().cast<TensorType>();
           ViewType retViewTy =
-              getTypeConverter()->convertType(retTensorTy).cast<ViewType>();
+              getTypeConverter()->convertType(retTensorTy).template cast<ViewType>();
           // Set lds for ops needing padding for FFT buffer
           if (isa<FrIOp>(op)) {
             auto operandTy = (operandBuffer.getType()).cast<ViewType>();
