@@ -157,8 +157,9 @@ struct OpLowering : public ConversionPattern {
                                            "could not retrieve meta data");
           }
           auto retTensorTy = result.getType().cast<TensorType>();
-          ViewType retViewTy =
-              getTypeConverter()->convertType(retTensorTy).cast<ViewType>();
+          ViewType retViewTy = getTypeConverter()
+                                   ->convertType(retTensorTy)
+                                   .template cast<ViewType>();
           // Set lds for ops needing padding for FFT buffer
           if (isa<FrIOp>(op)) {
             auto operandTy = (operandBuffer.getType()).cast<ViewType>();
