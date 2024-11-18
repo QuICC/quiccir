@@ -118,12 +118,12 @@ struct QuiccirViewWrapper
         if (layRets.size() == 1) {
           il = 0;
         }
-        if (id > dimRets.size()-1) {
+        if (id > dimRets.size() - 1) {
           module->emitError("Not enough return dimensions specified.");
           signalPassFailure();
           return;
         }
-        if (ir > retsTy.size()-1) {
+        if (ir > retsTy.size() - 1) {
           module->emitError("Not enough return types specified.");
           signalPassFailure();
           return;
@@ -146,12 +146,12 @@ struct QuiccirViewWrapper
         if (layArgs.size() == 1) {
           il = 0;
         }
-        if (id > dimRets.size()-1) {
+        if (id > dimRets.size() - 1) {
           module->emitError("Not enough input dimensions specified.");
           signalPassFailure();
           return;
         }
-        if (ir > retsTy.size()-1) {
+        if (ir > retsTy.size() - 1) {
           module->emitError("Not enough input types specified.");
           signalPassFailure();
           return;
