@@ -83,7 +83,8 @@ void TransposeOp::inferShapes() {
   auto outRange = getOutput().getType();
 
   // This is checked by the verifier.
-  assert(inRange.size() == outRange.size() && "Input and output ranges must have the same size");
+  assert(inRange.size() == outRange.size() &&
+         "Input and output ranges must have the same size");
   for (std::size_t i = 0; i < inRange.size(); ++i) {
     auto inType = inRange[i].dyn_cast<RankedTensorType>();
     auto outType = outRange[i].dyn_cast<RankedTensorType>();

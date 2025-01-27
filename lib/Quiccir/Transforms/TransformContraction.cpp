@@ -74,7 +74,8 @@ struct TransposeContractionOverLinOp : public OpRewritePattern<LINOP> {
     auto traOpRhs = dyn_cast<TransposeOp>(opRhs);
 
     // If the transpose ops have multiple inputs, give up
-    if (traOpLhs->getOperands().size() > 1 || traOpRhs->getOperands().size() > 1) {
+    if (traOpLhs->getOperands().size() > 1 ||
+        traOpRhs->getOperands().size() > 1) {
       return failure();
     }
 

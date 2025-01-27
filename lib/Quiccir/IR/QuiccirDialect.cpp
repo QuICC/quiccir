@@ -160,7 +160,6 @@ mlir::LogicalResult TransposeOp::verify() {
     return emitOpError() << "number of operands and results mismatch";
   }
 
-
   for (std::size_t i = 0; i < operandRange.size(); ++i) {
 
     auto opTensorType = operandRange[i].getType().dyn_cast<RankedTensorType>();
