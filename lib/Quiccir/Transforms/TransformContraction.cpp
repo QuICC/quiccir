@@ -74,9 +74,10 @@ struct TransposeContractionOverLinOp : public OpRewritePattern<LINOP> {
     auto traOpRhs = dyn_cast<TransposeOp>(opRhs);
 
     if (traOpLhs && traOpRhs) {
-      // get inputs
-      Value traInLhs = traOpLhs.getInput();
-      Value traInRhs = traOpRhs.getInput();
+      // Get inputs
+      /// \todo extend to multiple inputs
+      Value traInLhs = traOpLhs.getInput()[0];
+      Value traInRhs = traOpRhs.getInput()[0];
       auto loc = traOpLhs->getLoc();
       auto addNew = rewriter.create<LINOP>(loc, traInLhs, traInRhs);
       auto newTranspose = rewriter.clone(*static_cast<Operation *>(traOpLhs));

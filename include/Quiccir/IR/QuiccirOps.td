@@ -287,29 +287,33 @@ def Quiccir_QuadratureOp : Quiccir_Op<"quadrature", [Pure]> {
 // TransposeOp
 //===----------------------------------------------------------------------===//
 
-// def Quiccir_TransposeOp : Quiccir_Op<"transpose", [InferShapedTypeOpAdaptor, Pure]> {
 def Quiccir_TransposeOp : Quiccir_Op<"transpose", [Pure,
+    SameOperandsShape,
+    SameOperandsAndResultElementType,
     DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
     let summary = "Transpose operator";
 
     let description = [{
-        Permutes the dimensions based on permutation.
+        Permutes the dimensions of the input tensors based on permutation.
 
         Example:
 
         ```mlir
         %out = quiccir.transpose %in permutation [0, 2, 1]: tensor<1x2x3xf32> -> tensor<1x3x2xf32>
+        %outs:2 = quiccir.transpose %ins#1, %ins#2 permutation [0, 2, 1]: tensor<1x2x3xf32>, tensor<1x2x3xf32> -> tensor<1x3x2xf32>, tensor<1x2x3xf32>
         ```
     }];
 
     let arguments = (ins
-        AnyTensor:$input,
+        Variadic<AnyTensor>:$input,
+        // AnyTensor:$input,
         DenseI64ArrayAttr:$permutation,
         OptionalAttr<I64Attr>:$implptr
     );
 
     let results = (
-        outs AnyTensor:$output
+        outs Variadic<AnyTensor>:$output
+        // outs AnyTensor:$output
     );
 
     let assemblyFormat = [{

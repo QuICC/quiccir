@@ -79,35 +79,40 @@ void SubOp::inferShapes() {
 // TransposeOp
 //===----------------------------------------------------------------------===//
 void TransposeOp::inferShapes() {
-  Type in = getInput().getType();
-  Type out = getOutput().getType();
+  auto inRange = getInput().getType();
+  auto outRange = getOutput().getType();
 
-  auto inType = llvm::dyn_cast<RankedTensorType>(in);
-  auto outType = llvm::dyn_cast<RankedTensorType>(out);
+  // This is checked by the verifier.
+  assert(inRange.size() == outRange.size() && "Input and output ranges must have the same size");
+  for (std::size_t i = 0; i < inRange.size(); ++i) {
+    auto inType = inRange[i].dyn_cast<RankedTensorType>();
+    auto outType = outRange[i].dyn_cast<RankedTensorType>();
 
-  // Requires RankedTensorType.
-  if (!inType || !outType)
-    return;
+    // Requires RankedTensorType.
+    if (!inType || !outType)
+      continue;
 
-  llvm::ArrayRef<int64_t> inShape = inType.getShape();
-  llvm::ArrayRef<int64_t> outShape = outType.getShape();
+    llvm::ArrayRef<int64_t> inShape = inType.getShape();
+    llvm::ArrayRef<int64_t> outShape = outType.getShape();
 
-  // Try to propagate input
-  auto perm = getPermutation();
-  SmallVector<int64_t, 3> newOutShape{outShape};
-  for (auto idx : {0, 1, 2}) {
-    if (outType.isDynamicDim(perm[idx]) && !inType.isDynamicDim(idx)) {
-      newOutShape[perm[idx]] = inShape[idx];
+    // Try to propagate input
+    auto perm = getPermutation();
+    SmallVector<int64_t, 3> newOutShape{outShape};
+    constexpr std::array<int, 3> indices = {0, 1, 2};
+    for (auto idx : indices) {
+      if (outType.isDynamicDim(perm[idx]) && !inType.isDynamicDim(idx)) {
+        newOutShape[perm[idx]] = inShape[idx];
+      }
     }
-  }
-  getResult().setType(outType.clone(newOutShape));
+    getResult(i).setType(outType.clone(newOutShape));
 
-  // Try to propagate output
-  SmallVector<int64_t, 3> newInShape{inShape};
-  for (auto idx : {0, 1, 2}) {
-    if (!outType.isDynamicDim(perm[idx]) && inType.isDynamicDim(idx)) {
-      newInShape[idx] = outShape[perm[idx]];
+    // Try to propagate output
+    SmallVector<int64_t, 3> newInShape{inShape};
+    for (auto idx : indices) {
+      if (!outType.isDynamicDim(perm[idx]) && inType.isDynamicDim(idx)) {
+        newInShape[idx] = outShape[perm[idx]];
+      }
     }
+    getInput()[i].setType(inType.clone(newInShape));
   }
-  getInput().setType(inType.clone(newInShape));
 }
