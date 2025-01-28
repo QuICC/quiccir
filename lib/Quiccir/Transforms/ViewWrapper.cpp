@@ -146,12 +146,12 @@ struct QuiccirViewWrapper
         if (layArgs.size() == 1) {
           il = 0;
         }
-        if (id > dimRets.size() - 1) {
+        if (id > dimArgs.size() - 1) {
           module->emitError("Not enough input dimensions specified.");
           signalPassFailure();
           return;
         }
-        if (ir > retsTy.size() - 1) {
+        if (ir > argsTy.size() - 1) {
           module->emitError("Not enough input types specified.");
           signalPassFailure();
           return;
