@@ -121,7 +121,8 @@ void TransposeOp::inferShapes() {
 // Default parsers should work, however there is a ABI compatibility bug
 // see https://github.com/llvm/llvm-project/commit/76ce4736721
 
-::mlir::ParseResult TransposeOp::parse(::mlir::OpAsmParser &parser, ::mlir::OperationState &result) {
+::mlir::ParseResult TransposeOp::parse(::mlir::OpAsmParser &parser,
+                                       ::mlir::OperationState &result) {
   ::llvm::SmallVector<::mlir::OpAsmParser::UnresolvedOperand, 4> inputOperands;
   ::llvm::SMLoc inputOperandsLoc;
   (void)inputOperandsLoc;
@@ -137,29 +138,33 @@ void TransposeOp::inferShapes() {
   if (parser.parseEqual())
     return ::mlir::failure();
 
-  if (parser.parseCustomAttributeWithFallback(permutationAttr, ::mlir::Type{})) {
+  if (parser.parseCustomAttributeWithFallback(permutationAttr,
+                                              ::mlir::Type{})) {
     return ::mlir::failure();
   }
-  if (permutationAttr) result.attributes.append("permutation", permutationAttr);
+  if (permutationAttr)
+    result.attributes.append("permutation", permutationAttr);
   if (parser.parseColon())
     return ::mlir::failure();
 
   if (parser.parseCommaSeparatedList(
-        [&]() { return parser.parseType(inputTypes.emplace_back()); }))
+          [&]() { return parser.parseType(inputTypes.emplace_back()); }))
     return ::mlir::failure();
   if (parser.parseArrow())
     return ::mlir::failure();
 
   if (parser.parseCommaSeparatedList(
-        [&]() { return parser.parseType(outputTypes.emplace_back()); }))
+          [&]() { return parser.parseType(outputTypes.emplace_back()); }))
     return ::mlir::failure();
   {
-    auto loc = parser.getCurrentLocation();(void)loc;
+    auto loc = parser.getCurrentLocation();
+    (void)loc;
     if (parser.parseOptionalAttrDictWithKeyword(result.attributes))
       return ::mlir::failure();
   }
   result.addTypes(outputTypes);
-  if (parser.resolveOperands(inputOperands, inputTypes, inputOperandsLoc, result.operands))
+  if (parser.resolveOperands(inputOperands, inputTypes, inputOperandsLoc,
+                             result.operands))
     return ::mlir::failure();
   return ::mlir::success();
 }
@@ -170,7 +175,7 @@ void TransposeOp::print(::mlir::OpAsmPrinter &_odsPrinter) {
   _odsPrinter << ' ' << "permutation";
   _odsPrinter << ' ' << "=";
   _odsPrinter << ' ';
-_odsPrinter.printStrippedAttrOrType(getPermutationAttr());
+  _odsPrinter.printStrippedAttrOrType(getPermutationAttr());
   _odsPrinter << ' ' << ":";
   _odsPrinter << ' ';
   _odsPrinter << getInput().getTypes();
@@ -179,5 +184,6 @@ _odsPrinter.printStrippedAttrOrType(getPermutationAttr());
   _odsPrinter << getOutput().getTypes();
   ::llvm::SmallVector<::llvm::StringRef, 2> elidedAttrs;
   elidedAttrs.push_back("permutation");
-  _odsPrinter.printOptionalAttrDictWithKeyword((*this)->getAttrs(), elidedAttrs);
+  _odsPrinter.printOptionalAttrDictWithKeyword((*this)->getAttrs(),
+                                               elidedAttrs);
 }
