@@ -316,7 +316,13 @@ def Quiccir_TransposeOp : Quiccir_Op<"transpose", [Pure,
         // outs AnyTensor:$output
     );
 
+    // let assemblyFormat = [{
+    //     $input `permutation` `=` $permutation `:` type($input) `->` type($output) attr-dict-with-keyword
+    // }];
+
     let hasVerifier = 1;
+    // Default parsers should work, however there is a ABI compatibility bug
+    // see https://github.com/llvm/llvm-project/commit/76ce4736721a
     let hasCustomAssemblyFormat = 1;
 }
 

@@ -118,6 +118,9 @@ void TransposeOp::inferShapes() {
   }
 }
 
+// Default parsers should work, however there is a ABI compatibility bug
+// see https://github.com/llvm/llvm-project/commit/76ce4736721
+
 ::mlir::ParseResult TransposeOp::parse(::mlir::OpAsmParser &parser, ::mlir::OperationState &result) {
   ::llvm::SmallVector<::mlir::OpAsmParser::UnresolvedOperand, 4> inputOperands;
   ::llvm::SMLoc inputOperandsLoc;
@@ -141,12 +144,14 @@ void TransposeOp::inferShapes() {
   if (parser.parseColon())
     return ::mlir::failure();
 
-  if (parser.parseTypeList(inputTypes))
+  if (parser.parseCommaSeparatedList(
+        [&]() { return parser.parseType(inputTypes.emplace_back()); }))
     return ::mlir::failure();
   if (parser.parseArrow())
     return ::mlir::failure();
 
-  if (parser.parseTypeList(outputTypes))
+  if (parser.parseCommaSeparatedList(
+        [&]() { return parser.parseType(outputTypes.emplace_back()); }))
     return ::mlir::failure();
   {
     auto loc = parser.getCurrentLocation();(void)loc;
