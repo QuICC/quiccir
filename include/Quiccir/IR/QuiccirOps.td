@@ -316,11 +316,8 @@ def Quiccir_TransposeOp : Quiccir_Op<"transpose", [Pure,
         // outs AnyTensor:$output
     );
 
-    let assemblyFormat = [{
-        $input `permutation` `=` $permutation `:` type($input) `->` type($output) attr-dict-with-keyword
-    }];
-
     let hasVerifier = 1;
+    let hasCustomAssemblyFormat = 1;
 }
 
 

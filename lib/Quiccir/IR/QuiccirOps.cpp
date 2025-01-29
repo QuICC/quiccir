@@ -117,3 +117,62 @@ void TransposeOp::inferShapes() {
     getInput()[i].setType(inType.clone(newInShape));
   }
 }
+
+::mlir::ParseResult TransposeOp::parse(::mlir::OpAsmParser &parser, ::mlir::OperationState &result) {
+  ::llvm::SmallVector<::mlir::OpAsmParser::UnresolvedOperand, 4> inputOperands;
+  ::llvm::SMLoc inputOperandsLoc;
+  (void)inputOperandsLoc;
+  ::mlir::DenseI64ArrayAttr permutationAttr;
+  ::llvm::SmallVector<::mlir::Type, 1> inputTypes;
+  ::llvm::SmallVector<::mlir::Type, 1> outputTypes;
+
+  inputOperandsLoc = parser.getCurrentLocation();
+  if (parser.parseOperandList(inputOperands))
+    return ::mlir::failure();
+  if (parser.parseKeyword("permutation"))
+    return ::mlir::failure();
+  if (parser.parseEqual())
+    return ::mlir::failure();
+
+  if (parser.parseCustomAttributeWithFallback(permutationAttr, ::mlir::Type{})) {
+    return ::mlir::failure();
+  }
+  if (permutationAttr) result.attributes.append("permutation", permutationAttr);
+  if (parser.parseColon())
+    return ::mlir::failure();
+
+  if (parser.parseTypeList(inputTypes))
+    return ::mlir::failure();
+  if (parser.parseArrow())
+    return ::mlir::failure();
+
+  if (parser.parseTypeList(outputTypes))
+    return ::mlir::failure();
+  {
+    auto loc = parser.getCurrentLocation();(void)loc;
+    if (parser.parseOptionalAttrDictWithKeyword(result.attributes))
+      return ::mlir::failure();
+  }
+  result.addTypes(outputTypes);
+  if (parser.resolveOperands(inputOperands, inputTypes, inputOperandsLoc, result.operands))
+    return ::mlir::failure();
+  return ::mlir::success();
+}
+
+void TransposeOp::print(::mlir::OpAsmPrinter &_odsPrinter) {
+  _odsPrinter << ' ';
+  _odsPrinter << getInput();
+  _odsPrinter << ' ' << "permutation";
+  _odsPrinter << ' ' << "=";
+  _odsPrinter << ' ';
+_odsPrinter.printStrippedAttrOrType(getPermutationAttr());
+  _odsPrinter << ' ' << ":";
+  _odsPrinter << ' ';
+  _odsPrinter << getInput().getTypes();
+  _odsPrinter << ' ' << "->";
+  _odsPrinter << ' ';
+  _odsPrinter << getOutput().getTypes();
+  ::llvm::SmallVector<::llvm::StringRef, 2> elidedAttrs;
+  elidedAttrs.push_back("permutation");
+  _odsPrinter.printOptionalAttrDictWithKeyword((*this)->getAttrs(), elidedAttrs);
+}
