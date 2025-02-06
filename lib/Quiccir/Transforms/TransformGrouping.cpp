@@ -1,6 +1,6 @@
 //====- TransposeGrouping.cpp - Group Transpose ops ---------------===//
 //
-// This file implements a Grouping of 'group' akin transpose.
+// This file implements a Grouping of n (group option) akin transpose.
 //
 //===----------------------------------------------------------------------===//
 
@@ -62,6 +62,12 @@ struct QuiccirTransposeGroupingPass
 } // namespace
 
 void QuiccirTransposeGroupingPass::runOnOperation() {
+  if (group == 1) {
+    getOperation()->emitError("Group option must be greater than 1 or negative to express group all");
+    signalPassFailure();
+    return;
+  }
+
   func::FuncOp funcOp = getOperation();
   // Walk from root func
   SmallVector<Operation *, 4> transposeOps;
@@ -75,16 +81,13 @@ void QuiccirTransposeGroupingPass::runOnOperation() {
         return WalkResult::advance();
       }
       else {
-
         // Is this the first transpose with a single result?
         if (transposeOps.empty()) {
           // Then store it
-
           transposeOps.push_back(transposeOp);
           return WalkResult::advance();
         }
         else {
-
           // Check if the transpose op is the same as the collected ones
           if (isSameTranspose(dyn_cast<TransposeOp>(transposeOps.front()), transposeOp)) {
 
