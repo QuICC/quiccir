@@ -35,15 +35,16 @@ bool isSameTranspose(TransposeOp lhsOp, TransposeOp rhsOp) {
     }
     return true;
   };
-  bool isSamePemutation = checkPerm(lhsOp.getPermutation(), rhsOp.getPermutation());
+  bool isSamePemutation =
+      checkPerm(lhsOp.getPermutation(), rhsOp.getPermutation());
   auto checkType = [](RankedTensorType lhsType, RankedTensorType rhsType) {
     return lhsType == rhsType;
   };
-  bool isSameInputType = checkType(lhsOp.getInput()[0].getType().cast<RankedTensorType>(),
-                                   rhsOp.getInput()[0].getType().cast<RankedTensorType>());
+  bool isSameInputType =
+      checkType(lhsOp.getInput()[0].getType().cast<RankedTensorType>(),
+                rhsOp.getInput()[0].getType().cast<RankedTensorType>());
   return isSamePemutation && isSameInputType;
 }
-
 
 } // namespace
 
@@ -54,8 +55,10 @@ bool isSameTranspose(TransposeOp lhsOp, TransposeOp rhsOp) {
 /// This is a rewrite pass
 namespace {
 struct QuiccirTransposeGroupingPass
-    : public quiccir::impl::QuiccirTransposeGroupingBase<QuiccirTransposeGroupingPass> {
-  using QuiccirTransposeGroupingBase<QuiccirTransposeGroupingPass>::QuiccirTransposeGroupingBase;
+    : public quiccir::impl::QuiccirTransposeGroupingBase<
+          QuiccirTransposeGroupingPass> {
+  using QuiccirTransposeGroupingBase<
+      QuiccirTransposeGroupingPass>::QuiccirTransposeGroupingBase;
   void runOnOperation() final;
 };
 
@@ -63,7 +66,8 @@ struct QuiccirTransposeGroupingPass
 
 void QuiccirTransposeGroupingPass::runOnOperation() {
   if (group == 1) {
-    getOperation()->emitError("Group option must be greater than 1 or negative to express group all");
+    getOperation()->emitError(
+        "Group option must be greater than 1 or negative to express group all");
     signalPassFailure();
     return;
   }
@@ -79,17 +83,16 @@ void QuiccirTransposeGroupingPass::runOnOperation() {
       if (transposeOp->getNumResults() > 1) {
         // skip
         return WalkResult::advance();
-      }
-      else {
+      } else {
         // Is this the first transpose with a single result?
         if (transposeOps.empty()) {
           // Then store it
           transposeOps.push_back(transposeOp);
           return WalkResult::advance();
-        }
-        else {
+        } else {
           // Check if the transpose op is the same as the collected ones
-          if (isSameTranspose(dyn_cast<TransposeOp>(transposeOps.front()), transposeOp)) {
+          if (isSameTranspose(dyn_cast<TransposeOp>(transposeOps.front()),
+                              transposeOp)) {
 
             // Collect
             transposeOps.push_back(transposeOp);
@@ -108,8 +111,7 @@ void QuiccirTransposeGroupingPass::runOnOperation() {
 
   if (result.wasInterrupted() && !needToGroup) {
     signalPassFailure();
-  }
-  else {
+  } else {
     // Otherwise group the transposes
     // Collect inputs and return types
     SmallVector<Value, 4> inputs;
@@ -117,7 +119,8 @@ void QuiccirTransposeGroupingPass::runOnOperation() {
     // SmallVector<NamedAttribute, 4> attributes;
     for (auto transposeOp : transposeOps) {
       inputs.push_back(cast<TransposeOp>(transposeOp).getInput()[0]);
-      resultTypes.push_back(cast<TransposeOp>(transposeOp).getResult(0).getType());
+      resultTypes.push_back(
+          cast<TransposeOp>(transposeOp).getResult(0).getType());
     }
 
     // Set builder and insertion point
@@ -125,12 +128,15 @@ void QuiccirTransposeGroupingPass::runOnOperation() {
     builder.setInsertionPoint(transposeOps.front());
 
     // Create a new transpose op
-    auto newTranspose = builder.create<TransposeOp>(transposeOps.front()->getLoc(),
-      resultTypes, inputs, cast<TransposeOp>(transposeOps.front()).getPermutation(), ::mlir::IntegerAttr{});
+    auto newTranspose = builder.create<TransposeOp>(
+        transposeOps.front()->getLoc(), resultTypes, inputs,
+        cast<TransposeOp>(transposeOps.front()).getPermutation(),
+        ::mlir::IntegerAttr{});
 
     // Replace the old transpose uses with the new transpose values
     for (std::size_t i = 0; i < transposeOps.size(); i++) {
-      transposeOps[i]->getResult(0).replaceAllUsesWith(newTranspose.getResult(i));
+      transposeOps[i]->getResult(0).replaceAllUsesWith(
+          newTranspose.getResult(i));
       transposeOps[i]->erase();
     }
   }
@@ -141,6 +147,7 @@ std::unique_ptr<Pass> mlir::quiccir::createTransposeGroupingPass() {
   return std::make_unique<QuiccirTransposeGroupingPass>();
 }
 
-std::unique_ptr<Pass> mlir::quiccir::createTransposeGroupingPass(const QuiccirTransposeGroupingOptions &options) {
+std::unique_ptr<Pass> mlir::quiccir::createTransposeGroupingPass(
+    const QuiccirTransposeGroupingOptions &options) {
   return std::make_unique<QuiccirTransposeGroupingPass>(options);
 }

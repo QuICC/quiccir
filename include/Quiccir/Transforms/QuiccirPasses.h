@@ -40,8 +40,8 @@ std::unique_ptr<mlir::Pass> createTransformContractionPass();
 std::unique_ptr<mlir::Pass> createTransposeGroupingPass();
 
 /// Create a pass for performing transpose grouping with options
-std::unique_ptr<mlir::Pass> createTransposeGroupingPass(
-    const QuiccirTransposeGroupingOptions &options);
+std::unique_ptr<mlir::Pass>
+createTransposeGroupingPass(const QuiccirTransposeGroupingOptions &options);
 
 /// Create a pass for adding missing view layout info
 static std::array<std::array<std::string, 2>, 3> defaultLayout;
