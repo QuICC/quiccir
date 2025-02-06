@@ -35,6 +35,9 @@ std::unique_ptr<mlir::Pass> createFinalizeViewToLLVMPass();
 /// Create a pass for performing transform contraction
 std::unique_ptr<mlir::Pass> createTransformContractionPass();
 
+/// Create a pass for performing transform grouping
+std::unique_ptr<mlir::Pass> createTransformGroupingPass();
+
 /// Create a pass for adding missing view layout info
 static std::array<std::array<std::string, 2>, 3> defaultLayout;
 std::unique_ptr<mlir::Pass> createSetViewLayoutPass(

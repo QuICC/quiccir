@@ -36,7 +36,7 @@ bool isSameTransform(Operation *lhsOp, Operation *rhsOp) {
 }
 
 //===----------------------------------------------------------------------===//
-// TransposeContration over linear operators: AddOp or SubOp
+// TransposeContraction over linear operators: AddOp or SubOp
 //===----------------------------------------------------------------------===//
 template <class LINOP>
 struct TransposeContractionOverLinOp : public OpRewritePattern<LINOP> {
