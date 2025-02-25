@@ -109,8 +109,8 @@ void QuiccirTransposeGroupingPass::runOnOperation() {
     return WalkResult::advance();
   });
 
-  if (result.wasInterrupted() && !needToGroup) {
-    signalPassFailure();
+  if (!needToGroup) {
+    return;
   } else {
     // Otherwise group the transposes
     // Collect inputs and return types
