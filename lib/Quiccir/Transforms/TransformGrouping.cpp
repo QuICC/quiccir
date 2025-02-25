@@ -50,7 +50,6 @@ bool isSameTranspose(TransposeOp lhsOp, TransposeOp rhsOp) {
   return isSamePemutation && isSameInputType;
 }
 
-
 //===----------------------------------------------------------------------===//
 // TransposeGrouping over func ops
 //===----------------------------------------------------------------------===//
@@ -64,8 +63,8 @@ public:
   TransposeGrouping(MLIRContext *ctx, int32_t group)
       : OpRewritePattern<func::FuncOp>(ctx, /*benefit=*/1), group(group){};
 
-
-  LogicalResult matchAndRewrite(func::FuncOp funcOp, PatternRewriter & rewriter) const final {
+  LogicalResult matchAndRewrite(func::FuncOp funcOp,
+                                PatternRewriter &rewriter) const final {
 
     // Walk from root func
     SmallVector<Operation *, 4> transposeOps;
@@ -111,7 +110,7 @@ public:
       for (auto transposeOp : transposeOps) {
         inputs.push_back(cast<TransposeOp>(transposeOp).getInput()[0]);
         resultTypes.push_back(
-          cast<TransposeOp>(transposeOp).getResult(0).getType());
+            cast<TransposeOp>(transposeOp).getResult(0).getType());
       }
 
       // Set rewriter and insertion point
@@ -136,7 +135,6 @@ public:
     return failure();
   }
 };
-
 
 } // namespace
 
