@@ -72,7 +72,7 @@ public:
       if (auto transposeOp = dyn_cast<TransposeOp>(op)) {
         // Check if the transpose op has more than one result
         if (transposeOp->getNumResults() > 1) {
-          // skip
+          // Skip
           return WalkResult::advance();
         } else {
           // Is this the first transpose with a single result?
@@ -87,7 +87,7 @@ public:
               // Collect
               needToGroup = true;
               transposeOps.push_back(transposeOp);
-              // Stop if we have enough collected enough transposes
+              // Stop if we have collected enough transposes
               if (static_cast<int>(transposeOps.size()) == group) {
                 return WalkResult::interrupt();
               }
@@ -104,7 +104,6 @@ public:
       // Collect inputs and return types
       SmallVector<Value, 4> inputs;
       SmallVector<Type, 4> resultTypes;
-      // SmallVector<NamedAttribute, 4> attributes;
       for (auto transposeOp : transposeOps) {
         inputs.push_back(cast<TransposeOp>(transposeOp).getInput()[0]);
         resultTypes.push_back(
@@ -168,7 +167,7 @@ void QuiccirTransposeGroupingPass::runOnOperation() {
     signalPassFailure();
 }
 
-/// Create a pass for lowering operations to library calls
+/// Create a pass for grouping akin transpose ops
 std::unique_ptr<Pass> mlir::quiccir::createTransposeGroupingPass() {
   return std::make_unique<QuiccirTransposeGroupingPass>();
 }
