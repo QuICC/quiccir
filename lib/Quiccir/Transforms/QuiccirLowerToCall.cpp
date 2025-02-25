@@ -63,7 +63,7 @@ SmallVector<Value, 2> getIdxPtr(Operation *op,
     // Look at consumer to identify stage
     auto users = op->getUsers();
     if (users.empty()) {
-      func->emitError() << "there is no user, cannot identify transform stage";
+      op->emitError() << "there is no user, cannot identify transform stage";
       return {};
     }
     Operation *user = *users.begin();
