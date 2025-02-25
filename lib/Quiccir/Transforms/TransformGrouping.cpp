@@ -58,15 +58,13 @@ private:
   int32_t group;
 
 public:
-  // using OpRewritePattern<func::FuncOp>::OpRewritePattern;
-
   TransposeGrouping(MLIRContext *ctx, int32_t group)
       : OpRewritePattern<func::FuncOp>(ctx, /*benefit=*/1), group(group){};
 
   LogicalResult matchAndRewrite(func::FuncOp funcOp,
                                 PatternRewriter &rewriter) const final {
 
-    // Walk from root func
+    // Walk from root func and collect transposes to be grouped
     SmallVector<Operation *, 4> transposeOps;
     bool needToGroup = false;
     WalkResult result = funcOp.walk([&](Operation *op) {
@@ -86,7 +84,6 @@ public:
             // Check if the transpose op is the same as the collected ones
             if (isSameTranspose(dyn_cast<TransposeOp>(transposeOps.front()),
                                 transposeOp)) {
-
               // Collect
               needToGroup = true;
               transposeOps.push_back(transposeOp);
@@ -102,7 +99,8 @@ public:
     });
 
     if (needToGroup) {
-      // Otherwise group the transposes
+      // Group the collected transposes
+
       // Collect inputs and return types
       SmallVector<Value, 4> inputs;
       SmallVector<Type, 4> resultTypes;
