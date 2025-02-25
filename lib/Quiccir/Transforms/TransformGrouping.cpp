@@ -9,6 +9,10 @@
 
 #include "Quiccir/IR/QuiccirDialect.h"
 #include "Quiccir/IR/QuiccirOps.h"
+#include "mlir/IR/Matchers.h"
+#include "mlir/IR/PatternMatch.h"
+#include "mlir/Pass/Pass.h"
+#include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 
 #include "mlir/Dialect/Func/Transforms/FuncConversions.h"
 
@@ -46,6 +50,94 @@ bool isSameTranspose(TransposeOp lhsOp, TransposeOp rhsOp) {
   return isSamePemutation && isSameInputType;
 }
 
+
+//===----------------------------------------------------------------------===//
+// TransposeGrouping over func ops
+//===----------------------------------------------------------------------===//
+class TransposeGrouping : public OpRewritePattern<func::FuncOp> {
+private:
+  int32_t group;
+
+public:
+  // using OpRewritePattern<func::FuncOp>::OpRewritePattern;
+
+  TransposeGrouping(MLIRContext *ctx, int32_t group)
+      : OpRewritePattern<func::FuncOp>(ctx, /*benefit=*/1), group(group){};
+
+
+  LogicalResult matchAndRewrite(func::FuncOp funcOp, PatternRewriter & rewriter) const final {
+
+    // Walk from root func
+    SmallVector<Operation *, 4> transposeOps;
+    bool needToGroup = false;
+    WalkResult result = funcOp.walk([&](Operation *op) {
+      // Get the first transpose op that is not grouped
+      if (auto transposeOp = dyn_cast<TransposeOp>(op)) {
+        // Check if the transpose op has more than one result
+        if (transposeOp->getNumResults() > 1) {
+          // skip
+          return WalkResult::advance();
+        } else {
+          // Is this the first transpose with a single result?
+          if (transposeOps.empty()) {
+            // Then store it
+            transposeOps.push_back(transposeOp);
+            return WalkResult::advance();
+          } else {
+            // Check if the transpose op is the same as the collected ones
+            if (isSameTranspose(dyn_cast<TransposeOp>(transposeOps.front()),
+                                transposeOp)) {
+
+              // Collect
+              needToGroup = true;
+              transposeOps.push_back(transposeOp);
+              // Stop if we have enough collected enough transposes
+              if (static_cast<int>(transposeOps.size()) == group) {
+                return WalkResult::interrupt();
+              }
+            }
+          }
+        }
+      }
+      return WalkResult::advance();
+    });
+
+    if (needToGroup) {
+      // Otherwise group the transposes
+      // Collect inputs and return types
+      SmallVector<Value, 4> inputs;
+      SmallVector<Type, 4> resultTypes;
+      // SmallVector<NamedAttribute, 4> attributes;
+      for (auto transposeOp : transposeOps) {
+        inputs.push_back(cast<TransposeOp>(transposeOp).getInput()[0]);
+        resultTypes.push_back(
+          cast<TransposeOp>(transposeOp).getResult(0).getType());
+      }
+
+      // Set rewriter and insertion point
+      rewriter.setInsertionPoint(transposeOps.front());
+
+      // Create a new transpose op
+      rewriter.startRootUpdate(funcOp);
+      auto newTranspose = rewriter.create<TransposeOp>(
+          transposeOps.front()->getLoc(), resultTypes, inputs,
+          cast<TransposeOp>(transposeOps.front()).getPermutation(),
+          ::mlir::IntegerAttr{});
+
+      // Replace the old transpose uses with the new transpose values
+      for (std::size_t i = 0; i < transposeOps.size(); i++) {
+        transposeOps[i]->getResult(0).replaceAllUsesWith(
+            newTranspose.getResult(i));
+        rewriter.eraseOp(transposeOps[i]);
+      }
+      rewriter.finalizeRootUpdate(funcOp);
+      return success();
+    }
+    return failure();
+  }
+};
+
+
 } // namespace
 
 //===----------------------------------------------------------------------===//
@@ -72,74 +164,12 @@ void QuiccirTransposeGroupingPass::runOnOperation() {
     return;
   }
 
-  func::FuncOp funcOp = getOperation();
-  // Walk from root func
-  SmallVector<Operation *, 4> transposeOps;
-  bool needToGroup = false;
-  WalkResult result = funcOp.walk([&](Operation *op) {
-    // Get the first transpose op that is not grouped
-    if (auto transposeOp = dyn_cast<TransposeOp>(op)) {
-      // Check if the transpose op has more than one result
-      if (transposeOp->getNumResults() > 1) {
-        // skip
-        return WalkResult::advance();
-      } else {
-        // Is this the first transpose with a single result?
-        if (transposeOps.empty()) {
-          // Then store it
-          transposeOps.push_back(transposeOp);
-          return WalkResult::advance();
-        } else {
-          // Check if the transpose op is the same as the collected ones
-          if (isSameTranspose(dyn_cast<TransposeOp>(transposeOps.front()),
-                              transposeOp)) {
+  RewritePatternSet patterns(&getContext());
+  patterns.add<TransposeGrouping>(&getContext(), group);
 
-            // Collect
-            transposeOps.push_back(transposeOp);
-            // Have we collected enough?
-            if (static_cast<int>(transposeOps.size()) == group) {
-              // Then rewrite
-              needToGroup = true;
-              return WalkResult::interrupt();
-            }
-          }
-        }
-      }
-    }
-    return WalkResult::advance();
-  });
-
-  if (!needToGroup) {
-    return;
-  } else {
-    // Otherwise group the transposes
-    // Collect inputs and return types
-    SmallVector<Value, 4> inputs;
-    SmallVector<Type, 4> resultTypes;
-    // SmallVector<NamedAttribute, 4> attributes;
-    for (auto transposeOp : transposeOps) {
-      inputs.push_back(cast<TransposeOp>(transposeOp).getInput()[0]);
-      resultTypes.push_back(
-          cast<TransposeOp>(transposeOp).getResult(0).getType());
-    }
-
-    // Set builder and insertion point
-    OpBuilder builder(funcOp);
-    builder.setInsertionPoint(transposeOps.front());
-
-    // Create a new transpose op
-    auto newTranspose = builder.create<TransposeOp>(
-        transposeOps.front()->getLoc(), resultTypes, inputs,
-        cast<TransposeOp>(transposeOps.front()).getPermutation(),
-        ::mlir::IntegerAttr{});
-
-    // Replace the old transpose uses with the new transpose values
-    for (std::size_t i = 0; i < transposeOps.size(); i++) {
-      transposeOps[i]->getResult(0).replaceAllUsesWith(
-          newTranspose.getResult(i));
-      transposeOps[i]->erase();
-    }
-  }
+  FrozenRewritePatternSet patternSet(std::move(patterns));
+  if (failed(applyPatternsAndFoldGreedily(getOperation(), patternSet)))
+    signalPassFailure();
 }
 
 /// Create a pass for lowering operations to library calls
