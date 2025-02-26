@@ -4,6 +4,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+
 #include "Quiccir/Transforms/QuiccirPassDetail.h"
 #include "Quiccir/Transforms/QuiccirPasses.h"
 
@@ -15,6 +16,7 @@
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 
 #include "mlir/Dialect/Func/Transforms/FuncConversions.h"
+#include <queue>
 
 using namespace mlir;
 using namespace mlir::quiccir;
@@ -27,6 +29,7 @@ namespace mlir::quiccir {
 namespace {
 
 bool isSameTranspose(TransposeOp lhsOp, TransposeOp rhsOp) {
+  // Check if the permutations are the same
   auto checkPerm = [](const llvm::ArrayRef<int64_t> lhsPerm,
                       const llvm::ArrayRef<int64_t> rhsPerm) {
     if (lhsPerm.size() != rhsPerm.size()) {
@@ -41,14 +44,48 @@ bool isSameTranspose(TransposeOp lhsOp, TransposeOp rhsOp) {
   };
   bool isSamePemutation =
       checkPerm(lhsOp.getPermutation(), rhsOp.getPermutation());
-  auto checkType = [](RankedTensorType lhsType, RankedTensorType rhsType) {
-    return lhsType == rhsType;
+
+  // Check if the operands are of the same space (projection level)
+  auto checkSpace = [](Value lhs, Value rhs) {
+    auto lhsOp = lhs.getDefiningOp();
+    auto rhsOp = rhs.getDefiningOp();
+    if (lhsOp == nullptr || rhsOp == nullptr) {
+      // There is no defining op, must be a func arg
+      // then we assume that are the same space
+      // if they have the same type
+      auto checkType = [](RankedTensorType lhsType, RankedTensorType rhsType) {
+        return lhsType == rhsType;
+      };
+      return checkType(lhs.getType().cast<RankedTensorType>(),
+                       rhs.getType().cast<RankedTensorType>());
+    }
+    return lhsOp->getName() == rhsOp->getName();
   };
-  bool isSameInputType =
-      checkType(lhsOp.getInput()[0].getType().cast<RankedTensorType>(),
-                rhsOp.getInput()[0].getType().cast<RankedTensorType>());
-  return isSamePemutation && isSameInputType;
+  bool isSameSpace = checkSpace(lhsOp.getInput()[0], rhsOp.getInput()[0]);
+  return isSamePemutation && isSameSpace;
 }
+
+
+// BFS to fix the def use chain
+bool fixDominance(Operation* op) {
+  std::queue<Operation*> bfsQueue;
+  bfsQueue.push(op);
+  bool somethingChanged = false;
+  while (!bfsQueue.empty()) {
+    Operation* currentOp = bfsQueue.front();
+    bfsQueue.pop();
+    for (Value operand : currentOp->getOperands()) {
+      Operation* defOp = operand.getDefiningOp();
+      if (defOp && !defOp->isBeforeInBlock(currentOp)) {
+        somethingChanged = true;
+        defOp->moveBefore(currentOp);
+        bfsQueue.push(defOp);
+      }
+    }
+  }
+  return somethingChanged;
+};
+
 
 //===----------------------------------------------------------------------===//
 // TransposeGrouping over func ops
@@ -114,6 +151,8 @@ public:
       rewriter.setInsertionPoint(transposeOps.front());
 
       // Create a new transpose op
+      // the location needs to be the same as the last transpose op
+      // otherwise the the operands might not dominate their uses
       rewriter.startRootUpdate(funcOp);
       auto newTranspose = rewriter.create<TransposeOp>(
           transposeOps.front()->getLoc(), resultTypes, inputs,
@@ -124,8 +163,21 @@ public:
       for (std::size_t i = 0; i < transposeOps.size(); i++) {
         transposeOps[i]->getResult(0).replaceAllUsesWith(
             newTranspose.getResult(i));
+        // Erase the old transpose op
         rewriter.eraseOp(transposeOps[i]);
       }
+
+      // Walk the func body and fix the dominance
+      WalkResult result = WalkResult::interrupt();
+      while (result.wasInterrupted()) {
+        result = funcOp.walk([&](Operation *op) {
+          if (fixDominance(op)) {
+            return WalkResult::interrupt();
+          }
+          return WalkResult::advance();
+        });
+      }
+      // Done
       rewriter.finalizeRootUpdate(funcOp);
       return success();
     }
