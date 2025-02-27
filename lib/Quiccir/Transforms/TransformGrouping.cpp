@@ -66,7 +66,8 @@ bool isSameTranspose(TransposeOp lhsOp, TransposeOp rhsOp) {
 }
 
 
-// BFS to fix the def use chain
+/// Fix the use def chain using BFS
+/// \return true if the dominance is fixed
 bool fixDominance(Operation* op) {
   std::queue<Operation*> bfsQueue;
   bfsQueue.push(op);
@@ -76,9 +77,11 @@ bool fixDominance(Operation* op) {
     bfsQueue.pop();
     for (Value operand : currentOp->getOperands()) {
       Operation* defOp = operand.getDefiningOp();
-      if (defOp && !defOp->isBeforeInBlock(currentOp)) {
-        somethingChanged = true;
-        defOp->moveBefore(currentOp);
+      if (defOp) {
+        if (!defOp->isBeforeInBlock(currentOp)) {
+          somethingChanged = true;
+          defOp->moveBefore(currentOp);
+        }
         bfsQueue.push(defOp);
       }
     }
@@ -167,17 +170,20 @@ public:
         rewriter.eraseOp(transposeOps[i]);
       }
 
-      // Walk the func body and fix the dominance
-      WalkResult result = WalkResult::interrupt();
-      while (result.wasInterrupted()) {
-        result = funcOp.walk([&](Operation *op) {
-          if (fixDominance(op)) {
-            return WalkResult::interrupt();
-          }
-          return WalkResult::advance();
-        });
+      // We need to fix the dominance of func body
+      /// \todo to generalize to funcs with cfg
+      /// change the grouping to be block based
+      for (Block &block : funcOp.getBlocks()) {
+        bool isBeingReordered = false;
+        do {
+          // The operands of the block must post dominate
+          // their definitions
+          Operation *terminator = block.getTerminator();
+          isBeingReordered = fixDominance(terminator);
+        } while (isBeingReordered);
       }
-      // Done
+
+      // Rewriting is done
       rewriter.finalizeRootUpdate(funcOp);
       return success();
     }
