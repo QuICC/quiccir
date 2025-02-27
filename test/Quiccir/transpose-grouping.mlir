@@ -56,6 +56,28 @@ module {
     return %4 : tensor<?x?x?xf64>
   }
 
+
+  // Here we check that we can group even if the first transpose cannot be grouped
+  //
+  // CHECK: func.func @entryNoFirst(%[[A0:.*]]: tensor<?x?x?xf64>, %[[A1:.*]]: tensor<?x?x?xf64>) -> (tensor<?x?x?xcomplex<f64>>, tensor<?x?x?xcomplex<f64>>) {
+  func.func @entryNoFirst(%arg0: tensor<?x?x?xf64>, %arg1: tensor<?x?x?xf64>) -> (tensor<?x?x?xcomplex<f64>>, tensor<?x?x?xcomplex<f64>>) {
+    // CHECK: %[[FT:.*]] = quiccir.fr.int %[[A0]] : tensor<?x?x?xf64> -> tensor<?x?x?xcomplex<f64>> attributes {kind = "P"}
+    // CHECK: %[[TRAFT:.*]] = quiccir.transpose %[[FT]] permutation = [2, 0, 1] : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>>
+    // CHECK: %[[AL0:.*]] = quiccir.al.int %[[TRAFT]] : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>> attributes {kind = "P"}
+    // CHECK: %[[AL1:.*]] = quiccir.al.int %[[TRAFT]] : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>> attributes {kind = "DivLlDivS1"}
+    // CHECK: %[[TRAAL:.*]]:2 = quiccir.transpose %[[AL0]], %[[AL1]] permutation = [2, 0, 1] : tensor<?x?x?xcomplex<f64>>, tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>>, tensor<?x?x?xcomplex<f64>>
+    // CHECK: %[[JW:.*]] = quiccir.jw.int %[[TRAAL]]#0 : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>> attributes {kind = "I2"}
+    // CHECK: return %[[JW]], %[[TRAAL]]#1 : tensor<?x?x?xcomplex<f64>>, tensor<?x?x?xcomplex<f64>>
+    %0 = quiccir.fr.int %arg0 : tensor<?x?x?xf64> -> tensor<?x?x?xcomplex<f64>> attributes {kind = "P"}
+    %1 = quiccir.transpose %0 permutation = [2, 0, 1] : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>>
+    %2 = quiccir.al.int %1 : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>> attributes {kind = "P"}
+    %3 = quiccir.transpose %2 permutation = [2, 0, 1] : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>>
+    %4 = quiccir.jw.int %3 : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>> attributes {kind = "I2"}
+    %5 = quiccir.al.int %1 : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>> attributes {kind = "DivLlDivS1"}
+    %6 = quiccir.transpose %5 permutation = [2, 0, 1] : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>>
+    return %4, %6 : tensor<?x?x?xcomplex<f64>>, tensor<?x?x?xcomplex<f64>>
+  }
+
   // Here we check the reordering of the transposes results uses
   //
   // CHECK: func.func @entryGroupReorder(%[[S:.*]]: tensor<?x?x?xcomplex<f64>>, %[[T:.*]]: tensor<?x?x?xcomplex<f64>>) -> (tensor<?x?x?xf64>, tensor<?x?x?xf64>) {

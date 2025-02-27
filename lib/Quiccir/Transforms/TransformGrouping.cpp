@@ -46,12 +46,31 @@ bool isSameTranspose(TransposeOp lhsOp, TransposeOp rhsOp) {
 
   // Check if the operands are of the same space (projection level)
   auto checkSpace = [](Value lhs, Value rhs) {
-    auto lhsOp = lhs.getDefiningOp();
-    auto rhsOp = rhs.getDefiningOp();
+    /// \todo add transform/projection interface
+    auto isTransform = [](Operation *op) {
+      if (op == nullptr) {
+        return false;
+      }
+      return isa<FrIOp>(op) || isa<FrPOp>(op) || isa<AlIOp>(op) ||
+            isa<AlPOp>(op) || isa<JWIOp>(op) || isa<JWPOp>(op);
+    };
+    // Iteratively go up the defining op chain
+    // until we reach either a func arg or a transpose op
+    auto findOpLevel = [&](Operation *op) -> auto {
+      while (op != nullptr) {
+        if (isTransform(op)) {
+          // We are done
+          break;
+        }
+        op = op->getOperand(0).getDefiningOp();
+      }
+      return op;
+    };
+    Operation *lhsOp = findOpLevel(lhs.getDefiningOp());
+    Operation *rhsOp = findOpLevel(rhs.getDefiningOp());
     if (lhsOp == nullptr || rhsOp == nullptr) {
-      // There is no defining op, must be a func arg
-      // then we assume that are the same space
-      // if they have the same type
+      // We could not find a relevant defining op, value must be a func arg
+      // then we assume that are the same space if they have the same type
       auto checkType = [](RankedTensorType lhsType, RankedTensorType rhsType) {
         return lhsType == rhsType;
       };
@@ -64,11 +83,14 @@ bool isSameTranspose(TransposeOp lhsOp, TransposeOp rhsOp) {
   return isSamePemutation && isSameSpace;
 }
 
-/// Fix the use def chain using BFS
-/// \return true if the dominance is fixed
-bool fixDominance(Operation *op) {
+/// Fix the use def chain using BFS in a block
+/// \return true if the SSA dominance is fixed
+bool fixDominance(Block& block) {
+  // The operands of the block terminator must post
+  // dominate their definitions
+  Operation *terminator = block.getTerminator();
   std::queue<Operation *> bfsQueue;
-  bfsQueue.push(op);
+  bfsQueue.push(terminator);
   bool somethingChanged = false;
   while (!bfsQueue.empty()) {
     Operation *currentOp = bfsQueue.front();
@@ -101,89 +123,85 @@ public:
   LogicalResult matchAndRewrite(func::FuncOp funcOp,
                                 PatternRewriter &rewriter) const final {
 
-    // Walk from root func and collect transposes to be grouped
-    /// \todo to generalize to funcs with cfg
-    /// change the grouping to be block based
-    SmallVector<Operation *, 4> transposeOps;
-    bool needToGroup = false;
-    funcOp.walk([&](Operation *op) {
-      // Get the first transpose op that is not grouped
-      if (auto transposeOp = dyn_cast<TransposeOp>(op)) {
-        // Check if the transpose op has more than one result
-        if (transposeOp->getNumResults() > 1) {
-          // Skip
-          return WalkResult::advance();
-        } else {
-          // Is this the first transpose with a single result?
-          if (transposeOps.empty()) {
-            // Then store it
-            transposeOps.push_back(transposeOp);
-            return WalkResult::advance();
-          } else {
-            // Check if the transpose op is the same as the collected ones
-            if (isSameTranspose(dyn_cast<TransposeOp>(transposeOps.front()),
-                                transposeOp)) {
-              // Collect
-              needToGroup = true;
-              transposeOps.push_back(transposeOp);
-              // Stop if we have collected enough transposes
-              if (static_cast<int>(transposeOps.size()) == group) {
-                return WalkResult::interrupt();
-              }
-            }
+    // Collect transpose ops in a block as candidates for the grouping
+    SmallVector<TransposeOp, 4> candidateOps;
+    for (Block &block : funcOp.getBlocks()) {
+      for (Operation& op : block.getOperations()) {
+        if (auto transposeOp = dyn_cast<TransposeOp>(op)) {
+          // Check if the transpose op has only one result
+          if (transposeOp->getNumResults() == 1) {
+            candidateOps.push_back(transposeOp);
           }
         }
       }
-      return WalkResult::advance();
-    });
 
-    if (needToGroup) {
+      // Loop over candidates and store if same
+      SmallVector<Operation *, 4> transposeOps;
+      for (std::size_t i = 0; i < candidateOps.size(); i++) {
+        transposeOps.push_back(candidateOps[i]);
+        // Check if the transpose op is the same as the collected ones
+        for (std::size_t j = i + 1; j < candidateOps.size(); j++) {
+          if (isSameTranspose(candidateOps[i], candidateOps[j])) {
+            // Collect
+            transposeOps.push_back(candidateOps[j]);
+            // Stop if we have collected enough transposes
+            if (static_cast<int>(transposeOps.size()) == group) {
+              break;
+            }
+          }
+        }
+        // If we have more than one transpose, we can group them
+        if (transposeOps.size() > 1) {
+          break;
+        }
+        else {
+          transposeOps.clear();
+        }
+      }
+
       // Group the collected transposes
+      if (transposeOps.size() > 1) {
 
-      // Collect inputs and return types
-      SmallVector<Value, 4> inputs;
-      SmallVector<Type, 4> resultTypes;
-      for (auto transposeOp : transposeOps) {
-        inputs.push_back(cast<TransposeOp>(transposeOp).getInput()[0]);
-        resultTypes.push_back(
-            cast<TransposeOp>(transposeOp).getResult(0).getType());
-      }
+        // Collect inputs and return types
+        SmallVector<Value, 4> inputs;
+        SmallVector<Type, 4> resultTypes;
+        for (auto transposeOp : transposeOps) {
+          inputs.push_back(cast<TransposeOp>(transposeOp).getInput()[0]);
+          resultTypes.push_back(
+              cast<TransposeOp>(transposeOp).getResult(0).getType());
+        }
 
-      // Set rewriter and insertion point
-      rewriter.setInsertionPoint(transposeOps.front());
+        // Set rewriter and insertion point
+        rewriter.setInsertionPoint(transposeOps.front());
 
-      // Create a new transpose op
-      // we chose the first transpose op as the insertion point
-      // later we will fix the ops dominance
-      rewriter.startRootUpdate(funcOp);
-      auto newTranspose = rewriter.create<TransposeOp>(
-          transposeOps.front()->getLoc(), resultTypes, inputs,
-          cast<TransposeOp>(transposeOps.front()).getPermutation(),
-          ::mlir::IntegerAttr{});
+        // Create a new transpose op
+        // we chose the first transpose op as the insertion point
+        // later we will fix the ops dominance
+        rewriter.startRootUpdate(funcOp);
+        auto newTranspose = rewriter.create<TransposeOp>(
+            transposeOps.front()->getLoc(), resultTypes, inputs,
+            cast<TransposeOp>(transposeOps.front()).getPermutation(),
+            ::mlir::IntegerAttr{});
 
-      // Replace the old transpose uses with the new transpose values
-      for (std::size_t i = 0; i < transposeOps.size(); i++) {
-        transposeOps[i]->getResult(0).replaceAllUsesWith(
-            newTranspose.getResult(i));
-        // Erase the old transpose op
-        rewriter.eraseOp(transposeOps[i]);
-      }
+        // Replace the old transpose uses with the new transpose values
+        for (std::size_t i = 0; i < transposeOps.size(); i++) {
+          transposeOps[i]->getResult(0).replaceAllUsesWith(
+              newTranspose.getResult(i));
+          // Erase the old transpose op
+          rewriter.eraseOp(transposeOps[i]);
+        }
 
-      // We need to fix the ops dominance in the func body
-      for (Block &block : funcOp.getBlocks()) {
+        // We need to fix the ops SSA dominance in the block
         bool isBeingReordered = false;
         do {
-          // The operands of the block terminator must post
-          // dominate their definitions
-          Operation *terminator = block.getTerminator();
-          isBeingReordered = fixDominance(terminator);
+          isBeingReordered = fixDominance(block);
         } while (isBeingReordered);
-      }
 
-      // Rewriting is done
-      rewriter.finalizeRootUpdate(funcOp);
-      return success();
-    }
+        // Rewriting is done
+        rewriter.finalizeRootUpdate(funcOp);
+        return success();
+      }
+    } // end of block loop
     return failure();
   }
 };
