@@ -102,6 +102,8 @@ public:
                                 PatternRewriter &rewriter) const final {
 
     // Walk from root func and collect transposes to be grouped
+    /// \todo to generalize to funcs with cfg
+    /// change the grouping to be block based
     SmallVector<Operation *, 4> transposeOps;
     bool needToGroup = false;
     funcOp.walk([&](Operation *op) {
@@ -151,8 +153,8 @@ public:
       rewriter.setInsertionPoint(transposeOps.front());
 
       // Create a new transpose op
-      // the location needs to be the same as the last transpose op
-      // otherwise the the operands might not dominate their uses
+      // we chose the first transpose op as the insertion point
+      // later we will fix the ops dominance
       rewriter.startRootUpdate(funcOp);
       auto newTranspose = rewriter.create<TransposeOp>(
           transposeOps.front()->getLoc(), resultTypes, inputs,
@@ -167,14 +169,12 @@ public:
         rewriter.eraseOp(transposeOps[i]);
       }
 
-      // We need to fix the dominance of func body
-      /// \todo to generalize to funcs with cfg
-      /// change the grouping to be block based
+      // We need to fix the ops dominance in the func body
       for (Block &block : funcOp.getBlocks()) {
         bool isBeingReordered = false;
         do {
-          // The operands of the block must post dominate
-          // their definitions
+          // The operands of the block terminator must post
+          // dominate their definitions
           Operation *terminator = block.getTerminator();
           isBeingReordered = fixDominance(terminator);
         } while (isBeingReordered);
