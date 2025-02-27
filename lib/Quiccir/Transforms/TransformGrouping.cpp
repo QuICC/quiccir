@@ -52,7 +52,7 @@ bool isSameTranspose(TransposeOp lhsOp, TransposeOp rhsOp) {
         return false;
       }
       return isa<FrIOp>(op) || isa<FrPOp>(op) || isa<AlIOp>(op) ||
-            isa<AlPOp>(op) || isa<JWIOp>(op) || isa<JWPOp>(op);
+             isa<AlPOp>(op) || isa<JWIOp>(op) || isa<JWPOp>(op);
     };
     // Iteratively go up the defining op chain
     // until we reach either a func arg or a transpose op
@@ -85,7 +85,7 @@ bool isSameTranspose(TransposeOp lhsOp, TransposeOp rhsOp) {
 
 /// Fix the use def chain using BFS in a block
 /// \return true if the SSA dominance is fixed
-bool fixDominance(Block& block) {
+bool fixDominance(Block &block) {
   // The operands of the block terminator must post
   // dominate their definitions
   Operation *terminator = block.getTerminator();
@@ -126,7 +126,7 @@ public:
     // Collect transpose ops in a block as candidates for the grouping
     SmallVector<TransposeOp, 4> candidateOps;
     for (Block &block : funcOp.getBlocks()) {
-      for (Operation& op : block.getOperations()) {
+      for (Operation &op : block.getOperations()) {
         if (auto transposeOp = dyn_cast<TransposeOp>(op)) {
           // Check if the transpose op has only one result
           if (transposeOp->getNumResults() == 1) {
@@ -153,8 +153,7 @@ public:
         // If we have more than one transpose, we can group them
         if (transposeOps.size() > 1) {
           break;
-        }
-        else {
+        } else {
           transposeOps.clear();
         }
       }
