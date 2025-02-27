@@ -41,7 +41,7 @@ bool isSameTranspose(TransposeOp lhsOp, TransposeOp rhsOp) {
     }
     return true;
   };
-  bool isSamePemutation =
+  bool isSamePermutation =
       checkPerm(lhsOp.getPermutation(), rhsOp.getPermutation());
 
   // Check if the operands are of the same space (projection level)
@@ -80,7 +80,7 @@ bool isSameTranspose(TransposeOp lhsOp, TransposeOp rhsOp) {
     return lhsOp->getName() == rhsOp->getName();
   };
   bool isSameSpace = checkSpace(lhsOp.getInput()[0], rhsOp.getInput()[0]);
-  return isSamePemutation && isSameSpace;
+  return isSamePermutation && isSameSpace;
 }
 
 /// Fix the use def chain using BFS in a block
