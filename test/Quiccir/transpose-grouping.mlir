@@ -82,4 +82,33 @@ module {
       return %S3, %T3 : tensor<?x?x?xf64>, tensor<?x?x?xf64>
   }
 
+  // This test is more difficult and requires a full reorder
+  // of the post dominance of the return values for partial grouping
+  //
+  // PARTIAL: func.func @entry(%[[A0:.*]]: tensor<?x?x?xcomplex<f64>>, %[[A1:.*]]: tensor<?x?x?xcomplex<f64>>, %[[A2:.*]]: tensor<?x?x?xcomplex<f64>>) -> (tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>) {
+  func.func @entry(%arg0: tensor<?x?x?xcomplex<f64>>, %arg1: tensor<?x?x?xcomplex<f64>>, %arg2: tensor<?x?x?xcomplex<f64>>) -> (tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>) {
+    // PARTIAL: %[[JW0:.*]] = quiccir.jw.prj %[[A0]] : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>> attributes {kind = "D1"}
+    // PARTIAL: %[[JW1:.*]] = quiccir.jw.prj %[[A0]] : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>> attributes {kind = "DivR1_Zero"}
+    // PARTIAL: %[[JW01TR:.*]]:2 = quiccir.transpose %[[JW0]], %[[JW1]] permutation = [1, 2, 0] : tensor<?x?x?xcomplex<f64>>, tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>>, tensor<?x?x?xcomplex<f64>>
+    %0 = quiccir.jw.prj %arg0 : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>> attributes {kind = "D1"}
+    %1 = quiccir.transpose %0 permutation = [1, 2, 0] : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>>
+    %2 = quiccir.al.prj %1 : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>> attributes {kind = "P"}
+    %3 = quiccir.transpose %2 permutation = [1, 2, 0] : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>>
+    %4 = quiccir.fr.prj %3 : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xf64> attributes {kind = "P"}
+    %5 = quiccir.jw.prj %arg0 : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>> attributes {kind = "DivR1_Zero"}
+    %6 = quiccir.transpose %5 permutation = [1, 2, 0] : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>>
+    %7 = quiccir.al.prj %6 : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>> attributes {kind = "D1"}
+    %8 = quiccir.transpose %7 permutation = [1, 2, 0] : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>>
+    %9 = quiccir.fr.prj %8 : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xf64> attributes {kind = "P"}
+    %10 = quiccir.al.prj %6 : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>> attributes {kind = "DivS1Dp"}
+    %11 = quiccir.transpose %10 permutation = [1, 2, 0] : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>>
+    %12 = quiccir.fr.prj %11 : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xf64> attributes {kind = "P"}
+    %13 = quiccir.jw.prj %arg2 : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>> attributes {kind = "DivR1_Zero"}
+    %14 = quiccir.transpose %13 permutation = [1, 2, 0] : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>>
+    %15 = quiccir.al.prj %14 : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>> attributes {kind = "Ll"}
+    %16 = quiccir.transpose %15 permutation = [1, 2, 0] : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>>
+    %17 = quiccir.fr.prj %16 : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xf64> attributes {kind = "P"}
+    return %4, %9, %12, %17 : tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>
+  }
+
 }

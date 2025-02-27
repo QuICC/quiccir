@@ -4,7 +4,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-
 #include "Quiccir/Transforms/QuiccirPassDetail.h"
 #include "Quiccir/Transforms/QuiccirPasses.h"
 
@@ -65,18 +64,17 @@ bool isSameTranspose(TransposeOp lhsOp, TransposeOp rhsOp) {
   return isSamePemutation && isSameSpace;
 }
 
-
 /// Fix the use def chain using BFS
 /// \return true if the dominance is fixed
-bool fixDominance(Operation* op) {
-  std::queue<Operation*> bfsQueue;
+bool fixDominance(Operation *op) {
+  std::queue<Operation *> bfsQueue;
   bfsQueue.push(op);
   bool somethingChanged = false;
   while (!bfsQueue.empty()) {
-    Operation* currentOp = bfsQueue.front();
+    Operation *currentOp = bfsQueue.front();
     bfsQueue.pop();
     for (Value operand : currentOp->getOperands()) {
-      Operation* defOp = operand.getDefiningOp();
+      Operation *defOp = operand.getDefiningOp();
       if (defOp) {
         if (!defOp->isBeforeInBlock(currentOp)) {
           somethingChanged = true;
@@ -88,7 +86,6 @@ bool fixDominance(Operation* op) {
   }
   return somethingChanged;
 };
-
 
 //===----------------------------------------------------------------------===//
 // TransposeGrouping over func ops
@@ -107,7 +104,7 @@ public:
     // Walk from root func and collect transposes to be grouped
     SmallVector<Operation *, 4> transposeOps;
     bool needToGroup = false;
-    WalkResult result = funcOp.walk([&](Operation *op) {
+    funcOp.walk([&](Operation *op) {
       // Get the first transpose op that is not grouped
       if (auto transposeOp = dyn_cast<TransposeOp>(op)) {
         // Check if the transpose op has more than one result
