@@ -36,7 +36,7 @@ bool isSameTransform(Operation *lhsOp, Operation *rhsOp) {
 }
 
 //===----------------------------------------------------------------------===//
-// TransposeContration over linear operators: AddOp or SubOp
+// TransposeContraction over linear operators: AddOp or SubOp
 //===----------------------------------------------------------------------===//
 template <class LINOP>
 struct TransposeContractionOverLinOp : public OpRewritePattern<LINOP> {
@@ -74,9 +74,15 @@ struct TransposeContractionOverLinOp : public OpRewritePattern<LINOP> {
     auto traOpRhs = dyn_cast<TransposeOp>(opRhs);
 
     if (traOpLhs && traOpRhs) {
-      // get inputs
-      Value traInLhs = traOpLhs.getInput();
-      Value traInRhs = traOpRhs.getInput();
+      // If the transpose ops have multiple inputs, give up
+      if (traOpLhs->getOperands().size() > 1 ||
+          traOpRhs->getOperands().size() > 1) {
+        return failure();
+      }
+      // Get inputs
+      /// \todo extend to multiple inputs
+      Value traInLhs = traOpLhs.getInput()[0];
+      Value traInRhs = traOpRhs.getInput()[0];
       auto loc = traOpLhs->getLoc();
       auto addNew = rewriter.create<LINOP>(loc, traInLhs, traInRhs);
       auto newTranspose = rewriter.clone(*static_cast<Operation *>(traOpLhs));

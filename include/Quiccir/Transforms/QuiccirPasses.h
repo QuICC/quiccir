@@ -15,6 +15,7 @@ namespace quiccir {
 
 /// Generate the code for options
 #define GEN_PASS_DECL_QUICCIRVIEWWRAPPER
+#define GEN_PASS_DECL_QUICCIRTRANSPOSEGROUPING
 #include "Quiccir/Transforms/QuiccirPasses.h.inc"
 
 /// Create a pass for adding quiccir deallocation ops
@@ -34,6 +35,13 @@ std::unique_ptr<mlir::Pass> createFinalizeViewToLLVMPass();
 
 /// Create a pass for performing transform contraction
 std::unique_ptr<mlir::Pass> createTransformContractionPass();
+
+/// Create a pass for performing transform grouping
+std::unique_ptr<mlir::Pass> createTransposeGroupingPass();
+
+/// Create a pass for performing transpose grouping with options
+std::unique_ptr<mlir::Pass>
+createTransposeGroupingPass(const QuiccirTransposeGroupingOptions &options);
 
 /// Create a pass for adding missing view layout info
 static std::array<std::array<std::string, 2>, 3> defaultLayout;

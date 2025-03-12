@@ -151,36 +151,41 @@ mlir::LogicalResult MaterializeOp::verify() {
 //===----------------------------------------------------------------------===//
 
 mlir::LogicalResult TransposeOp::verify() {
-  auto opTensorType = getOperand().getType().dyn_cast<RankedTensorType>();
-  auto transposeType = getType().dyn_cast<RankedTensorType>();
+  // Loop over pair of input and output types
 
-  // Check rank
-  if (opTensorType.getRank() != transposeType.getRank()) {
-    return emitOpError() << "rank mismatch, tensor=" << opTensorType.getRank()
-                         << " while tranpose=" << transposeType.getRank();
+  auto operandRange = getOperands();
+  auto resultRange = getResults();
+
+  if (operandRange.size() != resultRange.size()) {
+    return emitOpError() << "number of operands and results mismatch";
   }
 
-  // Check shape
-  auto opTensorShape = opTensorType.getShape();
-  auto transposeShape = transposeType.getShape();
+  for (std::size_t i = 0; i < operandRange.size(); ++i) {
 
-  // Get permutation
-  auto perm = getPermutation();
+    auto opTensorType = operandRange[i].getType().dyn_cast<RankedTensorType>();
+    auto transposeType = resultRange[i].getType().dyn_cast<RankedTensorType>();
 
-  for (std::size_t i = 0; i < opTensorShape.size(); ++i) {
-    if ((opTensorShape[i] != ShapedType::kDynamic &&
-         transposeShape[i] != ShapedType::kDynamic) &&
-        opTensorShape[i] != transposeShape[perm[i]]) {
-      return emitError() << "shape mismatch, tensor= " << opTensorShape
-                         << " while transpose= " << transposeShape;
+    // Check rank
+    if (opTensorType.getRank() != transposeType.getRank()) {
+      return emitOpError() << "rank mismatch, tensor=" << opTensorType.getRank()
+                           << " while tranpose=" << transposeType.getRank();
     }
-  }
 
-  // Check element type
-  if (opTensorType.getElementType() != transposeType.getElementType()) {
-    return emitOpError() << "type mismatch, tensor="
-                         << opTensorType.getElementType() << " while transpose="
-                         << transposeType.getElementType();
+    // Check shape
+    auto opTensorShape = opTensorType.getShape();
+    auto transposeShape = transposeType.getShape();
+
+    // Get permutation
+    auto perm = getPermutation();
+
+    for (std::size_t i = 0; i < opTensorShape.size(); ++i) {
+      if ((opTensorShape[i] != ShapedType::kDynamic &&
+           transposeShape[i] != ShapedType::kDynamic) &&
+          opTensorShape[i] != transposeShape[perm[i]]) {
+        return emitError() << "shape mismatch, tensor= " << opTensorShape
+                           << " while transpose= " << transposeShape;
+      }
+    }
   }
 
   return mlir::success();

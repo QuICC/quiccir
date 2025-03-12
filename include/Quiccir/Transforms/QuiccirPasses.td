@@ -123,4 +123,20 @@ def QuiccirTransformContraction : Pass<"quiccir-transform-contraction", "func::F
     "quiccir::QuiccirDialect"];
 }
 
+def QuiccirTransposeGrouping : Pass<"quiccir-transpose-group", "ModuleOp"> {
+  let summary = "Group transpose operators to reduce the number of transpose ops."
+    "The pass groups the specified number of akin transposes together."
+    "If the number is negative, the pass groups all the akin transposes together.";
+
+  let constructor = "mlir::quiccir::createTransposeGroupingPass()";
+  let dependentDialects = [
+    "func::FuncDialect",
+    "quiccir::QuiccirDialect"];
+  let options = [
+    Option<"group", "group",
+           "int32_t", /*default=*/"-1",
+           "Set the number of transposes to group together">
+  ];
+}
+
 #endif // QUICCIR_QUICCIRPASSES

@@ -11,6 +11,7 @@ add_mlir_dialect_library(MLIRQuiccirPasses
     ViewWrapper.cpp
     SetImplptr.cpp
     TransformContraction.cpp
+    TransformGrouping.cpp
 
     ADDITIONAL_HEADER_DIRS
     ${PROJECT_SOURCE_DIR}/include/Quiccir

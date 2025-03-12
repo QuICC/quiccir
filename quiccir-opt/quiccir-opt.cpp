@@ -33,6 +33,7 @@ int main(int argc, char **argv) {
   mlir::quiccir::registerQuiccirSetDimensions();
   mlir::quiccir::registerQuiccirSetViewLayout();
   mlir::quiccir::registerQuiccirTransformContractionPass();
+  mlir::quiccir::registerQuiccirTransposeGroupingPass();
   mlir::quiccir::registerQuiccirLowerToCallPass();
   mlir::quiccir::registerQuiccirLowerAllocPass();
   mlir::quiccir::registerQuiccirConvertToLLVMPass();

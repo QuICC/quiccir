@@ -40,4 +40,18 @@ module {
   %sub = quiccir.sub %ftphys0, %ftphys1 : tensor<?x?x?xcomplex<f64>>, tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>>
   return %sub : tensor<?x?x?xcomplex<f64>>
   }
+
+  // CHECK: func.func @entryGrouped(%[[A0:.*]]: tensor<?x?x?xcomplex<f64>>, %[[A1:.*]]: tensor<?x?x?xcomplex<f64>>) -> tensor<?x?x?xcomplex<f64>> {
+  // CHECK: %[[TRA:.*]]:2 = quiccir.transpose %[[A0]], %[[A1]] permutation = [1, 2, 0] : tensor<?x?x?xcomplex<f64>>, tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>>, tensor<?x?x?xcomplex<f64>>
+  // CHECK: %[[FT0:.*]] = quiccir.al.prj %[[TRA]]#0 : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>> attributes {kind = "P"}
+  // CHECK: %[[FT1:.*]] = quiccir.al.prj %[[TRA]]#1 : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>> attributes {kind = "P"}
+  // CHECK: %[[RET:.*]] = quiccir.sub %{{.*}}, %{{.*}} : tensor<?x?x?xcomplex<f64>>, tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>>
+  // CHECK: return %[[RET]] : tensor<?x?x?xcomplex<f64>>
+  func.func @entryGrouped(%alphys0: tensor<?x?x?xcomplex<f64>>, %alphys1: tensor<?x?x?xcomplex<f64>>) -> tensor<?x?x?xcomplex<f64>> {
+  %ftmod:2 = quiccir.transpose %alphys0, %alphys1 permutation = [1, 2, 0] : tensor<?x?x?xcomplex<f64>>, tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>>, tensor<?x?x?xcomplex<f64>>
+  %ftphys0 = quiccir.al.prj %ftmod#0 : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>> attributes {kind = "P"}
+  %ftphys1 = quiccir.al.prj %ftmod#1 : tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>> attributes {kind = "P"}
+  %sub = quiccir.sub %ftphys0, %ftphys1 : tensor<?x?x?xcomplex<f64>>, tensor<?x?x?xcomplex<f64>> -> tensor<?x?x?xcomplex<f64>>
+  return %sub : tensor<?x?x?xcomplex<f64>>
+  }
 }

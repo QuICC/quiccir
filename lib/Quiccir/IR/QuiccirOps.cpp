@@ -79,35 +79,111 @@ void SubOp::inferShapes() {
 // TransposeOp
 //===----------------------------------------------------------------------===//
 void TransposeOp::inferShapes() {
-  Type in = getInput().getType();
-  Type out = getOutput().getType();
+  auto inRange = getInput().getType();
+  auto outRange = getOutput().getType();
 
-  auto inType = llvm::dyn_cast<RankedTensorType>(in);
-  auto outType = llvm::dyn_cast<RankedTensorType>(out);
+  // This is checked by the verifier.
+  assert(inRange.size() == outRange.size() &&
+         "Input and output ranges must have the same size");
+  for (std::size_t i = 0; i < inRange.size(); ++i) {
+    auto inType = inRange[i].dyn_cast<RankedTensorType>();
+    auto outType = outRange[i].dyn_cast<RankedTensorType>();
 
-  // Requires RankedTensorType.
-  if (!inType || !outType)
-    return;
+    // Requires RankedTensorType.
+    if (!inType || !outType)
+      continue;
 
-  llvm::ArrayRef<int64_t> inShape = inType.getShape();
-  llvm::ArrayRef<int64_t> outShape = outType.getShape();
+    llvm::ArrayRef<int64_t> inShape = inType.getShape();
+    llvm::ArrayRef<int64_t> outShape = outType.getShape();
 
-  // Try to propagate input
-  auto perm = getPermutation();
-  SmallVector<int64_t, 3> newOutShape{outShape};
-  for (auto idx : {0, 1, 2}) {
-    if (outType.isDynamicDim(perm[idx]) && !inType.isDynamicDim(idx)) {
-      newOutShape[perm[idx]] = inShape[idx];
+    // Try to propagate input
+    auto perm = getPermutation();
+    SmallVector<int64_t, 3> newOutShape{outShape};
+    constexpr std::array<int, 3> indices = {0, 1, 2};
+    for (auto idx : indices) {
+      if (outType.isDynamicDim(perm[idx]) && !inType.isDynamicDim(idx)) {
+        newOutShape[perm[idx]] = inShape[idx];
+      }
     }
-  }
-  getResult().setType(outType.clone(newOutShape));
+    getResult(i).setType(outType.clone(newOutShape));
 
-  // Try to propagate output
-  SmallVector<int64_t, 3> newInShape{inShape};
-  for (auto idx : {0, 1, 2}) {
-    if (!outType.isDynamicDim(perm[idx]) && inType.isDynamicDim(idx)) {
-      newInShape[idx] = outShape[perm[idx]];
+    // Try to propagate output
+    SmallVector<int64_t, 3> newInShape{inShape};
+    for (auto idx : indices) {
+      if (!outType.isDynamicDim(perm[idx]) && inType.isDynamicDim(idx)) {
+        newInShape[idx] = outShape[perm[idx]];
+      }
     }
+    getInput()[i].setType(inType.clone(newInShape));
   }
-  getInput().setType(inType.clone(newInShape));
+}
+
+// Default parsers should work, however there is a ABI compatibility bug
+// see https://github.com/llvm/llvm-project/commit/76ce4736721
+
+::mlir::ParseResult TransposeOp::parse(::mlir::OpAsmParser &parser,
+                                       ::mlir::OperationState &result) {
+  ::llvm::SmallVector<::mlir::OpAsmParser::UnresolvedOperand, 4> inputOperands;
+  ::llvm::SMLoc inputOperandsLoc;
+  (void)inputOperandsLoc;
+  ::mlir::DenseI64ArrayAttr permutationAttr;
+  ::llvm::SmallVector<::mlir::Type, 1> inputTypes;
+  ::llvm::SmallVector<::mlir::Type, 1> outputTypes;
+
+  inputOperandsLoc = parser.getCurrentLocation();
+  if (parser.parseOperandList(inputOperands))
+    return ::mlir::failure();
+  if (parser.parseKeyword("permutation"))
+    return ::mlir::failure();
+  if (parser.parseEqual())
+    return ::mlir::failure();
+
+  if (parser.parseCustomAttributeWithFallback(permutationAttr,
+                                              ::mlir::Type{})) {
+    return ::mlir::failure();
+  }
+  if (permutationAttr)
+    result.attributes.append("permutation", permutationAttr);
+  if (parser.parseColon())
+    return ::mlir::failure();
+
+  if (parser.parseCommaSeparatedList(
+          [&]() { return parser.parseType(inputTypes.emplace_back()); }))
+    return ::mlir::failure();
+  if (parser.parseArrow())
+    return ::mlir::failure();
+
+  if (parser.parseCommaSeparatedList(
+          [&]() { return parser.parseType(outputTypes.emplace_back()); }))
+    return ::mlir::failure();
+  {
+    auto loc = parser.getCurrentLocation();
+    (void)loc;
+    if (parser.parseOptionalAttrDictWithKeyword(result.attributes))
+      return ::mlir::failure();
+  }
+  result.addTypes(outputTypes);
+  if (parser.resolveOperands(inputOperands, inputTypes, inputOperandsLoc,
+                             result.operands))
+    return ::mlir::failure();
+  return ::mlir::success();
+}
+
+void TransposeOp::print(::mlir::OpAsmPrinter &_odsPrinter) {
+  _odsPrinter << ' ';
+  _odsPrinter << getInput();
+  _odsPrinter << ' ' << "permutation";
+  _odsPrinter << ' ' << "=";
+  _odsPrinter << ' ';
+  _odsPrinter.printStrippedAttrOrType(getPermutationAttr());
+  _odsPrinter << ' ' << ":";
+  _odsPrinter << ' ';
+  _odsPrinter << getInput().getTypes();
+  _odsPrinter << ' ' << "->";
+  _odsPrinter << ' ';
+  _odsPrinter << getOutput().getTypes();
+  ::llvm::SmallVector<::llvm::StringRef, 2> elidedAttrs;
+  elidedAttrs.push_back("permutation");
+  _odsPrinter.printOptionalAttrDictWithKeyword((*this)->getAttrs(),
+                                               elidedAttrs);
 }
