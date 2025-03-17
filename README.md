@@ -7,7 +7,7 @@ This dialect provides operators and types that can be lowered to library calls t
 
 It implements
 - a `opt`-like tool to operate on quiccir
-- a self contained library to JIT quiccir operators
+- a self contained library to JIT the computational graph of the non linear terms needed in QuICC
 
 ## Building quiccir
 
