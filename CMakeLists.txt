@@ -48,7 +48,6 @@ add_subdirectory(quiccir-translate)
 add_subdirectory(quiccir-lib)
 add_subdirectory(test)
 add_subdirectory(quiccir-opt)
-add_subdirectory(quiccir-miniapp)
 add_subdirectory(external)
 
 # Config
