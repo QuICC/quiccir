@@ -757,7 +757,7 @@ def Quiccir_AlIOp : Quiccir_Op<"al.int", [Pure,
 
 def Quiccir_JWPOp : Quiccir_Op<"jw.prj", [Pure,
     DeclareOpInterfaceMethods<TransformOpInterface>]> {
-    let summary = "Jone-Worland Transform modal to physical space";
+    let summary = "Jones-Worland Transform modal to physical space";
     let description = [{
         The `quiccir.jw.prj` operation implements a generic Jones Worland projector.
         At the momement there is no implemented path for code generation,
@@ -807,7 +807,7 @@ def Quiccir_JWPOp : Quiccir_Op<"jw.prj", [Pure,
 
 def Quiccir_JWIOp : Quiccir_Op<"jw.int", [Pure,
     DeclareOpInterfaceMethods<TransformOpInterface>]> {
-    let summary = "Jone-Worland Transform from physical to modal space";
+    let summary = "Jones-Worland Transform from physical to modal space";
     let description = [{
         The `quiccir.jw.int` operation implements a generic Jones Worland integrator.
         At the momement there is no implemented path for code generation,
@@ -827,6 +827,102 @@ def Quiccir_JWIOp : Quiccir_Op<"jw.int", [Pure,
 
         ```mlir
         %mods = quiccir.jw.int<implptr = 0 : i64 : !llvm.ptr, dim = 3 : i64> %phys: tensor<?x?x?x?> -> tensor<?x?x?x?>
+        ```
+    }];
+
+    let arguments = (ins AnyTensor:$phys
+        , OptionalAttr<I64Attr>:$implptr
+        , OptionalAttr<I64Attr>:$dim
+        , OptionalAttr<StrAttr>:$kind);
+    let results = (outs AnyTensor:$mods);
+
+    let assemblyFormat = [{
+        $phys `:` type($phys)  `->` type($mods) attr-dict-with-keyword
+    }];
+
+    let hasVerifier = 1;
+
+    // let skipDefaultBuilders = 1;
+    // Allow building a JWIOp from the input operand.
+    let builders = [
+        OpBuilder<(ins "Value":$phys)>
+    ];
+
+    let extraClassDefinition = inferTransformShapes;
+}
+
+//===----------------------------------------------------------------------===//
+// ChebyshevLinearMapProjectorOp
+//===----------------------------------------------------------------------===//
+
+def Quiccir_CLPOp : Quiccir_Op<"cl.prj", [Pure,
+    DeclareOpInterfaceMethods<TransformOpInterface>]> {
+    let summary = "Chebyshev LinearMap Transform modal to physical space";
+    let description = [{
+        The `quiccir.cl.prj` operation implements a Chevbyshev LinearMap projector.
+        At the momement there is no implemented path for code generation,
+        but only lowering to library calls.
+
+        This operation takes one tensor representing, the
+        modes values, it returns a tensor representing the value at the
+        integration points.
+
+        Attributes:
+        - implptr, index to retrieve backend class implementation
+        - dim, size of the operator that cannot be inferred from the input
+
+        Example:
+
+        ```mlir
+        %phys = quiccir.cl.prj<implptr = 0 : i64 : !llvm.ptr, dim = 3 : i64> %mods: tensor<?x?x?x?> -> tensor<?x?x?x?>
+        ```
+    }];
+
+    let arguments = (ins AnyTensor:$mods
+        , OptionalAttr<I64Attr>:$implptr
+        , OptionalAttr<I64Attr>:$dim
+        , OptionalAttr<StrAttr>:$kind);
+    let results = (outs AnyTensor:$phys);
+
+    let assemblyFormat = [{
+        $mods `:` type($mods)  `->` type($phys) attr-dict-with-keyword
+    }];
+
+    let hasVerifier = 1;
+
+    // let skipDefaultBuilders = 1;
+    // Allow building a CLPOp from the input operand.
+    let builders = [
+        OpBuilder<(ins "Value":$mods)>
+    ];
+
+    let extraClassDefinition = inferTransformShapes;
+}
+
+//===----------------------------------------------------------------------===//
+// ChebyshevLinearMapIntegratorOp
+//===----------------------------------------------------------------------===//
+
+def Quiccir_CLIOp : Quiccir_Op<"cl.int", [Pure,
+    DeclareOpInterfaceMethods<TransformOpInterface>]> {
+    let summary = "Chebyshev LinearMap Transform from physical to modal space";
+    let description = [{
+        The `quiccir.cl.int` operation implements a generic Chebyshev LinearMap integrator.
+        At the momement there is no implemented path for code generation,
+        but only lowering to library calls.
+
+        This operation takes one tensor representing, the value at the
+        integration points, it returns a tensor representing the
+        modes values.
+
+        Attributes:
+        - implptr, index to retrieve backend class implementation
+        - dim, size of the operator that cannot be inferred from the input
+
+        Example:
+
+        ```mlir
+        %mods = quiccir.cl.int<implptr = 0 : i64 : !llvm.ptr, dim = 3 : i64> %phys: tensor<?x?x?x?> -> tensor<?x?x?x?>
         ```
     }];
 

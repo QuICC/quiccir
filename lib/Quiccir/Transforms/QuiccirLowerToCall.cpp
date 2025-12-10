@@ -76,12 +76,12 @@ SmallVector<Value, 2> getIdxPtr(Operation *op,
     if (isa<AlIOp>(user) || isa<AlPOp>(user)) {
       indexPtr.push_back(2);
       indexIdx.push_back(3);
-    } else if (isa<JWIOp>(user) || isa<JWPOp>(user)) {
+    } else if (isa<JWIOp>(user) || isa<JWPOp>(user) || isa<CLIOp>(user) || isa<CLPOp>(user)) {
       indexPtr.push_back(4);
       indexIdx.push_back(5);
     }
     if (indexPtr.size() == 0 || indexIdx.size() == 0) {
-      func->emitError() << "unable to recognize tranpose stage";
+      func->emitError() << "unable to recognize transpose stage";
       return {};
     }
     Value ptrStruct =
@@ -396,6 +396,8 @@ void QuiccirToCallLoweringPass::runOnOperation() {
   // Now that the conversion target has been defined, we just need to provide
   // the set of patterns that will lower the Quiccir operations.
   RewritePatternSet patterns(&getContext());
+  patterns.add<OpLowering<quiccir::CLPOp>>(&getContext(), viewConverter);
+  patterns.add<OpLowering<quiccir::CLIOp>>(&getContext(), viewConverter);
   patterns.add<OpLowering<quiccir::JWPOp>>(&getContext(), viewConverter);
   patterns.add<OpLowering<quiccir::JWIOp>>(&getContext(), viewConverter);
   patterns.add<OpLowering<quiccir::AlPOp>>(&getContext(), viewConverter);

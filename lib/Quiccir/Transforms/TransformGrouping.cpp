@@ -52,7 +52,8 @@ bool isSameTranspose(TransposeOp lhsOp, TransposeOp rhsOp) {
         return false;
       }
       return isa<FrIOp>(op) || isa<FrPOp>(op) || isa<AlIOp>(op) ||
-             isa<AlPOp>(op) || isa<JWIOp>(op) || isa<JWPOp>(op);
+             isa<AlPOp>(op) || isa<JWIOp>(op) || isa<JWPOp>(op) ||
+             isa<CLIOp>(op) || isa<CLPOp>(op) ;
     };
     // Iteratively go up the defining op chain
     // until we reach either a func arg or a transpose op

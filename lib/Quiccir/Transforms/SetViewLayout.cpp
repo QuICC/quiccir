@@ -126,6 +126,20 @@ void QuiccirSetViewLayout::runOnOperation() {
       Value mods = jwPrjOp.getMods();
       setMissingLayout(mods, layout[2][1]);
     }
+    if (auto clIntOp = dyn_cast<CLIOp>(op)) {
+      // set attributes if not set
+      Value phys = clIntOp.getPhys();
+      setMissingLayout(phys, layout[2][0]);
+      Value mods = clIntOp.getMods();
+      setMissingLayout(mods, layout[2][1]);
+    }
+    if (auto clPrjOp = dyn_cast<CLPOp>(op)) {
+      // set attributes if not set
+      Value phys = clPrjOp.getPhys();
+      setMissingLayout(phys, layout[2][0]);
+      Value mods = clPrjOp.getMods();
+      setMissingLayout(mods, layout[2][1]);
+    }
     return WalkResult::advance();
   });
 

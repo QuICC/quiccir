@@ -591,6 +591,119 @@ mlir::LogicalResult JWIOp::verify() {
 }
 
 //===----------------------------------------------------------------------===//
+// CLPOp
+//===----------------------------------------------------------------------===//
+
+mlir::LogicalResult CLPOp::verify() {
+  auto mod = getOperand();
+  auto modType = mod.getType().dyn_cast<RankedTensorType>();
+  auto resultType = getType().dyn_cast<RankedTensorType>();
+
+  // Check element Types
+  if (!llvm::isa<ComplexType>(modType.getElementType())) {
+    return emitOpError()
+           << "operand #1 expected to be of type complex, instead "
+           << modType.getElementType();
+  }
+  if (!llvm::isa<ComplexType>(resultType.getElementType())) {
+    return emitOpError() << "result expected to be of type complex, instead "
+                         << resultType.getElementType();
+  }
+
+  // If unranked, there is nothing to check
+  if (!modType || !resultType)
+    return mlir::success();
+
+  // Check ranks
+  if (modType.getRank() != 3) {
+    return emitOpError() << "operand #1 expected rank=3 instead rank="
+                         << modType.getRank();
+  }
+  if (resultType.getRank() != 3) {
+    return emitOpError() << "return value expected rank=3 instead rank="
+                         << resultType.getRank();
+  }
+
+  // Check consistency of the number of modes
+  // right most is first logical
+  auto modShape = modType.getShape();
+  auto valShape = resultType.getShape();
+
+  if ((valShape[0] != ShapedType::kDynamic &&
+       modShape[0] != ShapedType::kDynamic) &&
+      modShape[0] != valShape[0]) {
+    return emitError() << "expected result first dimension " << valShape[0]
+                       << " to match mod first dimension " << modShape[0];
+  }
+  if ((valShape[2] != ShapedType::kDynamic &&
+       modShape[2] != ShapedType::kDynamic) &&
+      modShape[2] != valShape[2]) {
+    return emitError() << "expected result third dimension " << valShape[2]
+                       << " to match mod third dimension " << modShape[2];
+  }
+  // Todo: check dim attribute consistency if available
+
+  return mlir::success();
+}
+
+//===----------------------------------------------------------------------===//
+// CLIOp
+//===----------------------------------------------------------------------===//
+
+mlir::LogicalResult CLIOp::verify() {
+  auto phys = getOperand();
+  auto physType = phys.getType().dyn_cast<RankedTensorType>();
+  auto resultType = getType().dyn_cast<RankedTensorType>();
+
+  // Check element Types
+  if (!llvm::isa<ComplexType>(physType.getElementType())) {
+    return emitOpError()
+           << "operand #1 expected to be of type complex, instead "
+           << physType.getElementType();
+  }
+  if (!llvm::isa<ComplexType>(resultType.getElementType())) {
+    return emitOpError() << "result expected to be of type complex, instead "
+                         << resultType.getElementType();
+  }
+
+  // If unranked, there is nothing to check
+  if (!physType || !resultType)
+    return mlir::success();
+
+  // Check ranks
+  if (physType.getRank() != 3) {
+    return emitOpError() << "operand #1 expected rank=3 instead rank="
+                         << physType.getRank();
+  }
+  if (resultType.getRank() != 3) {
+    return emitOpError() << "return value expected rank=3 instead rank="
+                         << resultType.getRank();
+  }
+
+  // Check consistency of the number of integration points
+  // right most is first logical
+  auto physShape = physType.getShape();
+  auto valShape = resultType.getShape();
+
+  if ((valShape[0] != ShapedType::kDynamic &&
+       physShape[0] != ShapedType::kDynamic) &&
+      physShape[0] != valShape[0]) {
+    return emitError() << "expected result first dimension " << valShape[0]
+                       << " to match phys first dimension " << physShape[0];
+  }
+  if ((valShape[2] != ShapedType::kDynamic &&
+       physShape[2] != ShapedType::kDynamic) &&
+      physShape[2] != valShape[2]) {
+    return emitError() << "expected result third dimension " << valShape[2]
+                       << " to match phys third dimension " << physShape[2];
+  }
+
+  // Todo: check dim attribute consistency if available
+
+  return mlir::success();
+}
+
+//===----------------------------------------------------------------------===//
 // QuiccirDialect
 //===----------------------------------------------------------------------===//
 

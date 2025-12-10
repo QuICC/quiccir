@@ -114,6 +114,15 @@ void QuiccirSetDimensions::runOnOperation() {
       Value mods = jwIntOp.getMods();
       setMissingDimensions(mods, modsDim);
     }
+    if (auto clIntOp = dyn_cast<CLIOp>(op)) {
+      // set dimensions if not set
+      Value phys = clIntOp.getPhys();
+      llvm::SmallVector<int64_t, 3> physDim{_mods[2], _phys[0], _mods[1]};
+      setMissingDimensions(phys, physDim);
+      llvm::SmallVector<int64_t, 3> modsDim{_mods[2], _mods[0], _mods[1]};
+      Value mods = clIntOp.getMods();
+      setMissingDimensions(mods, modsDim);
+    }
     if (auto frPrjOp = dyn_cast<FrPOp>(op)) {
       // set dimensions if not set
       Value phys = frPrjOp.getPhys();
@@ -139,6 +148,15 @@ void QuiccirSetDimensions::runOnOperation() {
       setMissingDimensions(phys, physDim);
       llvm::SmallVector<int64_t, 3> modsDim{_mods[2], _mods[0], _mods[1]};
       Value mods = jwPrjOp.getMods();
+      setMissingDimensions(mods, modsDim);
+    }
+    if (auto clPrjOp = dyn_cast<CLPOp>(op)) {
+      // set dimensions if not set
+      Value phys = clPrjOp.getPhys();
+      llvm::SmallVector<int64_t, 3> physDim{_mods[2], _phys[0], _mods[1]};
+      setMissingDimensions(phys, physDim);
+      llvm::SmallVector<int64_t, 3> modsDim{_mods[2], _mods[0], _mods[1]};
+      Value mods = clPrjOp.getMods();
       setMissingDimensions(mods, modsDim);
     }
     // if (failed(deallocateBuffers(op)))

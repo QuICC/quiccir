@@ -127,3 +127,19 @@ module {
         return %0 : tensor<?x?x?xcomplex<f32>>
     }
 }
+
+module {
+    func.func @wrap(%arg0: tensor<?x?x?xcomplex<f32>>) -> tensor<?x?x?xcomplex<f32>> {
+        // CHECK: %{{.*}} = quiccir.cl.prj %{{.*}} : tensor<?x?x?xcomplex<f32>> -> tensor<?x?x?xcomplex<f32>>
+        %0 = quiccir.cl.prj %arg0 : tensor<?x?x?xcomplex<f32>> -> tensor<?x?x?xcomplex<f32>>
+        return %0 : tensor<?x?x?xcomplex<f32>>
+    }
+}
+
+module {
+    func.func @wrap(%arg0: tensor<?x?x?xcomplex<f32>>) -> tensor<?x?x?xcomplex<f32>> {
+        // CHECK: %{{.*}} = quiccir.cl.prj %{{.*}} : tensor<?x?x?xcomplex<f32>> -> tensor<?x?x?xcomplex<f32>> attributes {implptr = {{.*}} : i64}
+        %0 = quiccir.cl.prj %arg0 : tensor<?x?x?xcomplex<f32>> -> tensor<?x?x?xcomplex<f32>> attributes {implptr = 2 : i64}
+        return %0 : tensor<?x?x?xcomplex<f32>>
+    }
+}

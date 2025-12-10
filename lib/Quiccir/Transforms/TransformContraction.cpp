@@ -22,8 +22,10 @@ namespace {
 bool isSameTransform(Operation *lhsOp, Operation *rhsOp) {
   /// \todo add transform/projection interface
   auto isTransform = [](Operation *op) {
-    return isa<FrIOp>(op) || isa<FrPOp>(op) || isa<AlIOp>(op) ||
-           isa<AlPOp>(op) || isa<JWIOp>(op) || isa<JWPOp>(op);
+    return isa<FrIOp>(op) || isa<FrPOp>(op) || 
+           isa<AlIOp>(op) || isa<AlPOp>(op) ||
+           isa<JWIOp>(op) || isa<JWPOp>(op) || 
+           isa<CLIOp>(op) || isa<CLPOp>(op);
   };
   auto isLhsTransform = isTransform(lhsOp);
   auto isRhsTransform = isTransform(lhsOp);
