@@ -704,6 +704,52 @@ def Quiccir_AlPOp : Quiccir_Op<"al.prj", [Pure,
 }
 
 //===----------------------------------------------------------------------===//
+// AssociateLegendreVectorProjectorOp
+//===----------------------------------------------------------------------===//
+
+def Quiccir_AlPVOp : Quiccir_Op<"al.prjV", [Pure,
+    DeclareOpInterfaceMethods<TransformOpInterface>]> {
+    let summary = "AssociateLegendre Vector Transform modal to physical space";
+    let description = [{
+        The `quiccir.al.prjV` operation implements a vector AssociateLegendre projector.
+
+        This operation takes two tensor representing, the
+        S and T modes values, it returns a tensor representing the value at the
+        integration points Phi and Theta.
+
+        Attributes:
+        - implptr, index to retrieve backend class implementation
+        - dim, size of the operator that cannot be inferred from the input
+
+        Example:
+
+        ```mlir
+        %phys, %phys2 = quiccir.al.prjV<implptr = 0 : i64 : !llvm.ptr, dim = 3 : i64> %mods, %mods2: tensor<?x?x?x?>, tensor<?x?x?x?> -> tensor<?x?x?x?>, tensor<?x?x?x?>
+        ```
+    }];
+
+    let arguments = (ins AnyTensor:$mods, AnyTensor:$mods2 
+        , OptionalAttr<I64Attr>:$implptr
+        , OptionalAttr<I64Attr>:$dim
+        , OptionalAttr<StrAttr>:$kind);
+    let results = (outs AnyTensor:$phys, AnyTensor:$phys2);
+
+    let assemblyFormat = [{
+        $mods `,` $mods2 `:` type($mods) `,` type($mods2) `->` type($phys) `,` type($phys2) attr-dict-with-keyword
+    }];
+
+    let hasVerifier = 0;
+
+    // let skipDefaultBuilders = 1;
+    // Allow building a FrPOp from the input operand.
+    let builders = [
+        OpBuilder<(ins "Value":$mods, "Value":$mods2)>
+    ];
+
+    let extraClassDefinition = inferTransformShapesVectorPrj;
+}
+
+//===----------------------------------------------------------------------===//
 // AssociateLegendreIntegratorOp
 //===----------------------------------------------------------------------===//
 
@@ -749,6 +795,54 @@ def Quiccir_AlIOp : Quiccir_Op<"al.int", [Pure,
     ];
 
     let extraClassDefinition = inferTransformShapes;
+}
+
+//===----------------------------------------------------------------------===//
+// AssociateLegendreVectorIntegratorOp
+//===----------------------------------------------------------------------===//
+
+def Quiccir_AlIVOp : Quiccir_Op<"al.intV", [Pure,
+    DeclareOpInterfaceMethods<TransformOpInterface>]> {
+    let summary = "AssociateLegendre Transform from physical to modal space";
+    let description = [{
+        The `quiccir.al.intV` operation implements a vector AssociateLegendre integrator.
+        At the momement there is no implemented path for code generation,
+        but only lowering to library calls.
+
+        This operation takes one tensor representing, the value at the
+        integration points, it returns a tensor representing the
+        modes values.
+
+        Attributes:
+        - implptr, index to retrieve backend class implementation
+        - dim, size of the operator that cannot be inferred from the input
+
+        Example:
+
+        ```mlir
+        %mods, %mods2 = quiccir.al.intV<implptr = 0 : i64 : !llvm.ptr, dim = 3 : i64> %phys, %phys2: tensor<?x?x?x?>, tensor<?x?x?x?> -> tensor<?x?x?x?>, tensor<?x?x?x?>
+        ```
+    }];
+
+    let arguments = (ins AnyTensor:$phys, AnyTensor:$phys2
+        , OptionalAttr<I64Attr>:$implptr
+        , OptionalAttr<I64Attr>:$dim
+        , OptionalAttr<StrAttr>:$kind);
+    let results = (outs AnyTensor:$mods, AnyTensor:$mods2);
+
+    let assemblyFormat = [{
+        $phys `,` $phys2 `:` type($phys) `,` type($phys2) `->` type($mods) `,` type($mods2) attr-dict-with-keyword
+    }];
+
+    let hasVerifier = 0;
+
+    // let skipDefaultBuilders = 1;
+    // Allow building a FrIOp from the input operand.
+    let builders = [
+        OpBuilder<(ins "Value":$phys, "Value":$phys2)>
+    ];
+
+    let extraClassDefinition = inferTransformShapesVectorInt;
 }
 
 //===----------------------------------------------------------------------===//

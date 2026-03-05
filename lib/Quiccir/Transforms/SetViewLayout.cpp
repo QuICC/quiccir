@@ -105,12 +105,34 @@ void QuiccirSetViewLayout::runOnOperation() {
       Value mods = alIntOp.getMods();
       setMissingLayout(mods, layout[1][1]);
     }
+    if (auto alIntVOp = dyn_cast<AlIVOp>(op)) {
+      // set attributes if not set
+      Value phys = alIntVOp.getPhys();
+      setMissingLayout(phys, layout[1][0]);
+      Value phys2 = alIntVOp.getPhys2();
+      setMissingLayout(phys2, layout[1][0]);
+      Value mods = alIntVOp.getMods();
+      setMissingLayout(mods, layout[1][1]);
+      Value mods2 = alIntVOp.getMods();
+      setMissingLayout(mods2, layout[1][1]);
+    }
     if (auto alPrjOp = dyn_cast<AlPOp>(op)) {
       // set attributes if not set
       Value phys = alPrjOp.getPhys();
       setMissingLayout(phys, layout[1][0]);
       Value mods = alPrjOp.getMods();
       setMissingLayout(mods, layout[1][1]);
+    }
+    if (auto alPrjVOp = dyn_cast<AlPVOp>(op)) {
+      // set attributes if not set
+      Value phys = alPrjVOp.getPhys();
+      setMissingLayout(phys, layout[1][0]);
+      Value phys2 = alPrjVOp.getPhys2();
+      setMissingLayout(phys2, layout[1][0]);
+      Value mods = alPrjVOp.getMods();
+      setMissingLayout(mods, layout[1][1]);
+      Value mods2 = alPrjVOp.getMods();
+      setMissingLayout(mods2, layout[1][1]);
     }
     if (auto jwIntOp = dyn_cast<JWIOp>(op)) {
       // set attributes if not set

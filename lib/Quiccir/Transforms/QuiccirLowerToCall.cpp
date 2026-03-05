@@ -73,7 +73,7 @@ SmallVector<Value, 2> getIdxPtr(Operation *op,
       indexPtr.push_back(0);
       indexIdx.push_back(1);
     }
-    if (isa<AlIOp>(user) || isa<AlPOp>(user)) {
+    if (isa<AlIOp>(user) || isa<AlIVOp>(user) || isa<AlPOp>(user) || isa<AlPVOp>(user)) {
       indexPtr.push_back(2);
       indexIdx.push_back(3);
     } else if (isa<JWIOp>(user) || isa<JWPOp>(user)) {
@@ -399,7 +399,9 @@ void QuiccirToCallLoweringPass::runOnOperation() {
   patterns.add<OpLowering<quiccir::JWPOp>>(&getContext(), viewConverter);
   patterns.add<OpLowering<quiccir::JWIOp>>(&getContext(), viewConverter);
   patterns.add<OpLowering<quiccir::AlPOp>>(&getContext(), viewConverter);
+  patterns.add<OpLowering<quiccir::AlPVOp>>(&getContext(), viewConverter);
   patterns.add<OpLowering<quiccir::AlIOp>>(&getContext(), viewConverter);
+  patterns.add<OpLowering<quiccir::AlIVOp>>(&getContext(), viewConverter);
   patterns.add<OpLowering<quiccir::FrPOp>>(&getContext(), viewConverter);
   patterns.add<OpLowering<quiccir::FrIOp>>(&getContext(), viewConverter);
   patterns.add<OpLowering<quiccir::TransposeOp>>(&getContext(), viewConverter);
