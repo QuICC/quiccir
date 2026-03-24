@@ -562,6 +562,53 @@ def Quiccir_DotOp : Quiccir_Op<"dot", [Pure,
 }
 
 //===----------------------------------------------------------------------===//
+// MagVelCflOp
+//===----------------------------------------------------------------------===//
+
+def Quiccir_CflMagVelOp : Quiccir_Op<"cfl.magvel", [Pure, 
+    SameOperandsShape,
+    SameOperandsElementType,
+    SameOperandsAndResultShape,
+    SameOperandsAndResultElementType,
+    DeclareOpInterfaceMethods<KindOpInterface>,
+    DeclareOpInterfaceMethods<TransformOpInterface>]> {
+    let summary = "Magnetic/Velocity Cfl";
+    let description = [{
+        The `cfl.magvel` operation implements a Magnetic/Velocity CFL calculation.
+        ?variadic?
+
+        Example:
+
+        ```mlir
+        %res = quiccir.cfl.magvel %lhs, %rhs: tensor<?x?x?x?>, tensor<?x?x?x?> -> 
+        ```
+    }];
+
+    let arguments = (ins AnyTensor:$V0, AnyTensor:$V1, AnyTensor:$V2
+        , AnyTensor:$U0, AnyTensor:$U1, AnyTensor:$U2
+        , OptionalAttr<I64Attr>:$implptr
+        , OptionalAttr<StrAttr>:$kind);
+    let results = (outs AnyTensor:$dot);
+
+    let assemblyFormat = [{
+        `(` $V0 `,` $V1 `,` $V2 `)` `,` `(` $U0 `,` $U1 `,` $U2 `)` `:` `(` type($V0) `,` type($V1) `,` type($V2) `)`
+        `,` `(` type($U0) `,` type($U1) `,` type($U2) `)`  `->` type($dot)
+        attr-dict-with-keyword
+    }];
+
+    let hasVerifier = 0;
+    // let hasCanonicalizeMethod = 1;
+
+    // let skipDefaultBuilders = 1;
+    // Allow building a DotOp from the input operands.
+    let builders = [
+        OpBuilder<(ins "Value":$V0, "Value":$V1, "Value":$V2, "Value":$U0, "Value":$U1, "Value":$U2)>
+    ];
+    
+    let extraClassDefinition = inferTransformShapesCfl;
+}
+
+//===----------------------------------------------------------------------===//
 // FourierProjectorOp
 //===----------------------------------------------------------------------===//
 

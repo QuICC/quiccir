@@ -23,6 +23,7 @@ using namespace mlir::quiccir;
 
 void mlir::quiccir::quiccLibCallPipelineBuilder(OpPassManager &pm) {
   // Lower to view rapresentation
+  //pm.addPass(mlir::createPrintIRPass()); 
   pm.addPass(mlir::quiccir::createLowerToCallPass());
   pm.addPass(mlir::createCanonicalizerPass());
 
